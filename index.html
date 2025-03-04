@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Clientes</title>
+    <style>
+        td {
+    white-space: nowrap; /* Impede a quebra de linha */
+}
+
+td button {
+    display: inline-block; /* Mantém os botões na mesma linha */
+    margin-right: 5px; /* Espaçamento entre botões */
+}
+
+td {
+    display: flex; /* Faz os botões ficarem lado a lado */
+    flex-wrap: nowrap; /* Impede a quebra de linha */
+    align-items: center; /* Alinha os botões verticalmente */
+    gap: 5px; /* Adiciona um espaçamento entre os botões */
+}
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h3 {
+            text-align: center;
+            color: #0066cc;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #0066cc;
+            color: #fff;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #004d99;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            display: none; /* Inicialmente a tabela é oculta */
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        .avisado {
+            background-color: #007bff !important; /* Azul */
+        }
+        
+        .debito {
+            background-color: #ffa500 !important;
+        }
+
+        .vencendo-hoje {
+            background-color: #ffff99 !important; /* Amarelo claro para vencendo hoje */
+        }
+
+        .vencido {
+            background-color: #ff6666 !important; /* Vermelho claro para vencidos */
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        /* Estilos para o Modal */
+    .modal {
+    display: none; /* Inicialmente o modal está oculto */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Fundo escuro semitransparente */
+    justify-content: center;
+    align-items: center;
+}
+
+    .modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    width: 300px;
+}
+
+    .modal button {
+    background-color: #0066cc;
+    color: #fff;
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+    .modal button:hover {
+    background-color: #004d99;
+}
+
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Controle de Clientes</h1>
+        <!-- Botões de Importar/Exportar -->
+        <button onclick="importarClientes()">Importar Clientes (JSON)</button>
+        <button onclick="exportarClientes()">Exportar Clientes (JSON)</button>
+        
+        <h3>Adicionar Cliente</h3>
+<input type="date" id="dataInput" required>
+<input type="text" id="nomeInput" placeholder="Nome do Cliente" required>
+<input type="tel" id="telefoneInput" placeholder="Telefone (ex: 11999999999)" required>
+
+<!-- Novo campo para seleção do Produto -->
+<div>
+    <label>
+        <input type="radio" name="produto" value="UniTv" checked> UniTv
+    </label>
+    <label>
+        <input type="radio" name="produto" value="Duplecast"> Duplecast
+    </label>
+</div>
+
+<button onclick="adicionarCliente()">Adicionar Cliente</button>
+
+
+        
+        
+        <h3>Filtros</h3>
+        <button onclick="filtrarHoje()">Clientes Vencendo Hoje</button>
+        <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã</button>
+        <button onclick="filtrarVencidos()">Clientes Vencidos</button>
+        <button onclick="filtrarDebito()">Clientes com Débito</button>
+        <button onclick="exibirTodos()">Reexibir Todos</button>
+        <button onclick="limparTodos()">Limpar Todos</button>
+        <button onclick="desfazer()">Desfazer Última Ação</button>
+        <button onclick="desfazer()">Arquivados</button>
+        <button onclick="filtrarArquivados()">Arquivados</button>
+
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Data de Vencimento</th>
+                    
+                </tr>
+            </thead>
+            <tbody id="tabelaClientes"></tbody>
+        </table>
+        
+        <button onclick="salvarArquivo()">Salvar no Próprio HTML</button>
+        <button onclick="compartilharWhatsApp()">Compartilhar no WhatsApp</button>
+        
+        <h3>Data Atual</h3>
+        <p id="dataAtual"></p>
+        <!-- Modal de Confirmação -->
+    <div id="modalConfirmacao" class="modal">
+    <div class="modal-content">
+        <h3>Confirmar Duplicação</h3>
+        <p>Você tem certeza que deseja duplicar este cliente?</p>
+        <button onclick="confirmarDuplicacao()">Confirmar</button>
+        <button onclick="fecharModalConfirmacao()">Cancelar</button>
+    </div>
+</div>
+
+<div>
+    <label>
+        <input type="radio" name="produto" value="UniTv" checked> UniTv
+    </label>
+    <label>
+        <input type="radio" name="produto" value="Duplecast"> Duplecast
+    </label>
+</div>
+
+<div id="modalExclusao" class="modal">
+    <div class="modal-content">
+        <h3>Confirmar Exclusão</h3>
+        <p>Você tem certeza que deseja excluir este cliente?</p>
+        <button onclick="confirmarExclusao()">Confirmar</button>
+        <button onclick="fecharModal()">Cancelar</button>
+    </div>
+</div>
+
+
+    </div>
+
+    <script>
+        document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
+        let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+        let ultimaAcao = null;
+        let clientesFiltrados = [];
+        let clienteIndexParaExcluir = null;
+
+        function adicionarCliente() {
+    const dataInput = document.getElementById("dataInput").value.trim();
+    const nomeInput = document.getElementById("nomeInput").value.trim();
+    const telefoneInput = document.getElementById("telefoneInput").value.trim();
+    const produtoSelecionado = document.querySelector('input[name="produto"]:checked').value; // Pega o produto selecionado
+
+    if (!dataInput || !nomeInput || !telefoneInput) {
+        return alert("Por favor, insira a data, o nome e o telefone do cliente.");
+    }
+
+    const dataParts = dataInput.split("-");
+    const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
+    const telefoneLimpo = telefoneInput.replace(/[^\d]/g, '');
+
+    clientes.push({ 
+        data: dataFormatada, 
+        nome: nomeInput, 
+        telefone: telefoneLimpo, 
+        avisado: false, 
+        debito: false, 
+        Produto: produtoSelecionado // Adiciona o produto
+    });
+
+    document.getElementById("dataInput").value = "";
+    document.getElementById("nomeInput").value = "";
+    document.getElementById("telefoneInput").value = "";
+
+    exibirTabela();
+    salvarClientes();
+}
+
+function arquivar(index) {
+    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
+    let cliente = listaParaEditar[index];
+
+    // Encontrar o cliente correspondente na lista principal
+    let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
+    if (clienteOriginal) {
+        clienteOriginal.arquivado = true; // Marca como arquivado
+    }
+
+    exibirTabela();
+    salvarClientes();
+}
+
+function filtrarArquivados() {
+    clientesFiltrados = clientes.filter(cliente => cliente.arquivado);
+    exibirTabela(true); // Passa um argumento para indicar que estamos nos arquivados
+}
+
+function exibirTabela(exibirArquivados = false) {
+    let listaParaExibir = clientesFiltrados.length > 0 ? clientesFiltrados : clientes.filter(cliente => !cliente.arquivado);
+
+    const tabela = document.getElementById("tabelaClientes");
+    tabela.innerHTML = "";
+
+    listaParaExibir.forEach((cliente, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${cliente.data}</td>
+            <td>${cliente.nome}</td>
+            <td>
+                ${exibirArquivados ? `<button onclick="desarquivar(${index})">Desarquivar</button>` : `<button onclick="arquivar(${index})">📂</button>`}
+            </td>
+        `;
+        tabela.appendChild(tr);
+    });
+}
+
+
+function renovarAutomatico(index) {
+    const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
+
+    // Garante que tanto "Produto" quanto "produto" sejam considerados
+    const produtoCliente = cliente.Produto || cliente.produto || "Não informado";
+
+    if (produtoCliente === "Não informado") {
+        exibirAlerta("O produto do cliente não está informado!");
+        return;
+    }
+
+    if (produtoCliente === "Duplecast") {
+        renovarProximoMes(index);
+    } else if (produtoCliente === "UniTv") {
+        renovar30(index);
+    }
+}
+
+// Função para exibir alerta que fecha com ESC ou ENTER
+function exibirAlerta(mensagem) {
+    let modal = document.createElement("div");
+    modal.id = "modalAlerta";
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;">
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; width: 300px;">
+                <h3>Aviso</h3>
+                <p>${mensagem}</p>
+                <button onclick="fecharAlerta()">OK</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Fechar alerta com ESC ou ENTER
+    document.addEventListener("keydown", fecharComEscOuEnter);
+}
+
+function fecharAlerta() {
+    let modal = document.getElementById("modalAlerta");
+    if (modal) {
+        document.body.removeChild(modal);
+        document.removeEventListener("keydown", fecharComEscOuEnter);
+    }
+}
+
+// Função para fechar o alerta com ESC ou ENTER
+function fecharComEscOuEnter(event) {
+    if (event.key === "Escape" || event.key === "Enter") {
+        fecharAlerta();
+    }
+}
+
+// Função para renovar 30 dias
+function renovar30(index) {
+    const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
+    cliente.data = incrementarData(cliente.data, 30);
+    if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
+    exibirTabela();
+    salvarClientes();
+}
+
+// Função para renovar para o próximo mês
+function renovarProximoMes(index) {
+    const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
+    const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+    const dataObj = new Date(ano, mes - 1, dia);
+
+    dataObj.setMonth(dataObj.getMonth() + 1);
+    
+    if (dataObj.getDate() !== dia) {
+        dataObj.setDate(0);
+    }
+
+    cliente.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
+    
+    if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
+    exibirTabela();
+    salvarClientes();
+}
+
+// Função auxiliar para incrementar data
+function incrementarData(data, dias) {
+    const [dia, mes, ano] = data.split("/").map(num => parseInt(num));
+    const dataObj = new Date(ano, mes - 1, dia);
+    dataObj.setDate(dataObj.getDate() + dias);
+    return `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
+}
+
+
+// Confirmar exclusão com Enter
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Enter" && document.getElementById("modalConfirmacao").style.display === "flex") {
+        confirmarExclusao();
+    }
+});
+let clienteIndexParaDuplicar = null;  // Variável para armazenar o índice do cliente a ser duplicado
+
+// Função chamada ao clicar no botão "+"
+function duplicarCliente(index) {
+    clienteIndexParaDuplicar = index;  // Armazenar o índice do cliente
+    document.getElementById("modalConfirmacao").style.display = "flex";  // Exibe o modal
+}
+
+function fecharModal() {
+    document.getElementById("modalConfirmacao").style.display = "none";
+    document.getElementById("modalExclusao").style.display = "none";
+}
+
+// Confirmar exclusão
+function confirmarExclusao() {
+    if (clienteIndexParaExcluir !== null) {
+        let clienteRemovido = clientesFiltrados.length > 0 
+            ? clientesFiltrados[clienteIndexParaExcluir] 
+            : clientes[clienteIndexParaExcluir];
+
+        // Remove o cliente da lista principal `clientes`
+        clientes = clientes.filter(c => !(c.nome === clienteRemovido.nome && c.data === clienteRemovido.data));
+
+        // Se um filtro estiver ativo, remove também da lista filtrada
+        if (clientesFiltrados.length > 0) {
+            clientesFiltrados.splice(clienteIndexParaExcluir, 1);
+        }
+
+        // Atualiza a exibição da tabela
+        exibirTabela();
+        salvarClientes();
+
+        // Fecha o modal de exclusão
+        fecharModalExclusao();
+        
+        // Reseta a variável
+        clienteIndexParaExcluir = null;
+    }
+}
+
+// Função para fechar o modal de exclusão
+function fecharModalExclusao() {
+    document.getElementById("modalExclusao").style.display = "none"; 
+}
+
+// Adiciona evento para fechar com ESC e confirmar com ENTER
+document.addEventListener("keydown", function(event) {
+    let modalAberto = document.getElementById("modalExclusao").style.display === "flex";
+
+    if (modalAberto) {
+        if (event.key === "Escape") {
+            fecharModalExclusao(); // Fecha o modal ao pressionar ESC
+        }
+        if (event.key === "Enter") {
+            confirmarExclusao(); // Confirma a exclusão ao pressionar ENTER
+        }
+    }
+});
+
+// Função para fechar o modal de exclusão
+function fecharModalExclusao() {
+    document.getElementById("modalExclusao").style.display = "none"; 
+}
+
+// Evento para fechar o modal com ESC e confirmar com ENTER
+document.addEventListener("keydown", function(event) {
+    let modalAberto = document.getElementById("modalExclusao").style.display === "flex";
+
+    if (modalAberto) {
+        if (event.key === "Escape") {
+            fecharModalExclusao(); // Fecha o modal ao pressionar ESC
+        }
+        if (event.key === "Enter") {
+            confirmarExclusao(); // Confirma a exclusão ao pressionar ENTER
+        }
+    }
+});
+
+
+// Função para confirmar a duplicação do cliente
+function confirmarDuplicacao() {
+    if (clienteIndexParaDuplicar !== null) {
+        const cliente = clientes[clienteIndexParaDuplicar];
+        const novoCliente = { 
+            data: cliente.data,
+            nome: cliente.nome,
+            telefone: cliente.telefone,
+            avisado: cliente.avisado,
+            debito: cliente.debito,
+            Produto: cliente.Produto || cliente.produto || "Não informado"
+        };
+        clientes.push(novoCliente);
+        exibirTabela();
+        salvarClientes();
+        fecharModalConfirmacao(); // Fecha o modal corretamente
+        clienteIndexParaDuplicar = null; // Reseta a variável
+    }
+}
+
+
+function ordenarPorData() {
+    clientes.sort((a, b) => {
+        const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
+        const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
+
+        const dataA = new Date(anoA, mesA - 1, diaA);
+        const dataB = new Date(anoB, mesB - 1, diaB);
+
+        return dataA - dataB;
+    });
+
+    exibirTabela(); // Atualiza a tabela após a ordenação
+}
+
+
+function exibirTabela() {
+    let listaParaExibir = clientesFiltrados.length > 0 ? clientesFiltrados : clientes.filter(cliente => !cliente.arquivado);
+
+
+    if (listaParaExibir.length === 0) {
+        document.querySelector("table").style.display = "none";
+        return;
+    }
+
+    document.querySelector("table").style.display = "table";
+
+    const tabela = document.getElementById("tabelaClientes");
+    tabela.innerHTML = "";
+
+    const hoje = new Date();
+    const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                          (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                          hoje.getFullYear();
+
+    // **Ordena as datas do mais próximo para o mais distante**
+    listaParaExibir.sort((a, b) => {
+        const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
+        const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
+
+        const dataA = new Date(anoA, mesA - 1, diaA);
+        const dataB = new Date(anoB, mesB - 1, diaB);
+
+        return dataA - dataB; // Agora está em ordem crescente
+    });
+
+    listaParaExibir.forEach((cliente, index) => {
+        const tr = document.createElement("tr");
+
+        // Remove classes anteriores
+        tr.classList.remove("avisado", "debito", "vencendo-hoje", "vencido");
+
+        // Aplica as classes corretas
+        if (cliente.avisado) tr.classList.add("avisado");
+        if (cliente.debito) tr.classList.add("debito");
+
+        const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+        const dataCliente = new Date(ano, mes - 1, dia);
+
+        if (cliente.data === hojeFormatada) {
+            tr.classList.add("vencendo-hoje");
+        } else if (dataCliente < hoje) {
+            tr.classList.add("vencido");
+        }
+
+        tr.innerHTML = `
+            <td>${cliente.data}
+            
+                <a href="javascript:void(0);" 
+                onclick="enviarMensagemWhatsApp('${cliente.nome}', '${cliente.telefone}', '${cliente.data}')">
+                ${cliente.nome}
+                 </a>
+
+                 &nbsp;&nbsp;&nbsp; <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
+            
+            
+                <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
+                <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
+                <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
+                <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
+                <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
+                <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
+            </td>
+        `;
+
+        tabela.appendChild(tr);
+    });
+}
+
+
+
+function enviarMensagemWhatsApp(clienteNome, clienteTelefone, dataVencimento) {
+    const telefoneLimpo = clienteTelefone.replace(/\D/g, ''); // Remove tudo que não for número
+
+    const dataAtual = new Date();
+    const hora = dataAtual.getHours();
+
+    let saudacao = "Olá"; 
+    if (hora >= 6 && hora < 12) {
+        saudacao = "Bom dia";
+    } else if (hora >= 12 && hora < 18) {
+        saudacao = "Boa tarde";
+    } else {
+        saudacao = "Boa noite";
+    }
+
+    // Converter data de vencimento do cliente para comparar
+    const [dia, mes, ano] = dataVencimento.split("/").map(num => parseInt(num));
+    const dataCliente = new Date(ano, mes - 1, dia);
+
+    let mensagemVencimento = "";
+    if (dataCliente.toDateString() === dataAtual.toDateString()) {
+        mensagemVencimento = "Seu plano de TV vence hoje.";
+    } else if (dataCliente < dataAtual) {
+        mensagemVencimento = "⚠️ Seu plano de TV está vencido!";
+    } else {
+        mensagemVencimento = "Seu plano de TV vencerá em breve.";
+    }
+
+    const mensagem = `
+*${saudacao}*! 
+${mensagemVencimento}
+
+Lembre-se, pagamento em atraso aumenta o valor para 35 reais, em vez de 30.
+
+*Vencimento*: ${dataVencimento}
+
+O pagamento via PIX pode ser realizado no número: 
+*11950912509* (Waldemar Jose Luiz)
+`;
+
+    const url = `https://wa.me/${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
+}
+
+
+
+
+
+
+function exportarClientes() {
+    const clientesCompletos = clientes.map(cliente => ({
+        data: cliente.data,
+        nome: cliente.nome,
+        telefone: cliente.telefone,
+        avisado: cliente.avisado,
+        debito: cliente.debito,
+        Produto: cliente.Produto || "Não informado" // Garante que o campo Produto sempre esteja presente
+    }));
+
+    const clientesJson = JSON.stringify(clientesCompletos, null, 4);
+    const blob = new Blob([clientesJson], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "clientes.json";
+    link.click();
+}
+
+
+        function filtrarHoje() {
+    const hoje = new Date();
+    const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                          (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                          hoje.getFullYear();
+
+    clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada);
+
+    const tabela = document.getElementById("tabelaClientes");
+    tabela.innerHTML = ""; // Limpa a tabela antes de exibir novos dados
+
+    if (clientesFiltrados.length === 0) {
+        tabela.innerHTML = `<tr><td colspan="3" style="text-align: center; font-weight: bold; color: red;">Nenhum cliente vencendo hoje.</td></tr>`;
+    } else {
+        exibirTabela(); // Exibe os clientes normalmente
+    }
+}
+
+
+function filtrarAmanha() {
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1); // Adiciona 1 dia para pegar a data de amanhã
+    const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
+                            (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                            amanha.getFullYear();
+
+    clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada);
+
+    const tabela = document.getElementById("tabelaClientes");
+    tabela.innerHTML = ""; // Limpa a tabela antes de exibir novos dados
+
+    if (clientesFiltrados.length === 0) {
+        tabela.innerHTML = `<tr><td colspan="3" style="text-align: center; font-weight: bold; color: orange;">Nenhum cliente vencendo amanhã.</td></tr>`;
+    } else {
+        exibirTabela(); // Exibe os clientes normalmente
+    }
+}
+
+
+        function filtrarVencidos() {
+            const hoje = new Date();
+            clientesFiltrados = clientes.filter(cliente => {
+                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                const dataCliente = new Date(ano, mes - 1, dia);
+                return dataCliente < hoje;
+            });
+            exibirTabela();
+        }
+
+        function filtrarDebito() {
+            clientesFiltrados = clientes.filter(cliente => cliente.debito);
+            exibirTabela();
+        }
+
+        function exibirTodos() {
+            clientesFiltrados = [];
+            exibirTabela();
+        }
+
+        function limparTodos() {
+            clientes = [];
+            clientesFiltrados = [];
+            exibirTabela();
+            salvarClientes();
+        }
+
+        function editar(index) {
+    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
+    let cliente = listaParaEditar[index];
+
+    // Criando o modal
+    let modal = document.createElement("div");
+    modal.id = "modalEdicao";
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;">
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; width: 300px;">
+                <h3>Editar Cliente</h3>
+                <input type="text" id="novoNome" value="${cliente.nome}" placeholder="Nome"><br><br>
+                <input type="tel" id="novoTelefone" value="${cliente.telefone}" placeholder="Telefone"><br><br>
+                <input type="date" id="novaData" value="${formatarParaInputDate(cliente.data)}"><br><br>
+
+                <!-- Seleção do Produto -->
+                <div>
+                    <label>
+                        <input type="radio" name="editarProduto" value="UniTv" ${cliente.Produto === "UniTv" ? "checked" : ""}> UniTv
+                    </label>
+                    <label>
+                        <input type="radio" name="editarProduto" value="Duplecast" ${cliente.Produto === "Duplecast" ? "checked" : ""}> Duplecast
+                    </label>
+                </div>
+                <br>
+
+                <button id="salvarBtn">Salvar</button>
+                <button onclick="fecharModal()">Cancelar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Focar no primeiro campo automaticamente
+    document.getElementById("novoNome").focus();
+
+    // Adicionar eventos de teclado
+    document.getElementById("novoNome").addEventListener("keydown", (e) => proximoCampo(e, "novoTelefone"));
+    document.getElementById("novoTelefone").addEventListener("keydown", (e) => proximoCampo(e, "novaData"));
+    document.getElementById("novaData").addEventListener("keydown", (e) => verificarProdutoESalvar(e, index));
+
+    // Adicionar evento Enter no último campo para salvar
+    document.querySelectorAll('input[name="editarProduto"]').forEach(input => {
+        input.addEventListener("keydown", (e) => salvarComEnter(e, index));
+    });
+
+    // Botão de salvar com clique
+    document.getElementById("salvarBtn").addEventListener("click", () => salvarEdicao(index));
+
+    // Fechar modal com ESC
+    document.addEventListener("keydown", fecharComEsc);
+}
+
+// Função para pular para o próximo campo ao pressionar Enter
+function proximoCampo(event, proximoId) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById(proximoId)?.focus();
+    }
+}
+
+// Função para verificar se um produto está selecionado e salvar automaticamente
+function verificarProdutoESalvar(event, index) {
+    if (event.key === "Enter") {
+        const produtoSelecionado = document.querySelector('input[name="editarProduto"]:checked');
+        if (produtoSelecionado) {
+            salvarEdicao(index);
+        }
+    }
+}
+
+// Função para salvar ao pressionar Enter no último campo
+function salvarComEnter(event, index) {
+    if (event.key === "Enter") {
+        salvarEdicao(index);
+    }
+}
+
+// Função para salvar a edição
+function salvarEdicao(index) {
+    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
+    let cliente = listaParaEditar[index];
+
+    let novoNome = document.getElementById("novoNome").value;
+    let novoTelefone = document.getElementById("novoTelefone").value;
+    let novaData = document.getElementById("novaData").value;
+    let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value; // Obtém o novo produto
+
+    if (!novoNome || !novaData) {
+        alert("Nome e data são obrigatórios!");
+        return;
+    }
+
+    cliente.nome = novoNome;
+    cliente.telefone = novoTelefone;
+    cliente.data = novaData.split("-").reverse().join("/");
+    cliente.Produto = novoProduto; // Atualiza o produto
+
+    exibirTabela();
+    salvarClientes();
+    fecharModal();
+}
+
+// Função para converter "DD/MM/AAAA" para "AAAA-MM-DD"
+function formatarParaInputDate(data) {
+    let [dia, mes, ano] = data.split("/");
+    return `${ano}-${mes}-${dia}`;
+}
+
+// Fechar modal corretamente
+function fecharModal() {
+    let modal = document.getElementById("modalEdicao");
+    if (modal) {
+        document.body.removeChild(modal);
+        document.removeEventListener("keydown", fecharComEsc); // Remove o evento do ESC ao fechar
+    }
+}
+
+// Função para fechar o modal ao pressionar ESC
+function fecharComEsc(event) {
+    if (event.key === "Escape") {
+        fecharModal();
+    }
+}
+
+
+// Função para pular para o próximo campo ao pressionar Enter
+function proximoCampo(event, proximoId) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById(proximoId)?.focus();
+    }
+}
+
+// Função para salvar ao pressionar Enter no último campo
+function salvarComEnter(event, index) {
+    if (event.key === "Enter") {
+        salvarEdicao(index);
+    }
+}
+
+// Função para salvar a edição
+function salvarEdicao(index) {
+    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
+    let cliente = listaParaEditar[index];
+
+    let novoNome = document.getElementById("novoNome").value;
+    let novoTelefone = document.getElementById("novoTelefone").value;
+    let novaData = document.getElementById("novaData").value;
+    let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value; // Obtém o novo produto
+
+    if (!novoNome || !novaData) {
+        alert("Nome e data são obrigatórios!");
+        return;
+    }
+
+    cliente.nome = novoNome;
+    cliente.telefone = novoTelefone;
+    cliente.data = novaData.split("-").reverse().join("/");
+    cliente.Produto = novoProduto; // Atualiza o produto
+
+    exibirTabela();
+    salvarClientes();
+    fecharModal();
+}
+
+
+// Função para converter "DD/MM/AAAA" para "AAAA-MM-DD"
+function formatarParaInputDate(data) {
+    let [dia, mes, ano] = data.split("/");
+    return `${ano}-${mes}-${dia}`;
+}
+
+function copiarMensagem(index) {
+    let cliente = clientes[index];
+
+    const telefoneLimpo = cliente.telefone.replace(/\D/g, ''); // Remove tudo que não for número
+    const dataAtual = new Date();
+    const hora = dataAtual.getHours();
+
+    let saudacao = "Olá"; 
+    if (hora >= 6 && hora < 12) {
+        saudacao = "Bom dia";
+    } else if (hora >= 12 && hora < 18) {
+        saudacao = "Boa tarde";
+    } else {
+        saudacao = "Boa noite";
+    }
+
+    const mensagem = `
+${saudacao}!
+Hoje é o vencimento do seu plano de TV.
+
+Vencimento: ${dataAtual.toLocaleDateString('pt-BR')}
+
+O pagamento via PIX pode ser realizado no número: 
+11950912509 (Waldemar Jose Luiz)
+`;
+
+    // Usando API moderna para copiar para a área de transferência
+    navigator.clipboard.writeText(mensagem).then(() => {
+        alert("Mensagem copiada para a área de transferência!");
+    }).catch(err => {
+        console.error("Erro ao copiar:", err);
+        alert("Falha ao copiar. Tente manualmente.");
+    });
+}
+
+// Fechar modal corretamente
+function fecharModal() {
+    let modal = document.getElementById("modalEdicao");
+    if (modal) {
+        document.body.removeChild(modal);
+        document.removeEventListener("keydown", fecharComEsc); // Remove o evento do ESC ao fechar
+    }
+}
+
+// Função para mover para o próximo campo ao pressionar Enter
+function proximoCampo(event, proximoId) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById(proximoId).focus();
+    }
+}
+
+// Função para salvar ao pressionar Enter no campo de data
+function salvarComEnter(event, index) {
+    if (event.key === "Enter") {
+        salvarEdicao(index);
+    }
+}
+
+// Função para fechar o modal ao pressionar ESC
+function fecharComEsc(event) {
+    if (event.key === "Escape") {
+        fecharModal();
+    }
+}
+
+function excluir(index) {
+    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
+    let cliente = listaParaEditar[index];
+
+    // Encontrar o índice correto na lista principal
+    clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
+
+    if (clienteIndexParaExcluir !== -1) {
+        document.getElementById("modalExclusao").style.display = "flex"; // Exibe o modal
+    }
+}
+
+
+
+function toggleAvisado(index) {
+    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
+    let cliente = listaParaEditar[index];
+
+    // Buscar o índice correto na lista principal de clientes
+    let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
+    if (clienteOriginalIndex !== -1) {
+        clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
+    }
+
+    exibirTabela();
+    salvarClientes();
+}
+
+
+function toggleDebito(index) {
+    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
+    let cliente = listaParaEditar[index];
+
+    let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
+    if (clienteOriginalIndex !== -1) {
+        clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
+    }
+
+    exibirTabela();
+    salvarClientes();
+}
+
+
+
+        function renovar30(index) {
+            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
+            cliente.data = incrementarData(cliente.data, 30);
+            if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
+            exibirTabela();
+            salvarClientes();
+        }
+
+        function renovarProximoMes(index) {
+            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
+            const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+            const dataObj = new Date(ano, mes - 1, dia);
+
+            dataObj.setMonth(dataObj.getMonth() + 1);
+            
+            if (dataObj.getDate() !== dia) {
+                dataObj.setDate(0);
+            }
+
+            cliente.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
+            
+            if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
+            exibirTabela();
+            salvarClientes();
+        }
+
+        
+
+        function incrementarData(data, dias) {
+            const [dia, mes, ano] = data.split("/").map(num => parseInt(num));
+            const dataObj = new Date(ano, mes - 1, dia);
+            dataObj.setDate(dataObj.getDate() + dias);
+            return `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
+        }
+
+        function salvarClientes() {
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+        }
+
+        function salvarArquivo() {
+            const data = JSON.stringify(clientes, null, 4);
+            const blob = new Blob([data], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'clientes.json';
+            link.click();
+        }
+
+        function importarClientes() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const clientesImportados = JSON.parse(reader.result);
+
+                // Garante que cada cliente importado tenha o campo Produto
+                const clientesCorrigidos = clientesImportados.map(cliente => ({
+                    data: cliente.data,
+                    nome: cliente.nome,
+                    telefone: cliente.telefone,
+                    avisado: cliente.avisado,
+                    debito: cliente.debito,
+                    Produto: cliente.Produto || "Não informado" // Se não existir, define como "Não informado"
+                }));
+
+                // Adiciona os clientes importados à lista existente
+                clientes = [...clientes, ...clientesCorrigidos];
+
+                // Atualiza a tabela e salva os dados
+                exibirTabela();
+                salvarClientes();
+                alert("Clientes importados com sucesso!");
+            } catch (error) {
+                alert("Erro ao importar JSON. Verifique o arquivo.");
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+
+
+
+        function compartilharWhatsApp() {
+            const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
+            window.open(url, '_blank');
+        }
+
+        document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
+        exibirTabela();
+    </script>
+</body>
+</html>
