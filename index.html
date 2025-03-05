@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -513,7 +514,6 @@ function ordenarPorData() {
 function exibirTabela() {
     let listaParaExibir = clientesFiltrados.length > 0 ? clientesFiltrados : clientes.filter(cliente => !cliente.arquivado);
 
-
     if (listaParaExibir.length === 0) {
         document.querySelector("table").style.display = "none";
         return;
@@ -524,23 +524,27 @@ function exibirTabela() {
     const tabela = document.getElementById("tabelaClientes");
     tabela.innerHTML = "";
 
+    // Cálculo da data atual, apenas uma vez
     const hoje = new Date();
-    const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+    const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" + 
                           (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                           hoje.getFullYear();
 
-    // **Ordena as datas do mais próximo para o mais distante**
-    listaParaExibir.sort((a, b) => {
-        const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
-        const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
+    // Ordena as datas do mais próximo para o mais distante
+    // Aqui, criamos um array de objetos com os dados do cliente e o índice original
+    const listaComIndices = listaParaExibir.map((cliente, index) => ({ cliente, index }));
+
+    listaComIndices.sort((a, b) => {
+        const [diaA, mesA, anoA] = a.cliente.data.split("/").map(num => parseInt(num));
+        const [diaB, mesB, anoB] = b.cliente.data.split("/").map(num => parseInt(num));
 
         const dataA = new Date(anoA, mesA - 1, diaA);
         const dataB = new Date(anoB, mesB - 1, diaB);
 
-        return dataA - dataB; // Agora está em ordem crescente
+        return dataA - dataB; // Ordenação crescente (mais próximo primeiro)
     });
 
-    listaParaExibir.forEach((cliente, index) => {
+    listaComIndices.forEach(({ cliente, index }) => {
         const tr = document.createElement("tr");
 
         // Remove classes anteriores
@@ -550,9 +554,11 @@ function exibirTabela() {
         if (cliente.avisado) tr.classList.add("avisado");
         if (cliente.debito) tr.classList.add("debito");
 
+        // Converte a data do cliente para formato Date para comparação
         const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
         const dataCliente = new Date(ano, mes - 1, dia);
 
+        // Aplica classes baseadas nas datas
         if (cliente.data === hojeFormatada) {
             tr.classList.add("vencendo-hoje");
         } else if (dataCliente < hoje) {
@@ -561,15 +567,10 @@ function exibirTabela() {
 
         tr.innerHTML = `
             <td>${cliente.data}
-            
-                <a href="javascript:void(0);" 
-                onclick="enviarMensagemWhatsApp('${cliente.nome}', '${cliente.telefone}', '${cliente.data}')">
-                ${cliente.nome}
-                 </a>
-
+                <a href="javascript:void(0);" onclick="enviarMensagemWhatsApp('${cliente.nome}', '${cliente.telefone}')">
+                    ${cliente.nome}
+                </a>
                  &nbsp;&nbsp;&nbsp; <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
-            
-            
                 <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
                 <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
                 <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
@@ -583,9 +584,7 @@ function exibirTabela() {
     });
 }
 
-
-
-function enviarMensagemWhatsApp(clienteNome, clienteTelefone, dataVencimento) {
+function enviarMensagemWhatsApp(clienteNome, clienteTelefone) {
     const telefoneLimpo = clienteTelefone.replace(/\D/g, ''); // Remove tudo que não for número
 
     const dataAtual = new Date();
@@ -600,26 +599,11 @@ function enviarMensagemWhatsApp(clienteNome, clienteTelefone, dataVencimento) {
         saudacao = "Boa noite";
     }
 
-    // Converter data de vencimento do cliente para comparar
-    const [dia, mes, ano] = dataVencimento.split("/").map(num => parseInt(num));
-    const dataCliente = new Date(ano, mes - 1, dia);
-
-    let mensagemVencimento = "";
-    if (dataCliente.toDateString() === dataAtual.toDateString()) {
-        mensagemVencimento = "Seu plano de TV vence hoje.";
-    } else if (dataCliente < dataAtual) {
-        mensagemVencimento = "⚠️ Seu plano de TV está vencido!";
-    } else {
-        mensagemVencimento = "Seu plano de TV vencerá em breve.";
-    }
-
     const mensagem = `
 *${saudacao}*! 
-${mensagemVencimento}
+Hoje é o vencimento do seu plano de TV.
 
-Lembre-se, pagamento em atraso aumenta o valor para 35 reais, em vez de 30.
-
-*Vencimento*: ${dataVencimento}
+*Vencimento*: ${dataAtual.toLocaleDateString('pt-BR')}
 
 O pagamento via PIX pode ser realizado no número: 
 *11950912509* (Waldemar Jose Luiz)
@@ -628,8 +612,6 @@ O pagamento via PIX pode ser realizado no número:
     const url = `https://wa.me/${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
 }
-
-
 
 
 
@@ -960,12 +942,10 @@ function fecharComEsc(event) {
 }
 
 function excluir(index) {
-    let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
-    let cliente = listaParaEditar[index];
+    const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
 
-    // Encontrar o índice correto na lista principal
+    // Exibe o modal de confirmação de exclusão
     clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
-
     if (clienteIndexParaExcluir !== -1) {
         document.getElementById("modalExclusao").style.display = "flex"; // Exibe o modal
     }
