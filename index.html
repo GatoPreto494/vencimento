@@ -1013,11 +1013,11 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             }
 
             const inputWidthElement = document.getElementById('inputWidth');
-            if (inputWidthElement) { // Verifica se o elemento existe antes de tentar manipular
+            if (inputWidthElement) {
                 inputWidthElement.value = widthToApply;
             }
             const inputWidthValueSpan = document.getElementById('inputWidthValue');
-            if (inputWidthValueSpan) { // Verifica se o elemento existe antes de tentar manipular
+            if (inputWidthValueSpan) {
                 inputWidthValueSpan.textContent = `${widthToApply}%`;
             }
             applyInputWidth(widthToApply);
@@ -1031,12 +1031,33 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
         // --- FIM: FUNÇÕES DE AJUSTES ---
 
+        // Nova função para a exibição inicial
+        function inicializarExibicaoClientes() {
+            const hoje = new Date();
+            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                                  (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                                  hoje.getFullYear();
+
+            clientesFiltrados = clientes.filter(cliente => {
+                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                const dataCliente = new Date(ano, mes - 1, dia);
+
+                const isVencendoHoje = cliente.data === hojeFormatada;
+                const isVencido = dataCliente < hoje && cliente.data !== hojeFormatada;
+
+                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto;
+            });
+            modoExibicaoArquivados = false; // Garante que não está em modo arquivado
+            document.getElementById("searchInput").value = ""; // Limpa a pesquisa
+            exibirTabela(); // Chama exibirTabela para renderizar com os filtros iniciais
+        }
+
 
         // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
-        salvarEstadoNoHistorico();
+        salvarEstadoNoHistorico(); // Salva o estado inicial (pode estar vazio)
         loadSettings(); // Garante que o ajuste seja aplicado logo no início
-        exibirTabela();
+        inicializarExibicaoClientes(); // Chama a nova função para exibir os clientes filtrados na inicialização
     </script>
 </body>
 
