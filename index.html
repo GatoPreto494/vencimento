@@ -82,6 +82,7 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
+            position: relative; /* Necessário para posicionar o badge */
         }
 
         button:hover {
@@ -202,6 +203,22 @@
             width: calc(100% - 22px);
             margin-bottom: 15px;
         }
+
+        /* Estilo para o badge numérico */
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            padding: 3px 7px;
+            font-size: 0.7em;
+            min-width: 15px;
+            text-align: center;
+            line-height: 1;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 
@@ -230,14 +247,15 @@
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
 
         <h3>Filtros e Ações</h3>
-        <button onclick="filtrarHoje()">Clientes Vencendo Hoje</button>
-        <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã</button>
-        <button onclick="filtrarVencidos()">Clientes Vencidos</button>
-        <button onclick="filtrarDebito()">Clientes com Débito</button>
+        <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã <span id="badgeAmanha" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarVencidos()">Clientes Vencidos <span id="badgeVencidos" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarDebito()">Clientes com Débito <span id="badgeDebito" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarOcultos()">Clientes Avisados (WhatsApp) <span id="badgeOcultos" class="notification-badge" style="display:none;"></span></button>
         <button onclick="exibirTodos()">Reexibir Todos</button>
         <button onclick="limparTodos()">Limpar Todos</button>
         <button onclick="desfazer()">Desfazer Última Ação</button>
-        <button onclick="filtrarArquivados()">Arquivados</button>
+        <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge" style="display:none;"></span></button>
 
         <h3>Pesquisa de Clientes</h3>
         <input type="text" id="searchInput" placeholder="Pesquisar por nome ou telefone" oninput="pesquisarClientes()">
@@ -292,6 +310,15 @@
             </div>
         </div>
 
+        <div id="modalRenovarComDebito" class="modal">
+            <div class="modal-content">
+                <h3>Renovar com Débito?</h3>
+                <p>Tem certeza que deseja renovar este cliente e marcá-lo como Débito?</p>
+                <button id="btnConfirmarRenovacaoDebito">Confirmar</button>
+                <button onclick="fecharModal()">Cancelar</button>
+            </div>
+        </div>
+
         <div id="modalEdicao" class="modal" style="display: none;"></div>
         <div id="modalAlerta" class="modal" style="display: none;"></div>
 
@@ -302,10 +329,13 @@
         let clientesFiltrados = [];
         let clienteIndexParaExcluir = null;
         let clienteIndexParaDuplicar = null;
+        let clienteIndexParaRenovarDebito = null; // Novo para a renovação com débito
         let modoExibicaoArquivados = false;
+        let modoExibicaoOcultos = false; // Novo modo para clientes ocultos/avisados
 
         let historicoClientes = [];
         const MAX_HISTORY_STATES = 10;
+        let pressTimer; // Variável para o timer do long press
 
         function salvarEstadoNoHistorico() {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
@@ -337,6 +367,7 @@
         function fecharModal() {
             document.getElementById("modalConfirmacao").style.display = "none";
             document.getElementById("modalExclusao").style.display = "none";
+            document.getElementById("modalRenovarComDebito").style.display = "none"; // Fechar novo modal
             const modalEdicao = document.getElementById("modalEdicao");
             if (modalEdicao) {
                 modalEdicao.style.display = "none";
@@ -405,7 +436,7 @@
                 debito: false,
                 Produto: produtoSelecionado,
                 arquivado: false,
-                oculto: false
+                oculto: false // 'oculto' agora significa 'avisado via WhatsApp'
             });
 
             document.getElementById("dataInput").value = "";
@@ -420,11 +451,12 @@
             salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.nome === clienteParaArquivar.nome && c.data === clienteParaArquivar.data);
+            let clienteOriginal = clientes.find(c => c.nome === clienteParaArquivar.nome && c.data === clienteParaArquivar.data && c.telefone === clienteParaArquivar.telefone);
             if (clienteOriginal) {
                 clienteOriginal.arquivado = true;
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
+                modoExibicaoOcultos = false;
             }
             exibirTabela();
             salvarClientes();
@@ -434,11 +466,12 @@
             salvarEstadoNoHistorico();
             let clienteParaDesarquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.nome === clienteParaDesarquivar.nome && c.data === clienteParaDesarquivar.data);
+            let clienteOriginal = clientes.find(c => c.nome === clienteParaDesarquivar.nome && c.data === clienteParaDesarquivar.data && c.telefone === clienteParaDesarquivar.telefone);
             if (clienteOriginal) {
                 clienteOriginal.arquivado = false;
                 clientesFiltrados = [];
-                modoExibicaoArquivados = true;
+                modoExibicaoArquivados = true; // Permanece no filtro de arquivados
+                modoExibicaoOcultos = false;
             }
             exibirTabela();
             salvarClientes();
@@ -447,6 +480,15 @@
         function filtrarArquivados() {
             clientesFiltrados = [];
             modoExibicaoArquivados = true;
+            modoExibicaoOcultos = false;
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
+        }
+
+        function filtrarOcultos() { // Nova função de filtro
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
+            modoExibicaoOcultos = true;
             document.getElementById("searchInput").value = "";
             exibirTabela();
         }
@@ -458,15 +500,18 @@
 
             if (termoPesquisa !== '') {
                 clientesExibidos = clientes.filter(cliente =>
-                    !cliente.arquivado && !cliente.oculto &&
+                    !cliente.arquivado && !cliente.oculto && // Não mostra ocultos ou arquivados na pesquisa principal
                     (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
                 );
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
+                modoExibicaoOcultos = false;
             } else if (clientesFiltrados.length > 0) {
                 clientesExibidos = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto);
             } else if (modoExibicaoArquivados) {
                 clientesExibidos = clientes.filter(cliente => cliente.arquivado);
+            } else if (modoExibicaoOcultos) { // Nova condição para exibir ocultos
+                clientesExibidos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado);
             } else {
                 clientesExibidos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
             }
@@ -475,6 +520,7 @@
             if (clientesExibidos.length === 0) {
                 document.querySelector("table").style.display = "none";
                 document.getElementById("tabelaClientes").innerHTML = `<tr><td colspan="1" style="text-align: center; color: gray;">Nenhum cliente para exibir neste filtro.</td></tr>`;
+                atualizarContadores(); // Atualiza contadores mesmo que a tabela esteja vazia
                 return;
             }
 
@@ -516,9 +562,13 @@
                 if (modoExibicaoArquivados) {
                     botoesAcao = `<button title="Desarquivar Cliente" onclick="desarquivar(${index})">Desarquivar</button>`;
                 } else {
+                    // Adiciona eventos mousedown e mouseup para detecção de long press
                     botoesAcao = `
                         <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
-                        <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
+                        <button title="Renovar Automático"
+                                onmousedown="startRenovarTimer(event, ${index})"
+                                onmouseup="clearRenovarTimer()"
+                                onmouseleave="clearRenovarTimer()">🔁</button>
                         <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
                         <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
@@ -539,11 +589,30 @@
 
                 tabela.appendChild(tr);
             });
+            atualizarContadores();
         }
 
+        // --- Funções de Renovar com Débito ---
+        function startRenovarTimer(event, index) {
+            // Previne o comportamento padrão do clique imediato
+            event.preventDefault();
+            clearTimeout(pressTimer); // Limpa qualquer timer anterior
+
+            pressTimer = setTimeout(() => {
+                // Se o botão for segurado por 500ms, abre o modal de débito
+                clienteIndexParaRenovarDebito = index;
+                document.getElementById("modalRenovarComDebito").style.display = "flex";
+                document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
+                clearRenovarTimer(); // Limpa o timer após abrir o modal
+            }, 500); // 500ms para considerar um "long press"
+        }
+
+        function clearRenovarTimer() {
+            clearTimeout(pressTimer);
+        }
 
         function renovarAutomatico(index) {
-            salvarEstadoNoHistorico();
+            // Esta função será chamada apenas se não for um "long press"
             const cliente = clientesExibidos[index];
             const produtoCliente = cliente.Produto || "Não informado";
 
@@ -552,44 +621,72 @@
                 return;
             }
 
-            if (produtoCliente === "Duplecast") {
-                renovarProximoMes(index);
-            } else if (produtoCliente === "UniTv") {
-                renovar30(index);
-            }
-        }
-
-        function renovar30(index) {
-            const cliente = clientesExibidos[index];
-            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
+            salvarEstadoNoHistorico(); // Salva o estado antes de renovar
+            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginal) {
-                clienteOriginal.data = incrementarData(clienteOriginal.data, 30);
+                if (produtoCliente === "Duplecast") {
+                    renovarProximoMes(clienteOriginal);
+                } else if (produtoCliente === "UniTv") {
+                    renovar30(clienteOriginal);
+                }
+                clienteOriginal.debito = false; // Garante que o débito seja removido em renovação normal
             }
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
             exibirTabela();
             salvarClientes();
+            exibirAlerta("Cliente renovado com sucesso!");
         }
 
-        function renovarProximoMes(index) {
-            const cliente = clientesExibidos[index];
-            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
-            if (clienteOriginal) {
-                const [dia, mes, ano] = clienteOriginal.data.split("/").map(num => parseInt(num));
-                const dataObj = new Date(ano, mes - 1, dia);
+        function confirmarRenovacaoComDebito() {
+            if (clienteIndexParaRenovarDebito !== null) {
+                salvarEstadoNoHistorico();
+                const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
+                const produtoCliente = cliente.Produto || "Não informado";
 
-                dataObj.setMonth(dataObj.getMonth() + 1);
-
-                if (dataObj.getDate() !== dia) {
-                    dataObj.setDate(0);
+                if (produtoCliente === "Não informado") {
+                    exibirAlerta("O produto do cliente não está informado!");
+                    return;
                 }
 
-                clienteOriginal.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
+                let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+                if (clienteOriginal) {
+                    if (produtoCliente === "Duplecast") {
+                        renovarProximoMes(clienteOriginal);
+                    } else if (produtoCliente === "UniTv") {
+                        renovar30(clienteOriginal);
+                    }
+                    clienteOriginal.debito = true; // Marca como débito
+                }
+                clientesFiltrados = [];
+                modoExibicaoArquivados = false;
+                modoExibicaoOcultos = false;
+                exibirTabela();
+                salvarClientes();
+                fecharModal();
+                clienteIndexParaRenovarDebito = null;
+                exibirAlerta("Cliente renovado e marcado como DÉBITO!");
             }
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            exibirTabela();
-            salvarClientes();
+        }
+        // --- Fim Funções de Renovar com Débito ---
+
+
+        function renovar30(clienteObj) { // Recebe o objeto cliente diretamente
+            clienteObj.data = incrementarData(clienteObj.data, 30);
+        }
+
+        function renovarProximoMes(clienteObj) { // Recebe o objeto cliente diretamente
+            const [dia, mes, ano] = clienteObj.data.split("/").map(num => parseInt(num));
+            const dataObj = new Date(ano, mes - 1, dia);
+
+            dataObj.setMonth(dataObj.getMonth() + 1);
+
+            if (dataObj.getDate() !== dia) {
+                dataObj.setDate(0);
+            }
+
+            clienteObj.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
 
         function incrementarData(data, dias) {
@@ -622,6 +719,7 @@
                 clientes.push(novoCliente);
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
+                modoExibicaoOcultos = false;
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
@@ -676,9 +774,9 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             link.click();
             document.body.removeChild(link);
 
-            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
+            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginal) {
-                clienteOriginal.oculto = true;
+                clienteOriginal.oculto = true; // Marca como "oculto" (avisado)
             }
             exibirTabela();
         }
@@ -701,6 +799,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
             clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
             document.getElementById("searchInput").value = "";
             exibirTabela();
         }
@@ -714,6 +813,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
             clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
             document.getElementById("searchInput").value = "";
             exibirTabela();
         }
@@ -726,6 +826,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 return dataCliente < hoje && cliente.data !== hoje.toLocaleDateString('pt-BR') && !cliente.arquivado && !cliente.oculto;
             });
             modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
             document.getElementById("searchInput").value = "";
             exibirTabela();
         }
@@ -733,6 +834,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         function filtrarDebito() {
             clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
             document.getElementById("searchInput").value = "";
             exibirTabela();
         }
@@ -740,7 +842,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         function exibirTodos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
-            clientes.forEach(cliente => cliente.oculto = false);
+            modoExibicaoOcultos = false;
+            clientes.forEach(cliente => cliente.oculto = false); // Ao exibir todos, "desoculta" todos
             document.getElementById("searchInput").value = "";
             exibirTabela();
         }
@@ -750,6 +853,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             clientes = [];
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
             exibirTabela();
             salvarClientes();
             exibirAlerta("Todos os clientes foram limpos!");
@@ -811,7 +915,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         function salvarEdicao(index) {
             salvarEstadoNoHistorico();
             const clienteParaAtualizar = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data);
+            let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data && c.telefone === clienteParaAtualizar.telefone);
 
             if (clienteOriginalIndex === -1) {
                 exibirAlerta("Cliente não encontrado na lista principal!");
@@ -836,7 +940,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
-            clientes.forEach(cliente => cliente.oculto = false);
+            modoExibicaoOcultos = false;
+            clientes.forEach(cliente => cliente.oculto = false); // Ao salvar edição, desoculta o cliente
             document.getElementById("searchInput").value = "";
             exibirTabela();
             salvarClientes();
@@ -850,7 +955,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
         function excluir(index) {
             const cliente = clientesExibidos[index];
-            clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
+            clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteIndexParaExcluir !== -1) {
                 document.getElementById("modalExclusao").style.display = "flex";
             }
@@ -861,12 +966,9 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 salvarEstadoNoHistorico();
                 clientes.splice(clienteIndexParaExcluir, 1);
 
-                if (clientesFiltrados.length > 0) {
-                    clientesFiltrados = clientesFiltrados.filter((_, idx) => idx !== clienteIndexParaExcluir);
-                }
-
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
+                modoExibicaoOcultos = false;
                 clientes.forEach(cliente => cliente.oculto = false);
                 document.getElementById("searchInput").value = "";
                 exibirTabela();
@@ -879,7 +981,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         function toggleAvisado(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
+            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
             }
@@ -890,7 +992,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         function toggleDebito(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
+            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
             }
@@ -922,10 +1024,19 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                             debito: cliente.debito,
                             Produto: cliente.Produto || "Não informado",
                             arquivado: cliente.arquivado || false,
-                            oculto: false
+                            oculto: cliente.oculto || false // Garante que a propriedade 'oculto' existe
                         }));
 
-                        clientes = [...clientes, ...clientesCorrigidos];
+                        // Filtra clientes duplicados por nome, data e telefone antes de adicionar
+                        const novosClientesUnicos = clientesCorrigidos.filter(novoCliente =>
+                            !clientes.some(existente =>
+                                existente.nome === novoCliente.nome &&
+                                existente.data === novoCliente.data &&
+                                existente.telefone === novoCliente.telefone
+                            )
+                        );
+
+                        clientes = [...clientes, ...novosClientesUnicos];
 
                         exibirTabela();
                         salvarClientes();
@@ -940,7 +1051,9 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             input.click();
         }
 
+
         function compartilharWhatsApp() {
+            // Este botão pode ser usado para compartilhar o próprio link da aplicação ou informações gerais
             const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
             window.open(url, '_blank');
         }
@@ -951,6 +1064,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             if (termoPesquisa !== '') {
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
+                modoExibicaoOcultos = false;
             }
             exibirTabela();
         }
@@ -1031,7 +1145,54 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
         // --- FIM: FUNÇÕES DE AJUSTES ---
 
-        // Nova função para a exibição inicial
+        // --- Funções de Contadores ---
+        function atualizarContadores() {
+            const hoje = new Date();
+            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                                  (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                                  hoje.getFullYear();
+
+            const countHoje = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto).length;
+            const countAmanha = clientes.filter(cliente => {
+                const amanha = new Date();
+                amanha.setDate(amanha.getDate() + 1);
+                const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
+                                        (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                                        amanha.getFullYear();
+                return cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto;
+            }).length;
+            const countVencidos = clientes.filter(cliente => {
+                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                const dataCliente = new Date(ano, mes - 1, dia);
+                return dataCliente < hoje && cliente.data !== hojeFormatada && !cliente.arquivado && !cliente.oculto;
+            }).length;
+            const countDebito = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto).length;
+            const countOcultos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado).length;
+            const countArquivados = clientes.filter(cliente => cliente.arquivado).length;
+
+            updateBadge('badgeHoje', countHoje);
+            updateBadge('badgeAmanha', countAmanha);
+            updateBadge('badgeVencidos', countVencidos);
+            updateBadge('badgeDebito', countDebito);
+            updateBadge('badgeOcultos', countOcultos);
+            updateBadge('badgeArquivados', countArquivados);
+        }
+
+        function updateBadge(badgeId, count) {
+            const badge = document.getElementById(badgeId);
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        // --- FIM: Funções de Contadores ---
+
+
+        // Nova função para a exibição inicial - SEMPRE FILTRA PARA VENCENDO HOJE E VENCIDOS
         function inicializarExibicaoClientes() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -1047,8 +1208,9 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
                 return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto;
             });
-            modoExibicaoArquivados = false; // Garante que não está em modo arquivado
-            document.getElementById("searchInput").value = ""; // Limpa a pesquisa
+            modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false; // Garante que não está em modo ocultos
+            document.getElementById("searchInput").value = "";
             exibirTabela(); // Chama exibirTabela para renderizar com os filtros iniciais
         }
 
