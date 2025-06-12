@@ -8,25 +8,18 @@
     <style>
         td {
             white-space: nowrap;
-            /* Impede a quebra de linha */
         }
 
         td button {
             display: inline-block;
-            /* Mantém os botões na mesma linha */
             margin-right: 5px;
-            /* Espaçamento entre botões */
         }
 
         td {
             display: flex;
-            /* Faz os botões ficarem lado a lado */
             flex-wrap: nowrap;
-            /* Impede a quebra de linha */
             align-items: center;
-            /* Alinha os botões verticalmente */
             gap: 5px;
-            /* Adiciona um espaçamento entre os botões */
         }
 
         body {
@@ -37,7 +30,8 @@
         }
 
         .container {
-            width: 2000px;
+            width: 100%;
+            max-width: 2000px;
             margin: auto;
             background: #fff;
             padding: 20px;
@@ -51,12 +45,32 @@
             color: #0066cc;
         }
 
+        input[type="text"],
+        input[type="tel"],
+        input[type="date"],
         textarea {
-            width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .input-group-horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .input-group-horizontal input {
+            flex: 1;
+            min-width: 150px;
+            margin-bottom: 0;
+        }
+
+        .configurable-input {
+            /* Largura será definida pelo JavaScript, agora com 16% como padrão */
         }
 
         button {
@@ -79,7 +93,6 @@
             border-collapse: collapse;
             margin: 20px 0;
             display: none;
-            /* Inicialmente a tabela é oculta */
         }
 
         th,
@@ -91,7 +104,6 @@
 
         .avisado {
             background-color: #007bff !important;
-            /* Azul */
         }
 
         .debito {
@@ -100,31 +112,27 @@
 
         .vencendo-hoje {
             background-color: #ffff99 !important;
-            /* Amarelo claro para vencendo hoje */
         }
 
         .vencido {
             background-color: #ff6666 !important;
-            /* Vermelho claro para vencidos */
         }
 
         .center {
             text-align: center;
         }
 
-        /* Estilos para o Modal */
         .modal {
             display: none;
-            /* Inicialmente o modal está oculto */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            /* Fundo escuro semitransparente */
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
 
         .modal-content {
@@ -132,7 +140,9 @@
             padding: 20px;
             border-radius: 8px;
             text-align: center;
-            width: 300px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .modal button {
@@ -148,22 +158,67 @@
         .modal button:hover {
             background-color: #004d99;
         }
+
+        .settings-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            background-color: #0066cc;
+            color: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            transition: background-color 0.3s;
+        }
+
+        .settings-icon:hover {
+            background-color: #004d99;
+        }
+
+        #settingsArea {
+            display: none;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #settingsArea label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        #settingsArea input[type="range"],
+        #settingsArea input[type="number"] {
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <h1>Controle de Clientes</h1>
-        <!-- Botões de Importar/Exportar -->
         <button onclick="importarClientes()">Importar Clientes (JSON)</button>
         <button onclick="exportarClientes()">Exportar Clientes (JSON)</button>
 
         <h3>Adicionar Cliente</h3>
-        <input type="date" id="dataInput" required>
-        <input type="text" id="nomeInput" placeholder="Nome do Cliente" required>
-        <input type="tel" id="telefoneInput" placeholder="Telefone (ex: 11999999999)" required>
+        <div class="input-group-horizontal">
+            <input type="date" id="dataInput" class="configurable-input" required>
+            <input type="text" id="nomeInput" class="configurable-input" placeholder="Nome do Cliente" required>
+            <input type="tel" id="telefoneInput" class="configurable-input" placeholder="Telefone (ex: 11999999999)"
+                required>
+        </div>
 
-        <!-- Novo campo para seleção do Produto -->
         <div>
             <label>
                 <input type="radio" name="produto" value="UniTv" checked> UniTv
@@ -172,13 +227,9 @@
                 <input type="radio" name="produto" value="Duplecast"> Duplecast
             </label>
         </div>
-
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
 
-
-
-
-        <h3>Filtros</h3>
+        <h3>Filtros e Ações</h3>
         <button onclick="filtrarHoje()">Clientes Vencendo Hoje</button>
         <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã</button>
         <button onclick="filtrarVencidos()">Clientes Vencidos</button>
@@ -186,42 +237,50 @@
         <button onclick="exibirTodos()">Reexibir Todos</button>
         <button onclick="limparTodos()">Limpar Todos</button>
         <button onclick="desfazer()">Desfazer Última Ação</button>
-        <button onclick="desfazer()">Arquivados</button>
         <button onclick="filtrarArquivados()">Arquivados</button>
+
+        <h3>Pesquisa de Clientes</h3>
+        <input type="text" id="searchInput" placeholder="Pesquisar por nome ou telefone" oninput="pesquisarClientes()">
+        <button onclick="limparPesquisa()">Limpar Pesquisa</button>
 
 
         <table>
             <thead>
                 <tr>
                     <th>Data de Vencimento</th>
-
                 </tr>
             </thead>
             <tbody id="tabelaClientes"></tbody>
         </table>
 
-        <button onclick="salvarArquivo()">Salvar no Próprio HTML</button>
         <button onclick="compartilharWhatsApp()">Compartilhar no WhatsApp</button>
 
         <h3>Data Atual</h3>
         <p id="dataAtual"></p>
-        <!-- Modal de Confirmação -->
+
+        <div class="settings-icon" onclick="toggleSettingsArea()" title="Ajustes">⚙️</div>
+
+        <div id="settingsArea">
+            <h3>Ajustes de Interface</h3>
+            <p>Defina o tamanho das caixas de entrada de Data, Nome e Telefone.</p>
+
+            <div>
+                <label for="inputWidth">Largura dos Inputs (em %): <span id="inputWidthValue"></span></label>
+                <input type="range" id="inputWidth" min="10" max="100" value="16"
+                    oninput="updateInputWidth(this.value)">
+            </div>
+            <button onclick="saveSettings()">Salvar Ajustes</button>
+            <button onclick="resetSettings()">Redefinir Padrão</button>
+        </div>
+
+
         <div id="modalConfirmacao" class="modal">
             <div class="modal-content">
                 <h3>Confirmar Duplicação</h3>
                 <p>Você tem certeza que deseja duplicar este cliente?</p>
                 <button onclick="confirmarDuplicacao()">Confirmar</button>
-                <button onclick="fecharModalConfirmacao()">Cancelar</button>
+                <button onclick="fecharModal()">Cancelar</button>
             </div>
-        </div>
-
-        <div>
-            <label>
-                <input type="radio" name="produto" value="UniTv" checked> UniTv
-            </label>
-            <label>
-                <input type="radio" name="produto" value="Duplecast"> Duplecast
-            </label>
         </div>
 
         <div id="modalExclusao" class="modal">
@@ -233,26 +292,107 @@
             </div>
         </div>
 
+        <div id="modalEdicao" class="modal" style="display: none;"></div>
+        <div id="modalAlerta" class="modal" style="display: none;"></div>
 
     </div>
-
     <script>
         document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
         let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-        let ultimaAcao = null;
         let clientesFiltrados = [];
         let clienteIndexParaExcluir = null;
+        let clienteIndexParaDuplicar = null;
+        let modoExibicaoArquivados = false;
+
+        let historicoClientes = [];
+        const MAX_HISTORY_STATES = 10;
+
+        function salvarEstadoNoHistorico() {
+            const estadoAtual = JSON.parse(JSON.stringify(clientes));
+            historicoClientes.push(estadoAtual);
+
+            if (historicoClientes.length > MAX_HISTORY_STATES) {
+                historicoClientes.shift();
+            }
+        }
+
+        function desfazer() {
+            if (historicoClientes.length > 1) {
+                historicoClientes.pop();
+                clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1]));
+                salvarClientes();
+                exibirTodos();
+                exibirAlerta("Última ação desfeita!");
+            } else if (historicoClientes.length === 1 && clientes.length > 0) {
+                historicoClientes.pop();
+                clientes = [];
+                salvarClientes();
+                exibirTodos();
+                exibirAlerta("Última ação desfeita!");
+            } else {
+                exibirAlerta("Não há ações para desfazer.");
+            }
+        }
+
+        function fecharModal() {
+            document.getElementById("modalConfirmacao").style.display = "none";
+            document.getElementById("modalExclusao").style.display = "none";
+            const modalEdicao = document.getElementById("modalEdicao");
+            if (modalEdicao) {
+                modalEdicao.style.display = "none";
+                modalEdicao.innerHTML = "";
+                document.removeEventListener("keydown", fecharComEsc);
+            }
+            const modalAlerta = document.getElementById("modalAlerta");
+            if (modalAlerta) {
+                modalAlerta.style.display = "none";
+                modalAlerta.innerHTML = "";
+                document.removeEventListener("keydown", fecharComEscOuEnter);
+            }
+        }
+
+        function fecharComEsc(event) {
+            if (event.key === "Escape") {
+                fecharModal();
+            }
+        }
+
+        function fecharComEscOuEnter(event) {
+            if (event.key === "Escape" || event.key === "Enter") {
+                fecharModal();
+            }
+        }
+
+        function exibirAlerta(mensagem) {
+            let modalAlerta = document.getElementById("modalAlerta");
+            modalAlerta.style.display = "flex";
+            modalAlerta.innerHTML = `
+                <div class="modal-content">
+                    <h3>Aviso</h3>
+                    <p>${mensagem}</p>
+                    <button onclick="fecharModal()">OK</button>
+                </div>
+            `;
+            document.addEventListener("keydown", fecharComEscOuEnter);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === "Enter" && document.getElementById("modalExclusao").style.display === "flex") {
+                confirmarExclusao();
+            }
+        });
 
         function adicionarCliente() {
             const dataInput = document.getElementById("dataInput").value.trim();
             const nomeInput = document.getElementById("nomeInput").value.trim();
             const telefoneInput = document.getElementById("telefoneInput").value.trim();
-            const produtoSelecionado = document.querySelector('input[name="produto"]:checked').value; // Pega o produto selecionado
+            const produtoSelecionado = document.querySelector('input[name="produto"]:checked').value;
 
             if (!dataInput || !nomeInput || !telefoneInput) {
-                return alert("Por favor, insira a data, o nome e o telefone do cliente.");
+                return exibirAlerta("Por favor, insira a data, o nome e o telefone do cliente.");
             }
 
+            salvarEstadoNoHistorico();
             const dataParts = dataInput.split("-");
             const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
             const telefoneLimpo = telefoneInput.replace(/[^\d]/g, '');
@@ -263,7 +403,9 @@
                 telefone: telefoneLimpo,
                 avisado: false,
                 debito: false,
-                Produto: produtoSelecionado // Adiciona o produto
+                Produto: produtoSelecionado,
+                arquivado: false,
+                oculto: false
             });
 
             document.getElementById("dataInput").value = "";
@@ -275,49 +417,135 @@
         }
 
         function arquivar(index) {
-            let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
-            let cliente = listaParaEditar[index];
+            salvarEstadoNoHistorico();
+            let clienteParaArquivar = clientesExibidos[index];
 
-            // Encontrar o cliente correspondente na lista principal
-            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
+            let clienteOriginal = clientes.find(c => c.nome === clienteParaArquivar.nome && c.data === clienteParaArquivar.data);
             if (clienteOriginal) {
-                clienteOriginal.arquivado = true; // Marca como arquivado
+                clienteOriginal.arquivado = true;
+                clientesFiltrados = [];
+                modoExibicaoArquivados = false;
             }
+            exibirTabela();
+            salvarClientes();
+        }
 
+        function desarquivar(index) {
+            salvarEstadoNoHistorico();
+            let clienteParaDesarquivar = clientesExibidos[index];
+
+            let clienteOriginal = clientes.find(c => c.nome === clienteParaDesarquivar.nome && c.data === clienteParaDesarquivar.data);
+            if (clienteOriginal) {
+                clienteOriginal.arquivado = false;
+                clientesFiltrados = [];
+                modoExibicaoArquivados = true;
+            }
             exibirTabela();
             salvarClientes();
         }
 
         function filtrarArquivados() {
-            clientesFiltrados = clientes.filter(cliente => cliente.arquivado);
-            exibirTabela(true); // Passa um argumento para indicar que estamos nos arquivados
+            clientesFiltrados = [];
+            modoExibicaoArquivados = true;
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
         }
 
-        function exibirTabela(exibirArquivados = false) {
-    let listaParaExibir = clientesFiltrados.length > 0 ? clientesFiltrados : clientes.filter(cliente => !cliente.arquivado);
+        let clientesExibidos = [];
 
+        function exibirTabela() {
+            const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
+
+            if (termoPesquisa !== '') {
+                clientesExibidos = clientes.filter(cliente =>
+                    !cliente.arquivado && !cliente.oculto &&
+                    (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
+                );
+                clientesFiltrados = [];
+                modoExibicaoArquivados = false;
+            } else if (clientesFiltrados.length > 0) {
+                clientesExibidos = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto);
+            } else if (modoExibicaoArquivados) {
+                clientesExibidos = clientes.filter(cliente => cliente.arquivado);
+            } else {
+                clientesExibidos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
+            }
+
+
+            if (clientesExibidos.length === 0) {
+                document.querySelector("table").style.display = "none";
+                document.getElementById("tabelaClientes").innerHTML = `<tr><td colspan="1" style="text-align: center; color: gray;">Nenhum cliente para exibir neste filtro.</td></tr>`;
+                return;
+            }
+
+            document.querySelector("table").style.display = "table";
             const tabela = document.getElementById("tabelaClientes");
             tabela.innerHTML = "";
 
-            listaParaExibir.forEach((cliente, index) => {
+            clientesExibidos.sort((a, b) => {
+                const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
+                const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
+                const dataA = new Date(anoA, mesA - 1, diaA);
+                const dataB = new Date(anoB, mesB - 1, diaB);
+                return dataA - dataB;
+            });
+
+            const hoje = new Date();
+            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                hoje.getFullYear();
+
+            clientesExibidos.forEach((cliente, index) => {
                 const tr = document.createElement("tr");
+
+                tr.classList.remove("avisado", "debito", "vencendo-hoje", "vencido");
+
+                if (cliente.avisado) tr.classList.add("avisado");
+                if (cliente.debito) tr.classList.add("debito");
+
+                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                const dataCliente = new Date(ano, mes - 1, dia);
+
+                if (cliente.data === hojeFormatada) {
+                    tr.classList.add("vencendo-hoje");
+                } else if (dataCliente < hoje && cliente.data !== hojeFormatada) {
+                    tr.classList.add("vencido");
+                }
+
+                let botoesAcao = '';
+                if (modoExibicaoArquivados) {
+                    botoesAcao = `<button title="Desarquivar Cliente" onclick="desarquivar(${index})">Desarquivar</button>`;
+                } else {
+                    botoesAcao = `
+                        <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
+                        <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
+                        <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
+                        <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
+                        <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
+                        <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
+                        <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
+                    `;
+                }
+
                 tr.innerHTML = `
-            <td>${cliente.data}</td>
-            <td>${cliente.nome}</td>
-            <td>
-                ${exibirArquivados ? `<button onclick="desarquivar(${index})">Desarquivar</button>` : `<button onclick="arquivar(${index})">📂</button>`}
-            </td>
-        `;
+                    <td>
+                        ${cliente.data}
+                        <a href="#" onclick="enviarMensagemWhatsApp('${cliente.nome}', '${cliente.telefone}', ${index}); return false;">
+                            ${cliente.nome}
+                        </a>
+                        ${botoesAcao}
+                    </td>
+                `;
+
                 tabela.appendChild(tr);
             });
         }
 
 
         function renovarAutomatico(index) {
-            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
-
-            // Garante que tanto "Produto" quanto "produto" sejam considerados
-            const produtoCliente = cliente.Produto || cliente.produto || "Não informado";
+            salvarEstadoNoHistorico();
+            const cliente = clientesExibidos[index];
+            const produtoCliente = cliente.Produto || "Não informado";
 
             if (produtoCliente === "Não informado") {
                 exibirAlerta("O produto do cliente não está informado!");
@@ -331,70 +559,39 @@
             }
         }
 
-        // Função para exibir alerta que fecha com ESC ou ENTER
-        function exibirAlerta(mensagem) {
-            let modal = document.createElement("div");
-            modal.id = "modalAlerta";
-            modal.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;">
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; width: 300px;">
-                <h3>Aviso</h3>
-                <p>${mensagem}</p>
-                <button onclick="fecharAlerta()">OK</button>
-            </div>
-        </div>
-    `;
-            document.body.appendChild(modal);
-
-            // Fechar alerta com ESC ou ENTER
-            document.addEventListener("keydown", fecharComEscOuEnter);
-        }
-
-        function fecharAlerta() {
-            let modal = document.getElementById("modalAlerta");
-            if (modal) {
-                document.body.removeChild(modal);
-                document.removeEventListener("keydown", fecharComEscOuEnter);
-            }
-        }
-
-        // Função para fechar o alerta com ESC ou ENTER
-        function fecharComEscOuEnter(event) {
-            if (event.key === "Escape" || event.key === "Enter") {
-                fecharAlerta();
-            }
-        }
-
-        // Função para renovar 30 dias
         function renovar30(index) {
-            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
-            cliente.data = incrementarData(cliente.data, 30);
-            if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
-            exibirTabela();
-            salvarClientes();
-        }
-
-        // Função para renovar para o próximo mês
-        function renovarProximoMes(index) {
-            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
-            const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
-            const dataObj = new Date(ano, mes - 1, dia);
-
-            dataObj.setMonth(dataObj.getMonth() + 1);
-
-            if (dataObj.getDate() !== dia) {
-                dataObj.setDate(0);
+            const cliente = clientesExibidos[index];
+            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
+            if (clienteOriginal) {
+                clienteOriginal.data = incrementarData(clienteOriginal.data, 30);
             }
-
-            cliente.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
-
-            if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
             exibirTabela();
             salvarClientes();
         }
 
-        // Função auxiliar para incrementar data
+        function renovarProximoMes(index) {
+            const cliente = clientesExibidos[index];
+            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
+            if (clienteOriginal) {
+                const [dia, mes, ano] = clienteOriginal.data.split("/").map(num => parseInt(num));
+                const dataObj = new Date(ano, mes - 1, dia);
+
+                dataObj.setMonth(dataObj.getMonth() + 1);
+
+                if (dataObj.getDate() !== dia) {
+                    dataObj.setDate(0);
+                }
+
+                clienteOriginal.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
+            }
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
+            exibirTabela();
+            salvarClientes();
+        }
+
         function incrementarData(data, dias) {
             const [dia, mes, ano] = data.split("/").map(num => parseInt(num));
             const dataObj = new Date(ano, mes - 1, dia);
@@ -402,538 +599,54 @@
             return `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
 
-
-        // Confirmar exclusão com Enter
-        document.addEventListener('keydown', function (event) {
-            if (event.key === "Enter" && document.getElementById("modalConfirmacao").style.display === "flex") {
-                confirmarExclusao();
-            }
-        });
-        let clienteIndexParaDuplicar = null;  // Variável para armazenar o índice do cliente a ser duplicado
-
-        // Função chamada ao clicar no botão "+"
         function duplicarCliente(index) {
-            clienteIndexParaDuplicar = index;  // Armazenar o índice do cliente
-            document.getElementById("modalConfirmacao").style.display = "flex";  // Exibe o modal
+            clienteIndexParaDuplicar = index;
+            document.getElementById("modalConfirmacao").style.display = "flex";
         }
 
-        function fecharModal() {
-            document.getElementById("modalConfirmacao").style.display = "none";
-            document.getElementById("modalExclusao").style.display = "none";
-        }
-
-        // Confirmar exclusão
-        function confirmarExclusao() {
-            if (clienteIndexParaExcluir !== null) {
-                let clienteRemovido = clientesFiltrados.length > 0
-                    ? clientesFiltrados[clienteIndexParaExcluir]
-                    : clientes[clienteIndexParaExcluir];
-
-                // Remove o cliente da lista principal `clientes`
-                clientes = clientes.filter(c => !(c.nome === clienteRemovido.nome && c.data === clienteRemovido.data));
-
-                // Se um filtro estiver ativo, remove também da lista filtrada
-                if (clientesFiltrados.length > 0) {
-                    clientesFiltrados.splice(clienteIndexParaExcluir, 1);
-                }
-
-                // Atualiza a exibição da tabela
-                exibirTabela();
-                salvarClientes();
-
-                // Fecha o modal de exclusão
-                fecharModalExclusao();
-
-                // Reseta a variável
-                clienteIndexParaExcluir = null;
-            }
-        }
-
-        // Função para fechar o modal de exclusão
-        function fecharModalExclusao() {
-            document.getElementById("modalExclusao").style.display = "none";
-        }
-
-        // Adiciona evento para fechar com ESC e confirmar com ENTER
-        document.addEventListener("keydown", function (event) {
-            let modalAberto = document.getElementById("modalExclusao").style.display === "flex";
-
-            if (modalAberto) {
-                if (event.key === "Escape") {
-                    fecharModalExclusao(); // Fecha o modal ao pressionar ESC
-                }
-                if (event.key === "Enter") {
-                    confirmarExclusao(); // Confirma a exclusão ao pressionar ENTER
-                }
-            }
-        });
-
-        // Função para fechar o modal de exclusão
-        function fecharModalExclusao() {
-            document.getElementById("modalExclusao").style.display = "none";
-        }
-
-        // Evento para fechar o modal com ESC e confirmar com ENTER
-        document.addEventListener("keydown", function (event) {
-            let modalAberto = document.getElementById("modalExclusao").style.display === "flex";
-
-            if (modalAberto) {
-                if (event.key === "Escape") {
-                    fecharModalExclusao(); // Fecha o modal ao pressionar ESC
-                }
-                if (event.key === "Enter") {
-                    confirmarExclusao(); // Confirma a exclusão ao pressionar ENTER
-                }
-            }
-        });
-
-
-        // Função para confirmar a duplicação do cliente
         function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
-                const cliente = clientes[clienteIndexParaDuplicar];
+                salvarEstadoNoHistorico();
+                const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
+
                 const novoCliente = {
-                    data: cliente.data,
-                    nome: cliente.nome,
-                    telefone: cliente.telefone,
-                    avisado: cliente.avisado,
-                    debito: cliente.debito,
-                    Produto: cliente.Produto || cliente.produto || "Não informado"
+                    data: clienteOriginal.data,
+                    nome: clienteOriginal.nome,
+                    telefone: clienteOriginal.telefone,
+                    avisado: false,
+                    debito: false,
+                    Produto: clienteOriginal.Produto || "Não informado",
+                    arquivado: false,
+                    oculto: false
                 };
                 clientes.push(novoCliente);
+                clientesFiltrados = [];
+                modoExibicaoArquivados = false;
                 exibirTabela();
                 salvarClientes();
-                fecharModalConfirmacao(); // Fecha o modal corretamente
-                clienteIndexParaDuplicar = null; // Reseta a variável
-            }
-        }
-
-
-        function ordenarPorData() {
-            clientes.sort((a, b) => {
-                const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
-                const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
-
-                const dataA = new Date(anoA, mesA - 1, diaA);
-                const dataB = new Date(anoB, mesB - 1, diaB);
-
-                return dataA - dataB;
-            });
-
-            exibirTabela(); // Atualiza a tabela após a ordenação
-        }
-
-
-        function exibirTabela() {
-            let listaParaExibir = clientesFiltrados.length > 0
-                ? clientesFiltrados.filter(cliente => !cliente.oculto)
-                : clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
-
-            if (listaParaExibir.length === 0) {
-                document.querySelector("table").style.display = "none";
-                return;
-            }
-
-            document.querySelector("table").style.display = "table";
-
-            const tabela = document.getElementById("tabelaClientes");
-            tabela.innerHTML = "";
-
-            // Cálculo da data atual, apenas uma vez
-            const hoje = new Date();
-            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                hoje.getFullYear();
-
-            // Ordena as datas do mais próximo para o mais distante
-            // Aqui, criamos um array de objetos com os dados do cliente e o índice original
-            const listaComIndices = listaParaExibir.map((cliente, index) => ({ cliente, index }));
-
-            listaComIndices.sort((a, b) => {
-                const [diaA, mesA, anoA] = a.cliente.data.split("/").map(num => parseInt(num));
-                const [diaB, mesB, anoB] = b.cliente.data.split("/").map(num => parseInt(num));
-
-                const dataA = new Date(anoA, mesA - 1, diaA);
-                const dataB = new Date(anoB, mesB - 1, diaB);
-
-                return dataA - dataB; // Ordenação crescente (mais próximo primeiro)
-            });
-
-            listaComIndices.forEach(({ cliente, index }) => {
-                const tr = document.createElement("tr");
-
-                // Remove classes anteriores
-                tr.classList.remove("avisado", "debito", "vencendo-hoje", "vencido");
-
-                // Aplica as classes corretas
-                if (cliente.avisado) tr.classList.add("avisado");
-                if (cliente.debito) tr.classList.add("debito");
-
-                // Converte a data do cliente para formato Date para comparação
-                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
-                const dataCliente = new Date(ano, mes - 1, dia);
-
-                // Aplica classes baseadas nas datas
-                if (cliente.data === hojeFormatada) {
-                    tr.classList.add("vencendo-hoje");
-                } else if (dataCliente < hoje) {
-                    tr.classList.add("vencido");
-                }
-
-                tr.innerHTML = `
-            <td>${cliente.data}
-                <a href="#" onclick="enviarMensagemWhatsApp('${cliente.nome}', '${cliente.telefone}', ${index}); return false;">
-                ${cliente.nome}
-                </a>
-
-                 &nbsp;&nbsp;&nbsp; <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
-                <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
-                <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
-                <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
-                <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
-                <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
-                <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
-            </td>
-        `;
-
-                tabela.appendChild(tr);
-            });
-        }
-
-      function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
-    const telefoneLimpo = clienteTelefone.replace(/\D/g, ''); // Remove tudo que não for número
-
-    if (!telefoneLimpo) {
-        alert("Número de telefone inválido!");
-        return;
-    }
-
-    const cliente = clientes[index]; // Pegando os dados do cliente correto
-    const vencimento = cliente.data; // Pegando a data correta do cliente
-    const hoje = new Date();
-    
-    // Converter data do cliente para Date
-    const [dia, mes, ano] = vencimento.split("/").map(num => parseInt(num));
-    const dataVencimento = new Date(ano, mes - 1, dia);
-
-    const hojeFormatado = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-    const vencido = dataVencimento < hojeFormatado; // Agora só é vencido se for antes de hoje
-
-
-    // Definir saudação
-    const hora = hoje.getHours();
-    let saudacao = "Olá";
-    if (hora >= 6 && hora < 12) {
-        saudacao = "Bom dia";
-    } else if (hora >= 12 && hora < 18) {
-        saudacao = "Boa tarde";
-    } else {
-        saudacao = "Boa noite";
-    }
-
-    // Definir mensagem com base no vencimento
-    let mensagem;
-    if (vencido) {
-        mensagem = `${saudacao}! 
-Seu plano de TV *está vencido*  *${vencimento}*. 
-Lembrando que pagando no dia do vencimento o mensal é de 30 reais,
-após o dia de vencimento o mensal é de 35 reais.
-
-O pagamento via PIX pode ser feito no número:  
-*11950912509* (Waldemar Jose Luiz)
-`;
-    } else {
-        mensagem = `${saudacao}! 
-Hoje é o vencimento do seu plano de TV.  
-
-*Vencimento*: ${cliente.data}
-
-O pagamento via PIX pode ser realizado no número:  
-*11950912509* (Waldemar Jose Luiz)
-`;
-    }
-
-    const url = `https://wa.me/${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`;
-
-    console.log("Tentando abrir WhatsApp:", url); // Exibe no console
-
-    // Criar um link e simular clique para forçar a abertura
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
- 
-
-
-        function exportarClientes() {
-            const clientesCompletos = clientes.map(cliente => ({
-                data: cliente.data,
-                nome: cliente.nome,
-                telefone: cliente.telefone,
-                avisado: cliente.avisado,
-                debito: cliente.debito,
-                Produto: cliente.Produto || "Não informado" // Garante que o campo Produto sempre esteja presente
-            }));
-
-            const clientesJson = JSON.stringify(clientesCompletos, null, 4);
-            const blob = new Blob([clientesJson], { type: "application/json" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "clientes.json";
-            link.click();
-        }
-
-
-        function filtrarHoje() {
-            const hoje = new Date();
-            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                hoje.getFullYear();
-
-            clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada);
-
-            const tabela = document.getElementById("tabelaClientes");
-            tabela.innerHTML = ""; // Limpa a tabela antes de exibir novos dados
-
-            if (clientesFiltrados.length === 0) {
-                tabela.innerHTML = `<tr><td colspan="3" style="text-align: center; font-weight: bold; color: red;">Nenhum cliente vencendo hoje.</td></tr>`;
-            } else {
-                exibirTabela(); // Exibe os clientes normalmente
-            }
-        }
-
-
-        function filtrarAmanha() {
-            const amanha = new Date();
-            amanha.setDate(amanha.getDate() + 1); // Adiciona 1 dia para pegar a data de amanhã
-            const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
-                (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                amanha.getFullYear();
-
-            clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada);
-
-            const tabela = document.getElementById("tabelaClientes");
-            tabela.innerHTML = ""; // Limpa a tabela antes de exibir novos dados
-
-            if (clientesFiltrados.length === 0) {
-                tabela.innerHTML = `<tr><td colspan="3" style="text-align: center; font-weight: bold; color: orange;">Nenhum cliente vencendo amanhã.</td></tr>`;
-            } else {
-                exibirTabela(); // Exibe os clientes normalmente
-            }
-        }
-
-
-        function filtrarVencidos() {
-            const hoje = new Date();
-            clientesFiltrados = clientes.filter(cliente => {
-                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
-                const dataCliente = new Date(ano, mes - 1, dia);
-                return dataCliente < hoje;
-            });
-            exibirTabela();
-        }
-
-        function filtrarDebito() {
-            clientesFiltrados = clientes.filter(cliente => cliente.debito);
-            exibirTabela();
-        }
-
-        function exibirTodos() {
-            clientesFiltrados = [];
-            exibirTabela();
-        }
-
-        function limparTodos() {
-            clientes = [];
-            clientesFiltrados = [];
-            exibirTabela();
-            salvarClientes();
-        }
-
-        function editar(index) {
-            let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
-            let cliente = listaParaEditar[index];
-
-            // Criando o modal
-            let modal = document.createElement("div");
-            modal.id = "modalEdicao";
-            modal.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;">
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; width: 300px;">
-                <h3>Editar Cliente</h3>
-                <input type="text" id="novoNome" value="${cliente.nome}" placeholder="Nome"><br><br>
-                <input type="tel" id="novoTelefone" value="${cliente.telefone}" placeholder="Telefone"><br><br>
-                <input type="date" id="novaData" value="${formatarParaInputDate(cliente.data)}"><br><br>
-
-                <!-- Seleção do Produto -->
-                <div>
-                    <label>
-                        <input type="radio" name="editarProduto" value="UniTv" ${cliente.Produto === "UniTv" ? "checked" : ""}> UniTv
-                    </label>
-                    <label>
-                        <input type="radio" name="editarProduto" value="Duplecast" ${cliente.Produto === "Duplecast" ? "checked" : ""}> Duplecast
-                    </label>
-                </div>
-                <br>
-
-                <button id="salvarBtn">Salvar</button>
-                <button onclick="fecharModal()">Cancelar</button>
-            </div>
-        </div>
-    `;
-            document.body.appendChild(modal);
-
-            // Focar no primeiro campo automaticamente
-            document.getElementById("novoNome").focus();
-
-            // Adicionar eventos de teclado
-            document.getElementById("novoNome").addEventListener("keydown", (e) => proximoCampo(e, "novoTelefone"));
-            document.getElementById("novoTelefone").addEventListener("keydown", (e) => proximoCampo(e, "novaData"));
-            document.getElementById("novaData").addEventListener("keydown", (e) => verificarProdutoESalvar(e, index));
-
-            // Adicionar evento Enter no último campo para salvar
-            document.querySelectorAll('input[name="editarProduto"]').forEach(input => {
-                input.addEventListener("keydown", (e) => salvarComEnter(e, index));
-            });
-
-            // Botão de salvar com clique
-            document.getElementById("salvarBtn").addEventListener("click", () => salvarEdicao(index));
-
-            // Fechar modal com ESC
-            document.addEventListener("keydown", fecharComEsc);
-        }
-
-        // Função para pular para o próximo campo ao pressionar Enter
-        function proximoCampo(event, proximoId) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                document.getElementById(proximoId)?.focus();
-            }
-        }
-
-        // Função para verificar se um produto está selecionado e salvar automaticamente
-        function verificarProdutoESalvar(event, index) {
-            if (event.key === "Enter") {
-                const produtoSelecionado = document.querySelector('input[name="editarProduto"]:checked');
-                if (produtoSelecionado) {
-                    salvarEdicao(index);
-                }
-            }
-        }
-
-        // Função para salvar ao pressionar Enter no último campo
-        function salvarComEnter(event, index) {
-            if (event.key === "Enter") {
-                salvarEdicao(index);
-            }
-        }
-
-        // Função para salvar a edição
-        function salvarEdicao(index) {
-            let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
-            let cliente = listaParaEditar[index];
-
-            let novoNome = document.getElementById("novoNome").value;
-            let novoTelefone = document.getElementById("novoTelefone").value;
-            let novaData = document.getElementById("novaData").value;
-            let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value; // Obtém o novo produto
-
-            if (!novoNome || !novaData) {
-                alert("Nome e data são obrigatórios!");
-                return;
-            }
-
-            cliente.nome = novoNome;
-            cliente.telefone = novoTelefone;
-            cliente.data = novaData.split("-").reverse().join("/");
-            cliente.Produto = novoProduto; // Atualiza o produto
-
-            exibirTabela();
-            salvarClientes();
-            fecharModal();
-        }
-
-        // Função para converter "DD/MM/AAAA" para "AAAA-MM-DD"
-        function formatarParaInputDate(data) {
-            let [dia, mes, ano] = data.split("/");
-            return `${ano}-${mes}-${dia}`;
-        }
-
-        // Fechar modal corretamente
-        function fecharModal() {
-            let modal = document.getElementById("modalEdicao");
-            if (modal) {
-                document.body.removeChild(modal);
-                document.removeEventListener("keydown", fecharComEsc); // Remove o evento do ESC ao fechar
-            }
-        }
-
-        // Função para fechar o modal ao pressionar ESC
-        function fecharComEsc(event) {
-            if (event.key === "Escape") {
                 fecharModal();
+                clienteIndexParaDuplicar = null;
             }
         }
 
 
-        // Função para pular para o próximo campo ao pressionar Enter
-        function proximoCampo(event, proximoId) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                document.getElementById(proximoId)?.focus();
-            }
-        }
-
-        // Função para salvar ao pressionar Enter no último campo
-        function salvarComEnter(event, index) {
-            if (event.key === "Enter") {
-                salvarEdicao(index);
-            }
-        }
-
-        // Função para salvar a edição
-        function salvarEdicao(index) {
-            let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
-            let cliente = listaParaEditar[index];
-
-            let novoNome = document.getElementById("novoNome").value;
-            let novoTelefone = document.getElementById("novoTelefone").value;
-            let novaData = document.getElementById("novaData").value;
-            let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value; // Obtém o novo produto
-
-            if (!novoNome || !novaData) {
-                alert("Nome e data são obrigatórios!");
+        function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
+            const telefoneLimpo = clienteTelefone.replace(/\D/g, '');
+            if (!telefoneLimpo) {
+                exibirAlerta("Número de telefone inválido!");
                 return;
             }
 
-            cliente.nome = novoNome;
-            cliente.telefone = novoTelefone;
-            cliente.data = novaData.split("-").reverse().join("/");
-            cliente.Produto = novoProduto; // Atualiza o produto
+            const cliente = clientesExibidos[index];
+            const vencimento = cliente.data;
+            const hoje = new Date();
+            const [dia, mes, ano] = vencimento.split("/").map(num => parseInt(num));
+            const dataVencimento = new Date(ano, mes - 1, dia);
 
-            exibirTabela();
-            salvarClientes();
-            fecharModal();
-        }
+            const hojeFormatado = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+            const vencido = dataVencimento < hojeFormatado;
 
-
-        // Função para converter "DD/MM/AAAA" para "AAAA-MM-DD"
-        function formatarParaInputDate(data) {
-            let [dia, mes, ano] = data.split("/");
-            return `${ano}-${mes}-${dia}`;
-        }
-
-        function copiarMensagem(index) {
-            let cliente = clientes[index];
-
-            const telefoneLimpo = cliente.telefone.replace(/\D/g, ''); // Remove tudo que não for número
-            const dataAtual = new Date();
-            const hora = dataAtual.getHours();
-
+            const hora = hoje.getHours();
             let saudacao = "Olá";
             if (hora >= 6 && hora < 12) {
                 saudacao = "Bom dia";
@@ -943,144 +656,250 @@ O pagamento via PIX pode ser realizado no número:
                 saudacao = "Boa noite";
             }
 
-            const mensagem = `
-${saudacao}!
-Hoje é o vencimento do seu plano de TV.
-
-Vencimento: ${dataAtual.toLocaleDateString('pt-BR')}
-
-O pagamento via PIX pode ser realizado no número: 
-11950912509 (Waldemar Jose Luiz)
-`;
-
-            // Usando API moderna para copiar para a área de transferência
-            navigator.clipboard.writeText(mensagem).then(() => {
-                alert("Mensagem copiada para a área de transferência!");
-            }).catch(err => {
-                console.error("Erro ao copiar:", err);
-                alert("Falha ao copiar. Tente manualmente.");
-            });
-        }
-
-        // Fechar modal corretamente
-        function fecharModal() {
-            let modal = document.getElementById("modalEdicao");
-            if (modal) {
-                document.body.removeChild(modal);
-                document.removeEventListener("keydown", fecharComEsc); // Remove o evento do ESC ao fechar
+            let mensagem;
+            if (vencido) {
+                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento}*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.
+O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
+            } else {
+                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.
+*Vencimento*: ${cliente.data}
+O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
             }
+
+            const url = `https://wa.me/${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`;
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.target = "_blank";
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data);
+            if (clienteOriginal) {
+                clienteOriginal.oculto = true;
+            }
+            exibirTabela();
         }
 
-        // Função para mover para o próximo campo ao pressionar Enter
+        function exportarClientes() {
+            const clientesCompletos = JSON.parse(JSON.stringify(clientes));
+            const clientesJson = JSON.stringify(clientesCompletos, null, 4);
+            const blob = new Blob([clientesJson], { type: "application/json" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "clientes.json";
+            link.click();
+        }
+
+        function filtrarHoje() {
+            const hoje = new Date();
+            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                hoje.getFullYear();
+
+            clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto);
+            modoExibicaoArquivados = false;
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
+        }
+
+        function filtrarAmanha() {
+            const amanha = new Date();
+            amanha.setDate(amanha.getDate() + 1);
+            const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
+                (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                amanha.getFullYear();
+
+            clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto);
+            modoExibicaoArquivados = false;
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
+        }
+
+        function filtrarVencidos() {
+            const hoje = new Date();
+            clientesFiltrados = clientes.filter(cliente => {
+                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                const dataCliente = new Date(ano, mes - 1, dia);
+                return dataCliente < hoje && cliente.data !== hoje.toLocaleDateString('pt-BR') && !cliente.arquivado && !cliente.oculto;
+            });
+            modoExibicaoArquivados = false;
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
+        }
+
+        function filtrarDebito() {
+            clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto);
+            modoExibicaoArquivados = false;
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
+        }
+
+        function exibirTodos() {
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
+            clientes.forEach(cliente => cliente.oculto = false);
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
+        }
+
+        function limparTodos() {
+            salvarEstadoNoHistorico();
+            clientes = [];
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
+            exibirTabela();
+            salvarClientes();
+            exibirAlerta("Todos os clientes foram limpos!");
+        }
+
+        function editar(index) {
+            let cliente = clientesExibidos[index];
+            const modalEdicao = document.getElementById("modalEdicao");
+            modalEdicao.style.display = "flex";
+            modalEdicao.innerHTML = `
+                <div class="modal-content">
+                    <h3>Editar Cliente</h3>
+                    <input type="text" id="novoNome" value="${cliente.nome}" placeholder="Nome"><br><br>
+                    <input type="tel" id="novoTelefone" value="${cliente.telefone}" placeholder="Telefone"><br><br>
+                    <input type="date" id="novaData" value="${formatarParaInputDate(cliente.data)}"><br><br>
+
+                    <div>
+                        <label>
+                            <input type="radio" name="editarProduto" value="UniTv" ${cliente.Produto === "UniTv" ? "checked" : ""}> UniTv
+                        </label>
+                        <label>
+                            <input type="radio" name="editarProduto" value="Duplecast" ${cliente.Produto === "Duplecast" ? "checked" : ""}> Duplecast
+                        </label>
+                    </div>
+                    <br>
+                    <button id="salvarBtn">Salvar</button>
+                    <button onclick="fecharModal()">Cancelar</button>
+                </div>
+            `;
+
+            document.getElementById("novoNome").focus();
+            document.getElementById("novoNome").addEventListener("keydown", (e) => proximoCampo(e, "novoTelefone"));
+            document.getElementById("novoTelefone").addEventListener("keydown", (e) => proximoCampo(e, "novaData"));
+            document.getElementById("novaData").addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    document.getElementById("salvarBtn").focus();
+                }
+            });
+
+            document.getElementById("salvarBtn").addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    salvarEdicao(index);
+                }
+            });
+
+            document.getElementById("salvarBtn").addEventListener("click", () => salvarEdicao(index));
+            document.addEventListener("keydown", fecharComEsc);
+        }
+
         function proximoCampo(event, proximoId) {
             if (event.key === "Enter") {
                 event.preventDefault();
-                document.getElementById(proximoId).focus();
+                document.getElementById(proximoId)?.focus();
             }
         }
 
-        // Função para salvar ao pressionar Enter no campo de data
-        function salvarComEnter(event, index) {
-            if (event.key === "Enter") {
-                salvarEdicao(index);
-            }
-        }
+        function salvarEdicao(index) {
+            salvarEstadoNoHistorico();
+            const clienteParaAtualizar = clientesExibidos[index];
+            let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data);
 
-        // Função para fechar o modal ao pressionar ESC
-        function fecharComEsc(event) {
-            if (event.key === "Escape") {
+            if (clienteOriginalIndex === -1) {
+                exibirAlerta("Cliente não encontrado na lista principal!");
                 fecharModal();
+                return;
             }
+
+            let novoNome = document.getElementById("novoNome").value.trim();
+            let novoTelefone = document.getElementById("novoTelefone").value.trim();
+            let novaData = document.getElementById("novaData").value.trim();
+            let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value;
+
+            if (!novoNome || !novaData) {
+                exibirAlerta("Nome e data são obrigatórios!");
+                return;
+            }
+
+            clientes[clienteOriginalIndex].nome = novoNome;
+            clientes[clienteOriginalIndex].telefone = novoTelefone;
+            clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
+            clientes[clienteOriginalIndex].Produto = novoProduto;
+
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
+            clientes.forEach(cliente => cliente.oculto = false);
+            document.getElementById("searchInput").value = "";
+            exibirTabela();
+            salvarClientes();
+            fecharModal();
+        }
+
+        function formatarParaInputDate(data) {
+            let [dia, mes, ano] = data.split("/");
+            return `${ano}-${mes}-${dia}`;
         }
 
         function excluir(index) {
-            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
-
-            // Exibe o modal de confirmação de exclusão
+            const cliente = clientesExibidos[index];
             clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
             if (clienteIndexParaExcluir !== -1) {
-                document.getElementById("modalExclusao").style.display = "flex"; // Exibe o modal
+                document.getElementById("modalExclusao").style.display = "flex";
             }
         }
 
+        function confirmarExclusao() {
+            if (clienteIndexParaExcluir !== null) {
+                salvarEstadoNoHistorico();
+                clientes.splice(clienteIndexParaExcluir, 1);
 
+                if (clientesFiltrados.length > 0) {
+                    clientesFiltrados = clientesFiltrados.filter((_, idx) => idx !== clienteIndexParaExcluir);
+                }
+
+                clientesFiltrados = [];
+                modoExibicaoArquivados = false;
+                clientes.forEach(cliente => cliente.oculto = false);
+                document.getElementById("searchInput").value = "";
+                exibirTabela();
+                salvarClientes();
+                fecharModal();
+                clienteIndexParaExcluir = null;
+            }
+        }
 
         function toggleAvisado(index) {
-            let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
-            let cliente = listaParaEditar[index];
-
-            // Buscar o índice correto na lista principal de clientes
+            salvarEstadoNoHistorico();
+            let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
             }
-
             exibirTabela();
             salvarClientes();
         }
 
-
         function toggleDebito(index) {
-            let listaParaEditar = clientesFiltrados.length > 0 ? clientesFiltrados : clientes;
-            let cliente = listaParaEditar[index];
-
+            salvarEstadoNoHistorico();
+            let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
             }
-
             exibirTabela();
             salvarClientes();
-        }
-
-
-
-        function renovar30(index) {
-            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
-            cliente.data = incrementarData(cliente.data, 30);
-            if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
-            exibirTabela();
-            salvarClientes();
-        }
-
-        function renovarProximoMes(index) {
-            const cliente = clientesFiltrados.length > 0 ? clientesFiltrados[index] : clientes[index];
-            const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
-            const dataObj = new Date(ano, mes - 1, dia);
-
-            dataObj.setMonth(dataObj.getMonth() + 1);
-
-            if (dataObj.getDate() !== dia) {
-                dataObj.setDate(0);
-            }
-
-            cliente.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
-
-            if (clientesFiltrados.length > 0) clientesFiltrados.splice(index, 1);
-            exibirTabela();
-            salvarClientes();
-        }
-
-
-
-        function incrementarData(data, dias) {
-            const [dia, mes, ano] = data.split("/").map(num => parseInt(num));
-            const dataObj = new Date(ano, mes - 1, dia);
-            dataObj.setDate(dataObj.getDate() + dias);
-            return `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
 
         function salvarClientes() {
             localStorage.setItem('clientes', JSON.stringify(clientes));
-        }
-
-        function salvarArquivo() {
-            const data = JSON.stringify(clientes, null, 4);
-            const blob = new Blob([data], { type: 'application/json' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'clientes.json';
-            link.click();
         }
 
         function importarClientes() {
@@ -1092,27 +911,28 @@ O pagamento via PIX pode ser realizado no número:
                 const reader = new FileReader();
                 reader.onload = () => {
                     try {
+                        salvarEstadoNoHistorico();
                         const clientesImportados = JSON.parse(reader.result);
 
-                        // Garante que cada cliente importado tenha o campo Produto
                         const clientesCorrigidos = clientesImportados.map(cliente => ({
                             data: cliente.data,
                             nome: cliente.nome,
                             telefone: cliente.telefone,
                             avisado: cliente.avisado,
                             debito: cliente.debito,
-                            Produto: cliente.Produto || "Não informado" // Se não existir, define como "Não informado"
+                            Produto: cliente.Produto || "Não informado",
+                            arquivado: cliente.arquivado || false,
+                            oculto: false
                         }));
 
-                        // Adiciona os clientes importados à lista existente
                         clientes = [...clientes, ...clientesCorrigidos];
 
-                        // Atualiza a tabela e salva os dados
                         exibirTabela();
                         salvarClientes();
-                        alert("Clientes importados com sucesso!");
+                        exibirAlerta("Clientes importados com sucesso!");
                     } catch (error) {
-                        alert("Erro ao importar JSON. Verifique o arquivo.");
+                        exibirAlerta("Erro ao importar JSON. Verifique o arquivo.");
+                        console.error("Erro ao importar:", error);
                     }
                 };
                 reader.readAsText(file);
@@ -1120,15 +940,102 @@ O pagamento via PIX pode ser realizado no número:
             input.click();
         }
 
-
-
-
         function compartilharWhatsApp() {
             const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
             window.open(url, '_blank');
         }
 
+        function pesquisarClientes() {
+            const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
+
+            if (termoPesquisa !== '') {
+                clientesFiltrados = [];
+                modoExibicaoArquivados = false;
+            }
+            exibirTabela();
+        }
+
+        function limparPesquisa() {
+            document.getElementById("searchInput").value = "";
+            exibirTodos();
+        }
+
+        // --- FUNÇÕES DE AJUSTES ---
+        const SETTINGS_KEY = 'inputSettings';
+        const DEFAULT_INPUT_WIDTH_PERCENT = 16; // Alterado para 16%
+
+        function toggleSettingsArea() {
+            const settingsArea = document.getElementById('settingsArea');
+            if (settingsArea.style.display === 'block') {
+                settingsArea.style.display = 'none';
+            } else {
+                settingsArea.style.display = 'block';
+                loadSettings();
+            }
+        }
+
+        function applyInputWidth(widthPercent) {
+            const inputs = document.querySelectorAll('.configurable-input');
+            inputs.forEach(input => {
+                input.style.flexBasis = `${widthPercent}%`;
+                input.style.maxWidth = `${widthPercent}%`;
+                input.style.width = 'auto';
+            });
+        }
+
+        function updateInputWidth(value) {
+            const widthValueSpan = document.getElementById('inputWidthValue');
+            widthValueSpan.textContent = `${value}%`;
+            applyInputWidth(value);
+        }
+
+        function saveSettings() {
+            const inputWidth = document.getElementById('inputWidth').value;
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+                width: inputWidth
+            }));
+            exibirAlerta("Ajustes salvos com sucesso!");
+            toggleSettingsArea();
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem(SETTINGS_KEY);
+            let widthToApply = DEFAULT_INPUT_WIDTH_PERCENT;
+
+            if (savedSettings) {
+                try {
+                    const settings = JSON.parse(savedSettings);
+                    widthToApply = settings.width || DEFAULT_INPUT_WIDTH_PERCENT;
+                } catch (e) {
+                    console.error("Erro ao carregar ajustes do localStorage:", e);
+                    localStorage.removeItem(SETTINGS_KEY);
+                }
+            }
+
+            const inputWidthElement = document.getElementById('inputWidth');
+            if (inputWidthElement) { // Verifica se o elemento existe antes de tentar manipular
+                inputWidthElement.value = widthToApply;
+            }
+            const inputWidthValueSpan = document.getElementById('inputWidthValue');
+            if (inputWidthValueSpan) { // Verifica se o elemento existe antes de tentar manipular
+                inputWidthValueSpan.textContent = `${widthToApply}%`;
+            }
+            applyInputWidth(widthToApply);
+        }
+
+        function resetSettings() {
+            localStorage.removeItem(SETTINGS_KEY);
+            exibirAlerta("Ajustes redefinidos para o padrão!");
+            loadSettings();
+            toggleSettingsArea();
+        }
+        // --- FIM: FUNÇÕES DE AJUSTES ---
+
+
+        // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
+        salvarEstadoNoHistorico();
+        loadSettings(); // Garante que o ajuste seja aplicado logo no início
         exibirTabela();
     </script>
 </body>
