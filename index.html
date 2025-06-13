@@ -82,12 +82,39 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
-            position: relative; /* Necessário para posicionar o badge */
+            position: relative;
+            /* Necessário para posicionar o badge */
         }
 
         button:hover {
             background-color: #004d99;
         }
+
+        /* Estilo para o novo botão de débito */
+        .btn-debito-segurar {
+            background-color: #ffcc00;
+            /* Amarelo fraco */
+            color: #333;
+            /* Texto escuro para contraste */
+        }
+
+        .btn-debito-segurar:hover {
+            background-color: #e6b800;
+            /* Amarelo um pouco mais escuro no hover */
+        }
+
+        /* Novo estilo para o botão de confirmação perigosa (vermelho) */
+        .modal-confirm-danger {
+            background-color: #dc3545;
+            /* Vermelho */
+            color: #fff;
+        }
+
+        .modal-confirm-danger:hover {
+            background-color: #c82333;
+            /* Vermelho mais escuro */
+        }
+
 
         table {
             width: 100%;
@@ -247,15 +274,22 @@
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
 
         <h3>Filtros e Ações</h3>
-        <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge" style="display:none;"></span></button>
-        <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã <span id="badgeAmanha" class="notification-badge" style="display:none;"></span></button>
-        <button onclick="filtrarVencidos()">Clientes Vencidos <span id="badgeVencidos" class="notification-badge" style="display:none;"></span></button>
-        <button onclick="filtrarDebito()">Clientes com Débito <span id="badgeDebito" class="notification-badge" style="display:none;"></span></button>
-        <button onclick="filtrarOcultos()">Clientes Avisados (WhatsApp) <span id="badgeOcultos" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge"
+                style="display:none;"></span></button>
+        <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã <span id="badgeAmanha" class="notification-badge"
+                style="display:none;"></span></button>
+        <button onclick="filtrarVencidos()">Clientes Vencidos <span id="badgeVencidos" class="notification-badge"
+                style="display:none;"></span></button>
+        <button onclick="filtrarDebito()">Clientes com Débito <span id="badgeDebito" class="notification-badge"
+                style="display:none;"></span></button>
+        <button onclick="filtrarOcultos()">Clientes Avisados (WhatsApp) <span id="badgeOcultos"
+                class="notification-badge" style="display:none;"></span></button>
         <button onclick="exibirTodos()">Reexibir Todos</button>
-        <button onclick="limparTodos()">Limpar Todos</button>
-        <button onclick="desfazer()">Desfazer Última Ação</button>
-        <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="confirmarLimparTodos()">Limpar Todos</button>
+        <button onclick="confirmarDesfazer()">Desfazer Última Ação</button>
+        <button onclick="confirmarRefazer()">Refazer Última Ação</button>
+        <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge"
+                style="display:none;"></span></button>
 
         <h3>Pesquisa de Clientes</h3>
         <input type="text" id="searchInput" placeholder="Pesquisar por nome ou telefone" oninput="pesquisarClientes()">
@@ -319,6 +353,15 @@
             </div>
         </div>
 
+        <div id="modalConfirmacaoGenerica" class="modal">
+            <div class="modal-content">
+                <h3 id="modalConfirmacaoGenericaTitulo">Confirmação</h3>
+                <p id="modalConfirmacaoGenericaMensagem">Tem certeza?</p>
+                <button id="btnConfirmacaoGenericaConfirmar">Confirmar</button>
+                <button onclick="fecharModal()">Cancelar</button>
+            </div>
+        </div>
+
         <div id="modalEdicao" class="modal" style="display: none;"></div>
         <div id="modalAlerta" class="modal" style="display: none;"></div>
 
@@ -329,45 +372,64 @@
         let clientesFiltrados = [];
         let clienteIndexParaExcluir = null;
         let clienteIndexParaDuplicar = null;
-        let clienteIndexParaRenovarDebito = null; // Novo para a renovação com débito
+        let clienteIndexParaRenovarDebito = null;
         let modoExibicaoArquivados = false;
-        let modoExibicaoOcultos = false; // Novo modo para clientes ocultos/avisados
+        let modoExibicaoOcultos = false;
 
-        let historicoClientes = [];
+        let historicoClientes = []; // Histórico para 'Desfazer'
+        let redoHistory = []; // Novo histórico para 'Refazer'
         const MAX_HISTORY_STATES = 10;
-        let pressTimer; // Variável para o timer do long press
+        let pressTimerDebito;
+        let isLongPressDebito = false;
 
-        function salvarEstadoNoHistorico() {
+        let confirmActionCallback = null; // Função a ser executada se o modal de confirmação genérica for confirmado
+
+        function salvarEstadoNoHistorico(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoAtual);
 
             if (historicoClientes.length > MAX_HISTORY_STATES) {
                 historicoClientes.shift();
             }
+
+            if (clearRedo) {
+                redoHistory = []; // Limpa o histórico de refazer quando uma nova ação é realizada
+            }
         }
 
-        function desfazer() {
-            if (historicoClientes.length > 1) {
-                historicoClientes.pop();
-                clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1]));
-                salvarClientes();
-                exibirTodos();
-                exibirAlerta("Última ação desfeita!");
-            } else if (historicoClientes.length === 1 && clientes.length > 0) {
-                historicoClientes.pop();
-                clientes = [];
-                salvarClientes();
-                exibirTodos();
-                exibirAlerta("Última ação desfeita!");
+        // Função para exibir o modal de confirmação genérica com estilo customizável
+        function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
+            const modal = document.getElementById("modalConfirmacaoGenerica");
+            const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
+
+            document.getElementById("modalConfirmacaoGenericaTitulo").innerText = titulo;
+            document.getElementById("modalConfirmacaoGenericaMensagem").innerHTML = mensagem; // Usar innerHTML para negrito
+            confirmActionCallback = callback;
+
+            if (isDanger) {
+                btnConfirmar.classList.add("modal-confirm-danger");
             } else {
-                exibirAlerta("Não há ações para desfazer.");
+                btnConfirmar.classList.remove("modal-confirm-danger");
             }
+
+            btnConfirmar.onclick = () => {
+                if (confirmActionCallback) {
+                    confirmActionCallback();
+                    confirmActionCallback = null;
+                }
+                fecharModal();
+            };
+
+            modal.style.display = "flex";
+            document.addEventListener("keydown", fecharComEsc);
         }
 
         function fecharModal() {
             document.getElementById("modalConfirmacao").style.display = "none";
             document.getElementById("modalExclusao").style.display = "none";
-            document.getElementById("modalRenovarComDebito").style.display = "none"; // Fechar novo modal
+            document.getElementById("modalRenovarComDebito").style.display = "none";
+            document.getElementById("modalConfirmacaoGenerica").style.display = "none";
+
             const modalEdicao = document.getElementById("modalEdicao");
             if (modalEdicao) {
                 modalEdicao.style.display = "none";
@@ -389,7 +451,7 @@
         }
 
         function fecharComEscOuEnter(event) {
-            if (event.key === "Escape" || event.key === "Enter") {
+            if (event.key === "Enter" || event.key === "Escape") {
                 fecharModal();
             }
         }
@@ -423,7 +485,7 @@
                 return exibirAlerta("Por favor, insira a data, o nome e o telefone do cliente.");
             }
 
-            salvarEstadoNoHistorico();
+            salvarEstadoNoHistorico(); // Salva o estado ANTES de adicionar
             const dataParts = dataInput.split("-");
             const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
             const telefoneLimpo = telefoneInput.replace(/[^\d]/g, '');
@@ -436,7 +498,7 @@
                 debito: false,
                 Produto: produtoSelecionado,
                 arquivado: false,
-                oculto: false // 'oculto' agora significa 'avisado via WhatsApp'
+                oculto: false
             });
 
             document.getElementById("dataInput").value = "";
@@ -470,7 +532,7 @@
             if (clienteOriginal) {
                 clienteOriginal.arquivado = false;
                 clientesFiltrados = [];
-                modoExibicaoArquivados = true; // Permanece no filtro de arquivados
+                modoExibicaoArquivados = true;
                 modoExibicaoOcultos = false;
             }
             exibirTabela();
@@ -485,7 +547,7 @@
             exibirTabela();
         }
 
-        function filtrarOcultos() { // Nova função de filtro
+        function filtrarOcultos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = true;
@@ -500,7 +562,7 @@
 
             if (termoPesquisa !== '') {
                 clientesExibidos = clientes.filter(cliente =>
-                    !cliente.arquivado && !cliente.oculto && // Não mostra ocultos ou arquivados na pesquisa principal
+                    !cliente.arquivado && !cliente.oculto &&
                     (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
                 );
                 clientesFiltrados = [];
@@ -510,7 +572,7 @@
                 clientesExibidos = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto);
             } else if (modoExibicaoArquivados) {
                 clientesExibidos = clientes.filter(cliente => cliente.arquivado);
-            } else if (modoExibicaoOcultos) { // Nova condição para exibir ocultos
+            } else if (modoExibicaoOcultos) {
                 clientesExibidos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado);
             } else {
                 clientesExibidos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
@@ -520,7 +582,7 @@
             if (clientesExibidos.length === 0) {
                 document.querySelector("table").style.display = "none";
                 document.getElementById("tabelaClientes").innerHTML = `<tr><td colspan="1" style="text-align: center; color: gray;">Nenhum cliente para exibir neste filtro.</td></tr>`;
-                atualizarContadores(); // Atualiza contadores mesmo que a tabela esteja vazia
+                atualizarContadores();
                 return;
             }
 
@@ -562,19 +624,20 @@
                 if (modoExibicaoArquivados) {
                     botoesAcao = `<button title="Desarquivar Cliente" onclick="desarquivar(${index})">Desarquivar</button>`;
                 } else {
-                    // Adiciona eventos mousedown e mouseup para detecção de long press
                     botoesAcao = `
                         <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
-                        <button title="Renovar Automático"
-                                onmousedown="startRenovarTimer(event, ${index})"
-                                onmouseup="clearRenovarTimer()"
-                                onmouseleave="clearRenovarTimer()">🔁</button>
+                        <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
+                        <button title="Renovar com Débito (Segurar)"
+                                class="btn-debito-segurar"
+                                onmousedown="startRenovarDebitoTimer(event, ${index})"
+                                onmouseup="clearRenovarDebitoTimer()"
+                                onmouseleave="clearRenovarDebitoTimer()">DÉBITO</button>
                         <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
                         <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                         <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
-                    `;
+                        `;
                 }
 
                 tr.innerHTML = `
@@ -592,27 +655,25 @@
             atualizarContadores();
         }
 
-        // --- Funções de Renovar com Débito ---
-        function startRenovarTimer(event, index) {
-            // Previne o comportamento padrão do clique imediato
+        function startRenovarDebitoTimer(event, index) {
             event.preventDefault();
-            clearTimeout(pressTimer); // Limpa qualquer timer anterior
+            clearTimeout(pressTimerDebito);
+            isLongPressDebito = false;
 
-            pressTimer = setTimeout(() => {
-                // Se o botão for segurado por 500ms, abre o modal de débito
+            pressTimerDebito = setTimeout(() => {
+                isLongPressDebito = true;
                 clienteIndexParaRenovarDebito = index;
                 document.getElementById("modalRenovarComDebito").style.display = "flex";
                 document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
-                clearRenovarTimer(); // Limpa o timer após abrir o modal
-            }, 500); // 500ms para considerar um "long press"
+            }, 500);
         }
 
-        function clearRenovarTimer() {
-            clearTimeout(pressTimer);
+        function clearRenovarDebitoTimer() {
+            clearTimeout(pressTimerDebito);
+            isLongPressDebito = false;
         }
 
         function renovarAutomatico(index) {
-            // Esta função será chamada apenas se não for um "long press"
             const cliente = clientesExibidos[index];
             const produtoCliente = cliente.Produto || "Não informado";
 
@@ -621,7 +682,7 @@
                 return;
             }
 
-            salvarEstadoNoHistorico(); // Salva o estado antes de renovar
+            salvarEstadoNoHistorico(); // Salva o estado ANTES da renovação
             let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginal) {
                 if (produtoCliente === "Duplecast") {
@@ -629,24 +690,26 @@
                 } else if (produtoCliente === "UniTv") {
                     renovar30(clienteOriginal);
                 }
-                clienteOriginal.debito = false; // Garante que o débito seja removido em renovação normal
+                clienteOriginal.debito = false;
+                clienteOriginal.oculto = false;
             }
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             exibirTabela();
             salvarClientes();
-            exibirAlerta("Cliente renovado com sucesso!");
+            // REMOVIDO: exibirAlerta("Cliente renovado com sucesso!");
         }
 
         function confirmarRenovacaoComDebito() {
             if (clienteIndexParaRenovarDebito !== null) {
-                salvarEstadoNoHistorico();
+                salvarEstadoNoHistorico(); // Salva o estado ANTES da renovação
                 const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
                 const produtoCliente = cliente.Produto || "Não informado";
 
                 if (produtoCliente === "Não informado") {
                     exibirAlerta("O produto do cliente não está informado!");
+                    fecharModal();
                     return;
                 }
 
@@ -657,7 +720,8 @@
                     } else if (produtoCliente === "UniTv") {
                         renovar30(clienteOriginal);
                     }
-                    clienteOriginal.debito = true; // Marca como débito
+                    clienteOriginal.debito = true;
+                    clienteOriginal.oculto = false;
                 }
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
@@ -669,14 +733,13 @@
                 exibirAlerta("Cliente renovado e marcado como DÉBITO!");
             }
         }
-        // --- Fim Funções de Renovar com Débito ---
 
 
-        function renovar30(clienteObj) { // Recebe o objeto cliente diretamente
+        function renovar30(clienteObj) {
             clienteObj.data = incrementarData(clienteObj.data, 30);
         }
 
-        function renovarProximoMes(clienteObj) { // Recebe o objeto cliente diretamente
+        function renovarProximoMes(clienteObj) {
             const [dia, mes, ano] = clienteObj.data.split("/").map(num => parseInt(num));
             const dataObj = new Date(ano, mes - 1, dia);
 
@@ -703,7 +766,7 @@
 
         function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
-                salvarEstadoNoHistorico();
+                salvarEstadoNoHistorico(); // Salva o estado ANTES da duplicação
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
                 const novoCliente = {
@@ -772,11 +835,16 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             link.style.display = 'none';
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
+
+            setTimeout(() => {
+                if (link.parentNode) {
+                    link.parentNode.removeChild(link);
+                }
+            }, 100);
 
             let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginal) {
-                clienteOriginal.oculto = true; // Marca como "oculto" (avisado)
+                clienteOriginal.oculto = true;
             }
             exibirTabela();
         }
@@ -823,7 +891,10 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
-                return dataCliente < hoje && cliente.data !== hoje.toLocaleDateString('pt-BR') && !cliente.arquivado && !cliente.oculto;
+                const dataClienteSemHora = new Date(ano, mes - 1, dia);
+                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+                return dataClienteSemHora < hojeSemHora && !cliente.arquivado && !cliente.oculto;
             });
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -843,13 +914,63 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            clientes.forEach(cliente => cliente.oculto = false); // Ao exibir todos, "desoculta" todos
+            clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
             exibirTabela();
         }
 
+        function confirmarLimparTodos() {
+            exibirConfirmacaoGenerica(
+                "Limpar Todos os Clientes",
+                "Tem certeza que deseja limpar **TODOS** os clientes? Essa ação não pode ser desfeita e os dados serão perdidos permanentemente!",
+                limparTodos,
+                true
+            );
+        }
+
+        function confirmarDesfazer() {
+            if (historicoClientes.length <= 1) {
+                exibirAlerta("Não há ações para desfazer.");
+                return;
+            }
+
+            // Simula o estado para verificar se a próxima ação de desfazer limparia a lista
+            const estadoPrevistoAposDesfazer = historicoClientes.length > 1 ?
+                JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 2])) : [];
+
+            if (estadoPrevistoAposDesfazer.length === 0) {
+                exibirConfirmacaoGenerica(
+                    "Desfazer Última Ação (CUIDADO!)",
+                    "Atenção: A próxima ação de desfazer irá **LIMPAR TODA A SUA LISTA DE CLIENTES**! Tem certeza que deseja continuar?",
+                    desfazer,
+                    true
+                );
+            } else {
+                exibirConfirmacaoGenerica(
+                    "Desfazer Última Ação",
+                    "Tem certeza que deseja desfazer a última alteração? Isso irá reverter a lista de clientes para o estado anterior.",
+                    desfazer,
+                    false
+                );
+            }
+        }
+
+        function confirmarRefazer() {
+            if (redoHistory.length === 0) {
+                exibirAlerta("Não há ações para refazer.");
+                return;
+            }
+            exibirConfirmacaoGenerica(
+                "Refazer Última Ação",
+                "Tem certeza que deseja refazer a última ação desfeita?",
+                refazer,
+                false
+            );
+        }
+
         function limparTodos() {
-            salvarEstadoNoHistorico();
+            // Não precisa mais verificar historicoClientes.length aqui, a confirmação já fez isso
+            salvarEstadoNoHistorico(); // Salva o estado atual (lista não vazia) antes de limpar
             clientes = [];
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -858,6 +979,39 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             salvarClientes();
             exibirAlerta("Todos os clientes foram limpos!");
         }
+
+        function desfazer() {
+            if (historicoClientes.length <= 1) {
+                exibirAlerta("Não há ações para desfazer.");
+                return;
+            }
+
+            // Move o estado atual para o redoHistory antes de voltar no tempo
+            redoHistory.push(JSON.parse(JSON.stringify(clientes)));
+
+            historicoClientes.pop(); // Remove o estado atual
+            clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1])); // Volta para o estado anterior
+
+            salvarClientes();
+            exibirTodos();
+            exibirAlerta("Última ação desfeita!");
+        }
+
+        function refazer() {
+            if (redoHistory.length === 0) {
+                exibirAlerta("Não há ações para refazer.");
+                return;
+            }
+
+            // Move o estado atual para o historicoClientes antes de avançar no tempo
+            salvarEstadoNoHistorico(false); // Não limpa o redoHistory, pois estamos usando ele
+
+            clientes = redoHistory.pop(); // Pega o último estado do redoHistory
+            salvarClientes();
+            exibirTodos();
+            exibirAlerta("Última ação refeita!");
+        }
+
 
         function editar(index) {
             let cliente = clientesExibidos[index];
@@ -913,7 +1067,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
 
         function salvarEdicao(index) {
-            salvarEstadoNoHistorico();
+            salvarEstadoNoHistorico(); // Salva o estado ANTES da edição
             const clienteParaAtualizar = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data && c.telefone === clienteParaAtualizar.telefone);
 
@@ -941,7 +1095,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            clientes.forEach(cliente => cliente.oculto = false); // Ao salvar edição, desoculta o cliente
+            clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
             exibirTabela();
             salvarClientes();
@@ -963,7 +1117,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
         function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
-                salvarEstadoNoHistorico();
+                salvarEstadoNoHistorico(); // Salva o estado ANTES da exclusão
                 clientes.splice(clienteIndexParaExcluir, 1);
 
                 clientesFiltrados = [];
@@ -979,7 +1133,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
 
         function toggleAvisado(index) {
-            salvarEstadoNoHistorico();
+            salvarEstadoNoHistorico(); // Salva o estado ANTES da alteração
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginalIndex !== -1) {
@@ -990,7 +1144,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
 
         function toggleDebito(index) {
-            salvarEstadoNoHistorico();
+            salvarEstadoNoHistorico(); // Salva o estado ANTES da alteração
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginalIndex !== -1) {
@@ -1013,7 +1167,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 const reader = new FileReader();
                 reader.onload = () => {
                     try {
-                        salvarEstadoNoHistorico();
+                        salvarEstadoNoHistorico(); // Salva o estado ANTES da importação
                         const clientesImportados = JSON.parse(reader.result);
 
                         const clientesCorrigidos = clientesImportados.map(cliente => ({
@@ -1024,10 +1178,9 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                             debito: cliente.debito,
                             Produto: cliente.Produto || "Não informado",
                             arquivado: cliente.arquivado || false,
-                            oculto: cliente.oculto || false // Garante que a propriedade 'oculto' existe
+                            oculto: cliente.oculto || false
                         }));
 
-                        // Filtra clientes duplicados por nome, data e telefone antes de adicionar
                         const novosClientesUnicos = clientesCorrigidos.filter(novoCliente =>
                             !clientes.some(existente =>
                                 existente.nome === novoCliente.nome &&
@@ -1053,7 +1206,6 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
 
         function compartilharWhatsApp() {
-            // Este botão pode ser usado para compartilhar o próprio link da aplicação ou informações gerais
             const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
             window.open(url, '_blank');
         }
@@ -1076,7 +1228,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
         // --- FUNÇÕES DE AJUSTES ---
         const SETTINGS_KEY = 'inputSettings';
-        const DEFAULT_INPUT_WIDTH_PERCENT = 16; // Alterado para 16%
+        const DEFAULT_INPUT_WIDTH_PERCENT = 16;
 
         function toggleSettingsArea() {
             const settingsArea = document.getElementById('settingsArea');
@@ -1149,22 +1301,24 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         function atualizarContadores() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                                  (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                                  hoje.getFullYear();
+                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                hoje.getFullYear();
 
             const countHoje = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto).length;
             const countAmanha = clientes.filter(cliente => {
                 const amanha = new Date();
                 amanha.setDate(amanha.getDate() + 1);
                 const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
-                                        (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                                        amanha.getFullYear();
+                    (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                    amanha.getFullYear();
                 return cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto;
             }).length;
             const countVencidos = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
-                return dataCliente < hoje && cliente.data !== hojeFormatada && !cliente.arquivado && !cliente.oculto;
+                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+                return dataCliente < hojeSemHora && !cliente.arquivado && !cliente.oculto;
             }).length;
             const countDebito = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto).length;
             const countOcultos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado).length;
@@ -1192,34 +1346,35 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         // --- FIM: Funções de Contadores ---
 
 
-        // Nova função para a exibição inicial - SEMPRE FILTRA PARA VENCENDO HOJE E VENCIDOS
         function inicializarExibicaoClientes() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                                  (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                                  hoje.getFullYear();
+                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                hoje.getFullYear();
 
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
 
+                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
                 const isVencendoHoje = cliente.data === hojeFormatada;
-                const isVencido = dataCliente < hoje && cliente.data !== hojeFormatada;
+                const isVencido = dataCliente < hojeSemHora;
 
                 return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto;
             });
             modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false; // Garante que não está em modo ocultos
+            modoExibicaoOcultos = false;
             document.getElementById("searchInput").value = "";
-            exibirTabela(); // Chama exibirTabela para renderizar com os filtros iniciais
+            exibirTabela();
         }
 
 
         // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
-        salvarEstadoNoHistorico(); // Salva o estado inicial (pode estar vazio)
-        loadSettings(); // Garante que o ajuste seja aplicado logo no início
-        inicializarExibicaoClientes(); // Chama a nova função para exibir os clientes filtrados na inicialização
+        salvarEstadoNoHistorico(); // Salva o estado inicial
+        loadSettings();
+        inicializarExibicaoClientes();
     </script>
 </body>
 
