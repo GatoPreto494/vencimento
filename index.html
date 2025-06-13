@@ -379,8 +379,8 @@
         let historicoClientes = []; // Histórico para 'Desfazer'
         let redoHistory = []; // Novo histórico para 'Refazer'
         const MAX_HISTORY_STATES = 10;
-        let pressTimerDebito;
-        let isLongPressDebito = false;
+        // Removed: let pressTimerDebito;
+        // Removed: let isLongPressDebito = false;
 
         let confirmActionCallback = null; // Função a ser executada se o modal de confirmação genérica for confirmado
 
@@ -397,7 +397,6 @@
             }
         }
 
-        // Função para exibir o modal de confirmação genérica com estilo customizável
         function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
             const modal = document.getElementById("modalConfirmacaoGenerica");
             const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
@@ -485,7 +484,7 @@
                 return exibirAlerta("Por favor, insira a data, o nome e o telefone do cliente.");
             }
 
-            salvarEstadoNoHistorico(); // Salva o estado ANTES de adicionar
+            salvarEstadoNoHistorico();
             const dataParts = dataInput.split("-");
             const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
             const telefoneLimpo = telefoneInput.replace(/[^\d]/g, '');
@@ -627,11 +626,9 @@
                     botoesAcao = `
                         <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
                         <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
-                        <button title="Renovar com Débito (Segurar)"
+                        <button title="Renovar com Débito (Confirmação)"
                                 class="btn-debito-segurar"
-                                onmousedown="startRenovarDebitoTimer(event, ${index})"
-                                onmouseup="clearRenovarDebitoTimer()"
-                                onmouseleave="clearRenovarDebitoTimer()">DÉBITO</button>
+                                onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
                         <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
                         <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
@@ -655,23 +652,15 @@
             atualizarContadores();
         }
 
-        function startRenovarDebitoTimer(event, index) {
-            event.preventDefault();
-            clearTimeout(pressTimerDebito);
-            isLongPressDebito = false;
-
-            pressTimerDebito = setTimeout(() => {
-                isLongPressDebito = true;
-                clienteIndexParaRenovarDebito = index;
-                document.getElementById("modalRenovarComDebito").style.display = "flex";
-                document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
-            }, 500);
+        // Nova função para pedir confirmação antes de renovar com débito
+        function pedirConfirmacaoRenovacaoDebito(index) {
+            clienteIndexParaRenovarDebito = index; // Armazena o índice do cliente
+            document.getElementById("modalRenovarComDebito").style.display = "flex";
+            // O onclick do botão de confirmar já está configurado no HTML do modal
+            document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
         }
-
-        function clearRenovarDebitoTimer() {
-            clearTimeout(pressTimerDebito);
-            isLongPressDebito = false;
-        }
+        
+        // As funções startRenovarDebitoTimer e clearRenovarDebitoTimer foram removidas, pois não são mais necessárias.
 
         function renovarAutomatico(index) {
             const cliente = clientesExibidos[index];
@@ -766,7 +755,7 @@
 
         function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
-                salvarEstadoNoHistorico(); // Salva o estado ANTES da duplicação
+                salvarEstadoNoHistorico();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
                 const novoCliente = {
@@ -969,8 +958,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
 
         function limparTodos() {
-            // Não precisa mais verificar historicoClientes.length aqui, a confirmação já fez isso
-            salvarEstadoNoHistorico(); // Salva o estado atual (lista não vazia) antes de limpar
+            salvarEstadoNoHistorico();
             clientes = [];
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -986,11 +974,10 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 return;
             }
 
-            // Move o estado atual para o redoHistory antes de voltar no tempo
             redoHistory.push(JSON.parse(JSON.stringify(clientes)));
 
-            historicoClientes.pop(); // Remove o estado atual
-            clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1])); // Volta para o estado anterior
+            historicoClientes.pop();
+            clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1]));
 
             salvarClientes();
             exibirTodos();
@@ -1003,10 +990,9 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 return;
             }
 
-            // Move o estado atual para o historicoClientes antes de avançar no tempo
             salvarEstadoNoHistorico(false); // Não limpa o redoHistory, pois estamos usando ele
 
-            clientes = redoHistory.pop(); // Pega o último estado do redoHistory
+            clientes = redoHistory.pop();
             salvarClientes();
             exibirTodos();
             exibirAlerta("Última ação refeita!");
@@ -1067,7 +1053,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
 
         function salvarEdicao(index) {
-            salvarEstadoNoHistorico(); // Salva o estado ANTES da edição
+            salvarEstadoNoHistorico();
             const clienteParaAtualizar = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data && c.telefone === clienteParaAtualizar.telefone);
 
@@ -1117,7 +1103,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
         function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
-                salvarEstadoNoHistorico(); // Salva o estado ANTES da exclusão
+                salvarEstadoNoHistorico();
                 clientes.splice(clienteIndexParaExcluir, 1);
 
                 clientesFiltrados = [];
@@ -1133,7 +1119,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
 
         function toggleAvisado(index) {
-            salvarEstadoNoHistorico(); // Salva o estado ANTES da alteração
+            salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginalIndex !== -1) {
@@ -1144,7 +1130,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
         }
 
         function toggleDebito(index) {
-            salvarEstadoNoHistorico(); // Salva o estado ANTES da alteração
+            salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginalIndex !== -1) {
@@ -1167,7 +1153,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 const reader = new FileReader();
                 reader.onload = () => {
                     try {
-                        salvarEstadoNoHistorico(); // Salva o estado ANTES da importação
+                        salvarEstadoNoHistorico();
                         const clientesImportados = JSON.parse(reader.result);
 
                         const clientesCorrigidos = clientesImportados.map(cliente => ({
@@ -1372,7 +1358,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
 
         // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
-        salvarEstadoNoHistorico(); // Salva o estado inicial
+        salvarEstadoNoHistorico();
         loadSettings();
         inicializarExibicaoClientes();
     </script>
