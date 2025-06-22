@@ -115,7 +115,6 @@
             /* Vermelho mais escuro */
         }
 
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -246,11 +245,20 @@
             line-height: 1;
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
         }
+
+        #ultimaAtualizacaoInfo {
+            text-align: right;
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
+        <p id="ultimaAtualizacaoInfo">Última Atualização: Nunca</p>
+
         <h1>Controle de Clientes</h1>
         <button onclick="importarClientes()">Importar Clientes (JSON)</button>
         <button onclick="exportarClientes()">Exportar Clientes (JSON)</button>
@@ -290,11 +298,11 @@
         <button onclick="confirmarRefazer()">Refazer Última Ação</button>
         <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge"
                 style="display:none;"></span></button>
+        <button onclick="mostrarContagemProdutos()">Produtos</button>
 
         <h3>Pesquisa de Clientes</h3>
         <input type="text" id="searchInput" placeholder="Pesquisar por nome ou telefone" oninput="pesquisarClientes()">
         <button onclick="limparPesquisa()">Limpar Pesquisa</button>
-
 
         <table>
             <thead>
@@ -311,7 +319,6 @@
         <p id="dataAtual"></p>
 
         <div class="settings-icon" onclick="toggleSettingsArea()" title="Ajustes">⚙️</div>
-
         <div id="settingsArea">
             <h3>Ajustes de Interface</h3>
             <p>Defina o tamanho das caixas de entrada de Data, Nome e Telefone.</p>
@@ -325,7 +332,6 @@
             <button onclick="resetSettings()">Redefinir Padrão</button>
         </div>
 
-
         <div id="modalConfirmacao" class="modal">
             <div class="modal-content">
                 <h3>Confirmar Duplicação</h3>
@@ -334,7 +340,6 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
-
         <div id="modalExclusao" class="modal">
             <div class="modal-content">
                 <h3>Confirmar Exclusão</h3>
@@ -343,7 +348,6 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
-
         <div id="modalRenovarComDebito" class="modal">
             <div class="modal-content">
                 <h3>Renovar com Débito?</h3>
@@ -352,7 +356,6 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
-
         <div id="modalConfirmacaoGenerica" class="modal">
             <div class="modal-content">
                 <h3 id="modalConfirmacaoGenericaTitulo">Confirmação</h3>
@@ -361,10 +364,19 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
-
         <div id="modalEdicao" class="modal" style="display: none;"></div>
         <div id="modalAlerta" class="modal" style="display: none;"></div>
 
+        <div id="modalContagemProdutos" class="modal">
+            <div class="modal-content">
+                <h3>Contagem de Produtos</h3>
+                <p>UniTv: <span id="countUniTv">0</span> clientes <button
+                        onclick="filtrarPorProduto('UniTv')">Detalhes</button></p>
+                <p>Duplecast: <span id="countDuplecast">0</span> clientes <button
+                        onclick="filtrarPorProduto('Duplecast')">Detalhes</button></p>
+                <button onclick="fecharModal()">Fechar</button>
+            </div>
+        </div>
     </div>
     <script>
         document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
@@ -375,6 +387,7 @@
         let clienteIndexParaRenovarDebito = null;
         let modoExibicaoArquivados = false;
         let modoExibicaoOcultos = false;
+        let filtroProduto = null; // Novo estado para o filtro de produto
 
         let historicoClientes = []; // Histórico para 'Desfazer'
         let redoHistory = []; // Novo histórico para 'Refazer'
@@ -383,6 +396,24 @@
         // Removed: let isLongPressDebito = false;
 
         let confirmActionCallback = null; // Função a ser executada se o modal de confirmação genérica for confirmado
+
+        // --- Função para atualizar a data e hora da última atualização ---
+        function atualizarUltimaAtualizacao(acao = "dados atualizados") {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            const formattedDateTime = now.toLocaleString('pt-BR', options);
+            document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Atualização: ${formattedDateTime} (${acao})`;
+        }
+        // --- Fim da função de atualização ---
+
 
         function salvarEstadoNoHistorico(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
@@ -396,7 +427,6 @@
                 redoHistory = []; // Limpa o histórico de refazer quando uma nova ação é realizada
             }
         }
-
         function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
             const modal = document.getElementById("modalConfirmacaoGenerica");
             const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
@@ -422,12 +452,12 @@
             modal.style.display = "flex";
             document.addEventListener("keydown", fecharComEsc);
         }
-
         function fecharModal() {
             document.getElementById("modalConfirmacao").style.display = "none";
             document.getElementById("modalExclusao").style.display = "none";
             document.getElementById("modalRenovarComDebito").style.display = "none";
             document.getElementById("modalConfirmacaoGenerica").style.display = "none";
+            document.getElementById("modalContagemProdutos").style.display = "none"; // Fechar o novo modal
 
             const modalEdicao = document.getElementById("modalEdicao");
             if (modalEdicao) {
@@ -442,19 +472,16 @@
                 document.removeEventListener("keydown", fecharComEscOuEnter);
             }
         }
-
         function fecharComEsc(event) {
             if (event.key === "Escape") {
                 fecharModal();
             }
         }
-
         function fecharComEscOuEnter(event) {
             if (event.key === "Enter" || event.key === "Escape") {
                 fecharModal();
             }
         }
-
         function exibirAlerta(mensagem) {
             let modalAlerta = document.getElementById("modalAlerta");
             modalAlerta.style.display = "flex";
@@ -467,13 +494,11 @@
             `;
             document.addEventListener("keydown", fecharComEscOuEnter);
         }
-
         document.addEventListener('keydown', function (event) {
             if (event.key === "Enter" && document.getElementById("modalExclusao").style.display === "flex") {
                 confirmarExclusao();
             }
         });
-
         function adicionarCliente() {
             const dataInput = document.getElementById("dataInput").value.trim();
             const nomeInput = document.getElementById("nomeInput").value.trim();
@@ -506,8 +531,8 @@
 
             exibirTabela();
             salvarClientes();
+            atualizarUltimaAtualizacao("cliente adicionado");
         }
-
         function arquivar(index) {
             salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index];
@@ -518,11 +543,12 @@
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto
             }
             exibirTabela();
             salvarClientes();
+            atualizarUltimaAtualizacao("cliente arquivado");
         }
-
         function desarquivar(index) {
             salvarEstadoNoHistorico();
             let clienteParaDesarquivar = clientesExibidos[index];
@@ -533,49 +559,71 @@
                 clientesFiltrados = [];
                 modoExibicaoArquivados = true;
                 modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto
             }
             exibirTabela();
             salvarClientes();
+            atualizarUltimaAtualizacao("cliente desarquivado");
         }
-
         function filtrarArquivados() {
             clientesFiltrados = [];
             modoExibicaoArquivados = true;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("filtrado por arquivados");
         }
-
         function filtrarOcultos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = true;
+            filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("filtrado por avisados");
+        }
+
+        function filtrarPorProduto(produto) {
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
+            filtroProduto = produto;
+            document.getElementById("searchInput").value = "";
+            fecharModal(); // Fecha o modal de contagem
+            exibirTabela();
+            atualizarUltimaAtualizacao(`filtrado por produto: ${produto}`);
         }
 
         let clientesExibidos = [];
-
         function exibirTabela() {
             const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
 
+            let clientesParaProcessar = clientes;
+
+            // Aplica filtros principais
             if (termoPesquisa !== '') {
-                clientesExibidos = clientes.filter(cliente =>
+                clientesParaProcessar = clientes.filter(cliente =>
                     !cliente.arquivado && !cliente.oculto &&
                     (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
                 );
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto ao pesquisar
             } else if (clientesFiltrados.length > 0) {
-                clientesExibidos = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto);
+                clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto);
             } else if (modoExibicaoArquivados) {
-                clientesExibidos = clientes.filter(cliente => cliente.arquivado);
+                clientesParaProcessar = clientes.filter(cliente => cliente.arquivado);
             } else if (modoExibicaoOcultos) {
-                clientesExibidos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado);
+                clientesParaProcessar = clientes.filter(cliente => cliente.oculto && !cliente.arquivado);
+            } else if (filtroProduto) { // Novo filtro por produto
+                clientesParaProcessar = clientes.filter(cliente => cliente.Produto === filtroProduto && !cliente.arquivado && !cliente.oculto);
             } else {
-                clientesExibidos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
+                clientesParaProcessar = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
             }
+
+            clientesExibidos = clientesParaProcessar;
 
 
             if (clientesExibidos.length === 0) {
@@ -650,17 +698,16 @@
                 tabela.appendChild(tr);
             });
             atualizarContadores();
+            // Nao chame atualizarUltimaAtualizacao aqui para cada filtro,
+            // ela ja sera chamada pelas funcoes de filtro especificas
         }
-
         // Nova função para pedir confirmação antes de renovar com débito
         function pedirConfirmacaoRenovacaoDebito(index) {
             clienteIndexParaRenovarDebito = index; // Armazena o índice do cliente
             document.getElementById("modalRenovarComDebito").style.display = "flex";
             // O onclick do botão de confirmar já está configurado no HTML do modal
             document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
-        }
-        
-        // As funções startRenovarDebitoTimer e clearRenovarDebitoTimer foram removidas, pois não são mais necessárias.
+        } // As funções startRenovarDebitoTimer e clearRenovarDebitoTimer foram removidas, pois não são mais necessárias.
 
         function renovarAutomatico(index) {
             const cliente = clientesExibidos[index];
@@ -685,8 +732,10 @@
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             exibirTabela();
             salvarClientes();
+            atualizarUltimaAtualizacao("cliente renovado");
             // REMOVIDO: exibirAlerta("Cliente renovado com sucesso!");
         }
 
@@ -715,14 +764,15 @@
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaRenovarDebito = null;
                 exibirAlerta("Cliente renovado e marcado como DÉBITO!");
+                atualizarUltimaAtualizacao("cliente renovado com débito");
             }
         }
-
 
         function renovar30(clienteObj) {
             clienteObj.data = incrementarData(clienteObj.data, 30);
@@ -740,19 +790,17 @@
 
             clienteObj.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
-
         function incrementarData(data, dias) {
             const [dia, mes, ano] = data.split("/").map(num => parseInt(num));
             const dataObj = new Date(ano, mes - 1, dia);
             dataObj.setDate(dataObj.getDate() + dias);
             return `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
-
         function duplicarCliente(index) {
             clienteIndexParaDuplicar = index;
             document.getElementById("modalConfirmacao").style.display = "flex";
+            atualizarUltimaAtualizacao("confirmar duplicação");
         }
-
         function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
                 salvarEstadoNoHistorico();
@@ -772,13 +820,14 @@
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaDuplicar = null;
+                atualizarUltimaAtualizacao("cliente duplicado");
             }
         }
-
 
         function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
             const telefoneLimpo = clienteTelefone.replace(/\D/g, '');
@@ -808,16 +857,12 @@
 
             let mensagem;
             if (vencido) {
-                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento}*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.
-O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento}*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
             } else {
-                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.
-*Vencimento*: ${cliente.data}
-O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data}O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
             }
 
             const url = `https://wa.me/${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`;
-
             const link = document.createElement("a");
             link.href = url;
             link.target = "_blank";
@@ -836,8 +881,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 clienteOriginal.oculto = true;
             }
             exibirTabela();
+            atualizarUltimaAtualizacao("mensagem WhatsApp enviada");
         }
-
         function exportarClientes() {
             const clientesCompletos = JSON.parse(JSON.stringify(clientes));
             const clientesJson = JSON.stringify(clientesCompletos, null, 4);
@@ -846,8 +891,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             link.href = URL.createObjectURL(blob);
             link.download = "clientes.json";
             link.click();
+            atualizarUltimaAtualizacao("clientes exportados");
         }
-
         function filtrarHoje() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -857,10 +902,11 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("filtrado por vencendo hoje");
         }
-
         function filtrarAmanha() {
             const amanha = new Date();
             amanha.setDate(amanha.getDate() + 1);
@@ -871,10 +917,11 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("filtrado por vencendo amanhã");
         }
-
         function filtrarVencidos() {
             const hoje = new Date();
             clientesFiltrados = clientes.filter(cliente => {
@@ -887,27 +934,30 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             });
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("filtrado por vencidos");
         }
-
         function filtrarDebito() {
             clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("filtrado por débito");
         }
-
         function exibirTodos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("exibindo todos os clientes");
         }
-
         function confirmarLimparTodos() {
             exibirConfirmacaoGenerica(
                 "Limpar Todos os Clientes",
@@ -916,7 +966,6 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 true
             );
         }
-
         function confirmarDesfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
@@ -943,7 +992,6 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 );
             }
         }
-
         function confirmarRefazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
@@ -956,18 +1004,18 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 false
             );
         }
-
         function limparTodos() {
             salvarEstadoNoHistorico();
             clientes = [];
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             exibirTabela();
             salvarClientes();
             exibirAlerta("Todos os clientes foram limpos!");
+            atualizarUltimaAtualizacao("lista limpa");
         }
-
         function desfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
@@ -982,8 +1030,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             salvarClientes();
             exibirTodos();
             exibirAlerta("Última ação desfeita!");
+            atualizarUltimaAtualizacao("última ação desfeita");
         }
-
         function refazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
@@ -991,13 +1039,12 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             }
 
             salvarEstadoNoHistorico(false); // Não limpa o redoHistory, pois estamos usando ele
-
             clientes = redoHistory.pop();
             salvarClientes();
             exibirTodos();
             exibirAlerta("Última ação refeita!");
+            atualizarUltimaAtualizacao("última ação refeita");
         }
-
 
         function editar(index) {
             let cliente = clientesExibidos[index];
@@ -1023,7 +1070,6 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                     <button onclick="fecharModal()">Cancelar</button>
                 </div>
             `;
-
             document.getElementById("novoNome").focus();
             document.getElementById("novoNome").addEventListener("keydown", (e) => proximoCampo(e, "novoTelefone"));
             document.getElementById("novoTelefone").addEventListener("keydown", (e) => proximoCampo(e, "novaData"));
@@ -1033,25 +1079,22 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                     document.getElementById("salvarBtn").focus();
                 }
             });
-
             document.getElementById("salvarBtn").addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
                     salvarEdicao(index);
                 }
             });
-
             document.getElementById("salvarBtn").addEventListener("click", () => salvarEdicao(index));
             document.addEventListener("keydown", fecharComEsc);
+            atualizarUltimaAtualizacao("início da edição");
         }
-
         function proximoCampo(event, proximoId) {
             if (event.key === "Enter") {
                 event.preventDefault();
                 document.getElementById(proximoId)?.focus();
             }
         }
-
         function salvarEdicao(index) {
             salvarEstadoNoHistorico();
             const clienteParaAtualizar = clientesExibidos[index];
@@ -1081,26 +1124,26 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
             exibirTabela();
             salvarClientes();
             fecharModal();
+            atualizarUltimaAtualizacao("cliente editado");
         }
-
         function formatarParaInputDate(data) {
             let [dia, mes, ano] = data.split("/");
             return `${ano}-${mes}-${dia}`;
         }
-
         function excluir(index) {
             const cliente = clientesExibidos[index];
             clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteIndexParaExcluir !== -1) {
                 document.getElementById("modalExclusao").style.display = "flex";
             }
+            atualizarUltimaAtualizacao("confirmar exclusão");
         }
-
         function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
                 salvarEstadoNoHistorico();
@@ -1109,15 +1152,16 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto
                 clientes.forEach(cliente => cliente.oculto = false);
                 document.getElementById("searchInput").value = "";
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaExcluir = null;
+                atualizarUltimaAtualizacao("cliente excluído");
             }
         }
-
         function toggleAvisado(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
@@ -1127,8 +1171,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             }
             exibirTabela();
             salvarClientes();
+            atualizarUltimaAtualizacao("status de avisado alterado");
         }
-
         function toggleDebito(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
@@ -1138,12 +1182,11 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             }
             exibirTabela();
             salvarClientes();
+            atualizarUltimaAtualizacao("status de débito alterado");
         }
-
         function salvarClientes() {
             localStorage.setItem('clientes', JSON.stringify(clientes));
         }
-
         function importarClientes() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -1180,6 +1223,7 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                         exibirTabela();
                         salvarClientes();
                         exibirAlerta("Clientes importados com sucesso!");
+                        atualizarUltimaAtualizacao("clientes importados");
                     } catch (error) {
                         exibirAlerta("Erro ao importar JSON. Verifique o arquivo.");
                         console.error("Erro ao importar:", error);
@@ -1190,12 +1234,11 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             input.click();
         }
 
-
         function compartilharWhatsApp() {
             const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
             window.open(url, '_blank');
+            atualizarUltimaAtualizacao("compartilhado via WhatsApp");
         }
-
         function pesquisarClientes() {
             const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
 
@@ -1203,15 +1246,16 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto ao pesquisar
             }
             exibirTabela();
+            atualizarUltimaAtualizacao("pesquisa realizada");
         }
-
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
             exibirTodos();
+            atualizarUltimaAtualizacao("pesquisa limpa");
         }
-
         // --- FUNÇÕES DE AJUSTES ---
         const SETTINGS_KEY = 'inputSettings';
         const DEFAULT_INPUT_WIDTH_PERCENT = 16;
@@ -1224,8 +1268,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 settingsArea.style.display = 'block';
                 loadSettings();
             }
+            atualizarUltimaAtualizacao("ajustes acessados");
         }
-
         function applyInputWidth(widthPercent) {
             const inputs = document.querySelectorAll('.configurable-input');
             inputs.forEach(input => {
@@ -1234,13 +1278,11 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
                 input.style.width = 'auto';
             });
         }
-
         function updateInputWidth(value) {
             const widthValueSpan = document.getElementById('inputWidthValue');
             widthValueSpan.textContent = `${value}%`;
             applyInputWidth(value);
         }
-
         function saveSettings() {
             const inputWidth = document.getElementById('inputWidth').value;
             localStorage.setItem(SETTINGS_KEY, JSON.stringify({
@@ -1248,8 +1290,8 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             }));
             exibirAlerta("Ajustes salvos com sucesso!");
             toggleSettingsArea();
+            atualizarUltimaAtualizacao("ajustes salvos");
         }
-
         function loadSettings() {
             const savedSettings = localStorage.getItem(SETTINGS_KEY);
             let widthToApply = DEFAULT_INPUT_WIDTH_PERCENT;
@@ -1274,15 +1316,14 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             }
             applyInputWidth(widthToApply);
         }
-
         function resetSettings() {
             localStorage.removeItem(SETTINGS_KEY);
             exibirAlerta("Ajustes redefinidos para o padrão!");
             loadSettings();
             toggleSettingsArea();
+            atualizarUltimaAtualizacao("ajustes redefinidos");
         }
         // --- FIM: FUNÇÕES DE AJUSTES ---
-
         // --- Funções de Contadores ---
         function atualizarContadores() {
             const hoje = new Date();
@@ -1317,7 +1358,6 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             updateBadge('badgeOcultos', countOcultos);
             updateBadge('badgeArquivados', countArquivados);
         }
-
         function updateBadge(badgeId, count) {
             const badge = document.getElementById(badgeId);
             if (badge) {
@@ -1330,6 +1370,18 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             }
         }
         // --- FIM: Funções de Contadores ---
+
+        // Nova função para mostrar a contagem de produtos
+        function mostrarContagemProdutos() {
+            const countUniTv = clientes.filter(cliente => cliente.Produto === 'UniTv' && !cliente.arquivado && !cliente.oculto).length;
+            const countDuplecast = clientes.filter(cliente => cliente.Produto === 'Duplecast' && !cliente.arquivado && !cliente.oculto).length;
+
+            document.getElementById('countUniTv').textContent = countUniTv;
+            document.getElementById('countDuplecast').textContent = countDuplecast;
+
+            document.getElementById('modalContagemProdutos').style.display = 'flex';
+            atualizarUltimaAtualizacao("contagem de produtos exibida");
+        }
 
 
         function inicializarExibicaoClientes() {
@@ -1351,10 +1403,11 @@ O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose 
             });
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
+            filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarUltimaAtualizacao("inicialização da página");
         }
-
 
         // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
