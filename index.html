@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -377,7 +378,17 @@
                 <button onclick="fecharModal()">Fechar</button>
             </div>
         </div>
-    </div>
+
+        <div id="modalEscolherProduto" class="modal">
+            <div class="modal-content">
+                <h3>Escolher Tipo de Produto</h3>
+                <p>Selecione o tipo de produto para o cliente:</p>
+                <button onclick="alterarProdutoClienteConfirm('UniTv')">UniTv</button>
+                <button onclick="alterarProdutoClienteConfirm('Duplecast')">Duplecast</button>
+                <button onclick="fecharModal()">Cancelar</button>
+            </div>
+        </div>
+        </div>
     <script>
         document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
         let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
@@ -385,6 +396,8 @@
         let clienteIndexParaExcluir = null;
         let clienteIndexParaDuplicar = null;
         let clienteIndexParaRenovarDebito = null;
+        let clienteIndexParaAlterarProduto = null; // NOVO: Para armazenar o índice do cliente para alteração de produto
+
         let modoExibicaoArquivados = false;
         let modoExibicaoOcultos = false;
         let filtroProduto = null; // Novo estado para o filtro de produto
@@ -396,7 +409,6 @@
         // Removed: let isLongPressDebito = false;
 
         let confirmActionCallback = null; // Função a ser executada se o modal de confirmação genérica for confirmado
-
         // --- Função para atualizar a data e hora da última atualização ---
         function atualizarUltimaAtualizacao(acao = "dados atualizados") {
             const now = new Date();
@@ -413,7 +425,6 @@
             document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Atualização: ${formattedDateTime} (${acao})`;
         }
         // --- Fim da função de atualização ---
-
 
         function salvarEstadoNoHistorico(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
@@ -458,6 +469,7 @@
             document.getElementById("modalRenovarComDebito").style.display = "none";
             document.getElementById("modalConfirmacaoGenerica").style.display = "none";
             document.getElementById("modalContagemProdutos").style.display = "none"; // Fechar o novo modal
+            document.getElementById("modalEscolherProduto").style.display = "none"; // NOVO: Fechar o modal de escolha de produto
 
             const modalEdicao = document.getElementById("modalEdicao");
             if (modalEdicao) {
@@ -514,9 +526,15 @@
             const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
             const telefoneLimpo = telefoneInput.replace(/[^\d]/g, '');
 
+            let nomeComProduto = nomeInput;
+            if (produtoSelecionado === "UniTv" || produtoSelecionado === "Duplecast") {
+                nomeComProduto = `${nomeInput} (${produtoSelecionado})`;
+            }
+
+
             clientes.push({
                 data: dataFormatada,
-                nome: nomeInput,
+                nome: nomeComProduto, // O nome já é adicionado com o produto
                 telefone: telefoneLimpo,
                 avisado: false,
                 debito: false,
@@ -625,7 +643,6 @@
 
             clientesExibidos = clientesParaProcessar;
 
-
             if (clientesExibidos.length === 0) {
                 document.querySelector("table").style.display = "none";
                 document.getElementById("tabelaClientes").innerHTML = `<tr><td colspan="1" style="text-align: center; color: gray;">Nenhum cliente para exibir neste filtro.</td></tr>`;
@@ -679,17 +696,20 @@
                                 onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
                         <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
                         <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
-                        <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
+                        <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button> <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                         <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
                         `;
                 }
 
+                // Remove o "(UniTv)" ou "(Duplecast)" do nome para exibir o nome "limpo" antes de adicionar o produto novamente
+                const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+
                 tr.innerHTML = `
                     <td>
                         ${cliente.data}
-                        <a href="#" onclick="enviarMensagemWhatsApp('${cliente.nome}', '${cliente.telefone}', ${index}); return false;">
-                            ${cliente.nome}
+                        <a href="#" onclick="enviarMensagemWhatsApp('${nomeExibicaoBase}', '${cliente.telefone}', ${index}); return false;">
+                            ${nomeExibicaoBase} (${cliente.Produto || 'N/I'})
                         </a>
                         ${botoesAcao}
                     </td>
@@ -808,7 +828,7 @@
 
                 const novoCliente = {
                     data: clienteOriginal.data,
-                    nome: clienteOriginal.nome,
+                    name: clienteOriginal.name, // Correção: use clienteOriginal.name
                     telefone: clienteOriginal.telefone,
                     avisado: false,
                     debito: false,
@@ -905,6 +925,7 @@
             filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarContadores(); // Atualiza os contadores
             atualizarUltimaAtualizacao("filtrado por vencendo hoje");
         }
         function filtrarAmanha() {
@@ -920,6 +941,7 @@
             filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarContadores(); // Atualiza os contadores
             atualizarUltimaAtualizacao("filtrado por vencendo amanhã");
         }
         function filtrarVencidos() {
@@ -937,6 +959,7 @@
             filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarContadores(); // Atualiza os contadores
             atualizarUltimaAtualizacao("filtrado por vencidos");
         }
         function filtrarDebito() {
@@ -946,6 +969,7 @@
             filtroProduto = null; // Limpa o filtro de produto
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarContadores(); // Atualiza os contadores
             atualizarUltimaAtualizacao("filtrado por débito");
         }
         function exibirTodos() {
@@ -956,6 +980,7 @@
             clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            atualizarContadores(); // Atualiza os contadores
             atualizarUltimaAtualizacao("exibindo todos os clientes");
         }
         function confirmarLimparTodos() {
@@ -1050,10 +1075,14 @@
             let cliente = clientesExibidos[index];
             const modalEdicao = document.getElementById("modalEdicao");
             modalEdicao.style.display = "flex";
+
+            // Remove "(UniTv)" ou "(Duplecast)" do nome para exibir o nome "limpo" no campo de edição
+            const nomeLimpo = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+
             modalEdicao.innerHTML = `
                 <div class="modal-content">
                     <h3>Editar Cliente</h3>
-                    <input type="text" id="novoNome" value="${cliente.nome}" placeholder="Nome"><br><br>
+                    <input type="text" id="novoNome" value="${nomeLimpo}" placeholder="Nome"><br><br>
                     <input type="tel" id="novoTelefone" value="${cliente.telefone}" placeholder="Telefone"><br><br>
                     <input type="date" id="novaData" value="${formatarParaInputDate(cliente.data)}"><br><br>
 
@@ -1116,7 +1145,11 @@
                 return;
             }
 
-            clientes[clienteOriginalIndex].nome = novoNome;
+            // Remove o produto existente do nome antes de adicionar o novo
+            let nomeSemProduto = novoNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+            let nomeComNovoProduto = `${nomeSemProduto} (${novoProduto})`;
+
+            clientes[clienteOriginalIndex].nome = nomeComNovoProduto;
             clientes[clienteOriginalIndex].telefone = novoTelefone;
             clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
             clientes[clienteOriginalIndex].Produto = novoProduto;
@@ -1201,7 +1234,10 @@
 
                         const clientesCorrigidos = clientesImportados.map(cliente => ({
                             data: cliente.data,
-                            nome: cliente.nome,
+                            // Garante que o nome tenha o formato (Produto) ao importar
+                            nome: cliente.Produto && !cliente.nome.includes(`(${cliente.Produto})`)
+                                ? `${cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${cliente.Produto})`
+                                : cliente.nome,
                             telefone: cliente.telefone,
                             avisado: cliente.avisado,
                             debito: cliente.debito,
@@ -1383,6 +1419,39 @@
             atualizarUltimaAtualizacao("contagem de produtos exibida");
         }
 
+        // NOVO: Função para abrir o modal de escolha de produto
+        function abrirModalAlterarProduto(index) {
+            clienteIndexParaAlterarProduto = index;
+            document.getElementById('modalEscolherProduto').style.display = 'flex';
+            atualizarUltimaAtualizacao("escolhendo produto");
+        }
+
+        // NOVO: Função para confirmar a alteração do produto do cliente
+        function alterarProdutoClienteConfirm(novoProduto) {
+            if (clienteIndexParaAlterarProduto !== null) {
+                salvarEstadoNoHistorico();
+                const clienteParaAtualizar = clientesExibidos[clienteIndexParaAlterarProduto];
+                let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data && c.telefone === clienteParaAtualizar.telefone);
+
+                if (clienteOriginalIndex !== -1) {
+                    // Remove o produto existente do nome antes de adicionar o novo
+                    let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                    clientes[clienteOriginalIndex].Produto = novoProduto;
+                    clientes[clienteOriginalIndex].nome = `${nomeSemProduto} (${novoProduto})`; // Atualiza o nome com o novo produto
+                }
+                clientesFiltrados = [];
+                modoExibicaoArquivados = false;
+                modoExibicaoOcultos = false;
+                filtroProduto = null; // Limpa o filtro de produto
+                exibirTabela();
+                salvarClientes();
+                fecharModal();
+                clienteIndexParaAlterarProduto = null;
+                exibirAlerta(`Produto do cliente alterado para ${novoProduto}!`);
+                atualizarUltimaAtualizacao(`produto do cliente alterado para ${novoProduto}`);
+            }
+        }
+
 
         function inicializarExibicaoClientes() {
             const hoje = new Date();
@@ -1408,7 +1477,6 @@
             exibirTabela();
             atualizarUltimaAtualizacao("inicialização da página");
         }
-
         // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
         salvarEstadoNoHistorico();
