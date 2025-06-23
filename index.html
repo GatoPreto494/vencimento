@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -7,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Clientes</title>
     <style>
+        /* Estilos CSS (inalterados) */
         td {
             white-space: nowrap;
         }
@@ -388,27 +388,23 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
-        </div>
+    </div>
     <script>
         document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
-        let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+        let clientes = []; // Inicializado como array vazio, será preenchido por loadClientes()
         let clientesFiltrados = [];
         let clienteIndexParaExcluir = null;
         let clienteIndexParaDuplicar = null;
         let clienteIndexParaRenovarDebito = null;
-        let clienteIndexParaAlterarProduto = null; // NOVO: Para armazenar o índice do cliente para alteração de produto
-
+        let clienteIndexParaAlterarProduto = null;
         let modoExibicaoArquivados = false;
         let modoExibicaoOcultos = false;
-        let filtroProduto = null; // Novo estado para o filtro de produto
-
-        let historicoClientes = []; // Histórico para 'Desfazer'
-        let redoHistory = []; // Novo histórico para 'Refazer'
+        let filtroProduto = null;
+        let historicoClientes = [];
+        let redoHistory = [];
         const MAX_HISTORY_STATES = 10;
-        // Removed: let pressTimerDebito;
-        // Removed: let isLongPressDebito = false;
+        let confirmActionCallback = null;
 
-        let confirmActionCallback = null; // Função a ser executada se o modal de confirmação genérica for confirmado
         // --- Função para atualizar a data e hora da última atualização ---
         function atualizarUltimaAtualizacao(acao = "dados atualizados") {
             const now = new Date();
@@ -424,6 +420,7 @@
             const formattedDateTime = now.toLocaleString('pt-BR', options);
             document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Atualização: ${formattedDateTime} (${acao})`;
         }
+
         // --- Fim da função de atualização ---
 
         function salvarEstadoNoHistorico(clearRedo = true) {
@@ -435,15 +432,16 @@
             }
 
             if (clearRedo) {
-                redoHistory = []; // Limpa o histórico de refazer quando uma nova ação é realizada
+                redoHistory = [];
             }
         }
+
         function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
             const modal = document.getElementById("modalConfirmacaoGenerica");
             const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
 
             document.getElementById("modalConfirmacaoGenericaTitulo").innerText = titulo;
-            document.getElementById("modalConfirmacaoGenericaMensagem").innerHTML = mensagem; // Usar innerHTML para negrito
+            document.getElementById("modalConfirmacaoGenericaMensagem").innerHTML = mensagem;
             confirmActionCallback = callback;
 
             if (isDanger) {
@@ -463,13 +461,14 @@
             modal.style.display = "flex";
             document.addEventListener("keydown", fecharComEsc);
         }
+
         function fecharModal() {
             document.getElementById("modalConfirmacao").style.display = "none";
             document.getElementById("modalExclusao").style.display = "none";
             document.getElementById("modalRenovarComDebito").style.display = "none";
             document.getElementById("modalConfirmacaoGenerica").style.display = "none";
-            document.getElementById("modalContagemProdutos").style.display = "none"; // Fechar o novo modal
-            document.getElementById("modalEscolherProduto").style.display = "none"; // NOVO: Fechar o modal de escolha de produto
+            document.getElementById("modalContagemProdutos").style.display = "none";
+            document.getElementById("modalEscolherProduto").style.display = "none";
 
             const modalEdicao = document.getElementById("modalEdicao");
             if (modalEdicao) {
@@ -484,16 +483,19 @@
                 document.removeEventListener("keydown", fecharComEscOuEnter);
             }
         }
+
         function fecharComEsc(event) {
             if (event.key === "Escape") {
                 fecharModal();
             }
         }
+
         function fecharComEscOuEnter(event) {
             if (event.key === "Enter" || event.key === "Escape") {
                 fecharModal();
             }
         }
+
         function exibirAlerta(mensagem) {
             let modalAlerta = document.getElementById("modalAlerta");
             modalAlerta.style.display = "flex";
@@ -506,11 +508,13 @@
             `;
             document.addEventListener("keydown", fecharComEscOuEnter);
         }
+
         document.addEventListener('keydown', function (event) {
             if (event.key === "Enter" && document.getElementById("modalExclusao").style.display === "flex") {
                 confirmarExclusao();
             }
         });
+
         function adicionarCliente() {
             const dataInput = document.getElementById("dataInput").value.trim();
             const nomeInput = document.getElementById("nomeInput").value.trim();
@@ -531,19 +535,19 @@
                 nomeComProduto = `${nomeInput} (${produtoSelecionado})`;
             }
 
-
             clientes.push({
                 data: dataFormatada,
-                nome: nomeComProduto, // O nome já é adicionado com o produto
+                nome: nomeComProduto,
                 telefone: telefoneLimpo,
                 avisado: false,
                 debito: false,
                 Produto: produtoSelecionado,
-                arquivado: false,
+                arquivado: false, // Garante que a propriedade existe ao adicionar
                 oculto: false
             });
 
-            document.getElementById("dataInput").value = "";
+            // Limpa os campos após adicionar, mas mantém a data preenchida para o próximo
+            // document.getElementById("dataInput").value = ""; // Removido para manter a data preenchida
             document.getElementById("nomeInput").value = "";
             document.getElementById("telefoneInput").value = "";
 
@@ -551,6 +555,7 @@
             salvarClientes();
             atualizarUltimaAtualizacao("cliente adicionado");
         }
+
         function arquivar(index) {
             salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index];
@@ -558,15 +563,17 @@
             let clienteOriginal = clientes.find(c => c.nome === clienteParaArquivar.nome && c.data === clienteParaArquivar.data && c.telefone === clienteParaArquivar.telefone);
             if (clienteOriginal) {
                 clienteOriginal.arquivado = true;
+                // Ao arquivar, reexiba a tabela principal (não arquivados, não ocultos)
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto
+                filtroProduto = null;
             }
             exibirTabela();
             salvarClientes();
             atualizarUltimaAtualizacao("cliente arquivado");
         }
+
         function desarquivar(index) {
             salvarEstadoNoHistorico();
             let clienteParaDesarquivar = clientesExibidos[index];
@@ -574,29 +581,34 @@
             let clienteOriginal = clientes.find(c => c.nome === clienteParaDesarquivar.nome && c.data === clienteParaDesarquivar.data && c.telefone === clienteParaDesarquivar.telefone);
             if (clienteOriginal) {
                 clienteOriginal.arquivado = false;
+                // Para manter na tela de arquivados após desarquivar, se essa for a intenção:
+                // modoExibicaoArquivados = true;
+                // Para voltar para o padrão:
+                modoExibicaoArquivados = false; // Define para mostrar clientes não arquivados
                 clientesFiltrados = [];
-                modoExibicaoArquivados = true;
                 modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto
+                filtroProduto = null;
             }
             exibirTabela();
             salvarClientes();
             atualizarUltimaAtualizacao("cliente desarquivado");
         }
+
         function filtrarArquivados() {
             clientesFiltrados = [];
-            modoExibicaoArquivados = true;
+            modoExibicaoArquivados = true; // Ativa o modo de exibição de arquivados
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarUltimaAtualizacao("filtrado por arquivados");
         }
+
         function filtrarOcultos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = true;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarUltimaAtualizacao("filtrado por avisados");
@@ -608,7 +620,7 @@
             modoExibicaoOcultos = false;
             filtroProduto = produto;
             document.getElementById("searchInput").value = "";
-            fecharModal(); // Fecha o modal de contagem
+            fecharModal();
             exibirTabela();
             atualizarUltimaAtualizacao(`filtrado por produto: ${produto}`);
         }
@@ -617,29 +629,30 @@
         function exibirTabela() {
             const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
 
-            let clientesParaProcessar = clientes;
+            let clientesParaProcessar;
 
-            // Aplica filtros principais
             if (termoPesquisa !== '') {
+                // Se há pesquisa, ignora todos os outros filtros e busca em todos os clientes (inclusive arquivados e ocultos)
                 clientesParaProcessar = clientes.filter(cliente =>
-                    !cliente.arquivado && !cliente.oculto &&
                     (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
                 );
+                // Limpa os modos de exibição para a pesquisa ser abrangente
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto ao pesquisar
-            } else if (clientesFiltrados.length > 0) {
-                clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto);
+                filtroProduto = null;
             } else if (modoExibicaoArquivados) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.arquivado);
             } else if (modoExibicaoOcultos) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.oculto && !cliente.arquivado);
-            } else if (filtroProduto) { // Novo filtro por produto
+            } else if (filtroProduto) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.Produto === filtroProduto && !cliente.arquivado && !cliente.oculto);
-            } else {
+            } else if (clientesFiltrados.length > 0) { // Se há um filtro específico aplicado (hoje, amanhã, vencidos, débito)
+                clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto); // Assume que esses filtros já excluíram arquivados/ocultos
+            } else { // Exibição padrão: não arquivados e não ocultos
                 clientesParaProcessar = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
             }
+
 
             clientesExibidos = clientesParaProcessar;
 
@@ -696,13 +709,13 @@
                                 onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
                         <button title="Marcar/Desmarcar Avisado" onclick="toggleAvisado(${index})">${cliente.avisado ? "Desmarcar Avisado" : "Marcar Avisado"}</button>
                         <button title="Marcar/Desmarcar Débito" onclick="toggleDebito(${index})">${cliente.debito ? "Desmarcar Débito" : "Marcar Débito"}</button>
-                        <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button> <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
+                        <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button>
+                        <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                         <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
                         `;
                 }
 
-                // Remove o "(UniTv)" ou "(Duplecast)" do nome para exibir o nome "limpo" antes de adicionar o produto novamente
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
 
                 tr.innerHTML = `
@@ -718,16 +731,13 @@
                 tabela.appendChild(tr);
             });
             atualizarContadores();
-            // Nao chame atualizarUltimaAtualizacao aqui para cada filtro,
-            // ela ja sera chamada pelas funcoes de filtro especificas
         }
-        // Nova função para pedir confirmação antes de renovar com débito
+
         function pedirConfirmacaoRenovacaoDebito(index) {
-            clienteIndexParaRenovarDebito = index; // Armazena o índice do cliente
+            clienteIndexParaRenovarDebito = index;
             document.getElementById("modalRenovarComDebito").style.display = "flex";
-            // O onclick do botão de confirmar já está configurado no HTML do modal
             document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
-        } // As funções startRenovarDebitoTimer e clearRenovarDebitoTimer foram removidas, pois não são mais necessárias.
+        }
 
         function renovarAutomatico(index) {
             const cliente = clientesExibidos[index];
@@ -738,7 +748,7 @@
                 return;
             }
 
-            salvarEstadoNoHistorico(); // Salva o estado ANTES da renovação
+            salvarEstadoNoHistorico();
             let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginal) {
                 if (produtoCliente === "Duplecast") {
@@ -748,20 +758,20 @@
                 }
                 clienteOriginal.debito = false;
                 clienteOriginal.oculto = false;
+                clienteOriginal.arquivado = false; // Desarquiva ao renovar
             }
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             exibirTabela();
             salvarClientes();
             atualizarUltimaAtualizacao("cliente renovado");
-            // REMOVIDO: exibirAlerta("Cliente renovado com sucesso!");
         }
 
         function confirmarRenovacaoComDebito() {
             if (clienteIndexParaRenovarDebito !== null) {
-                salvarEstadoNoHistorico(); // Salva o estado ANTES da renovação
+                salvarEstadoNoHistorico();
                 const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
                 const produtoCliente = cliente.Produto || "Não informado";
 
@@ -780,11 +790,12 @@
                     }
                     clienteOriginal.debito = true;
                     clienteOriginal.oculto = false;
+                    clienteOriginal.arquivado = false; // Desarquiva ao renovar
                 }
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto
+                filtroProduto = null;
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
@@ -810,17 +821,20 @@
 
             clienteObj.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
+
         function incrementarData(data, dias) {
             const [dia, mes, ano] = data.split("/").map(num => parseInt(num));
             const dataObj = new Date(ano, mes - 1, dia);
             dataObj.setDate(dataObj.getDate() + dias);
             return `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
+
         function duplicarCliente(index) {
             clienteIndexParaDuplicar = index;
             document.getElementById("modalConfirmacao").style.display = "flex";
             atualizarUltimaAtualizacao("confirmar duplicação");
         }
+
         function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
                 salvarEstadoNoHistorico();
@@ -828,19 +842,19 @@
 
                 const novoCliente = {
                     data: clienteOriginal.data,
-                    name: clienteOriginal.name, // Correção: use clienteOriginal.name
+                    nome: clienteOriginal.nome, // Já vem com o produto no nome
                     telefone: clienteOriginal.telefone,
                     avisado: false,
                     debito: false,
                     Produto: clienteOriginal.Produto || "Não informado",
-                    arquivado: false,
+                    arquivado: false, // Cliente duplicado não deve ser arquivado
                     oculto: false
                 };
                 clientes.push(novoCliente);
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto
+                filtroProduto = null;
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
@@ -896,16 +910,32 @@
                 }
             }, 100);
 
+            // Garante que o estado de "oculto" seja salvo no cliente original, não na cópia filtrada/exibida
             let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginal) {
                 clienteOriginal.oculto = true;
             }
             exibirTabela();
+            salvarClientes();
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada");
         }
+
         function exportarClientes() {
-            const clientesCompletos = JSON.parse(JSON.stringify(clientes));
-            const clientesJson = JSON.stringify(clientesCompletos, null, 4);
+            // Antes de exportar, garanta que todos os clientes tenham as propriedades esperadas
+            // Isso é uma medida de segurança, caso clientes antigos sem 'arquivado' ou 'oculto'
+            // tenham sido carregados e não atualizados.
+            const clientesParaExportar = clientes.map(c => ({
+                data: c.data,
+                nome: c.nome,
+                telefone: c.telefone,
+                avisado: c.avisado || false,
+                debito: c.debito || false,
+                Produto: c.Produto || "Não informado",
+                arquivado: c.arquivado || false, // Garante que 'arquivado' esteja no objeto
+                oculto: c.oculto || false // Garante que 'oculto' esteja no objeto
+            }));
+
+            const clientesJson = JSON.stringify(clientesParaExportar, null, 4);
             const blob = new Blob([clientesJson], { type: "application/json" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
@@ -913,6 +943,67 @@
             link.click();
             atualizarUltimaAtualizacao("clientes exportados");
         }
+
+        function importarClientes() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        salvarEstadoNoHistorico();
+                        const clientesImportados = JSON.parse(reader.result);
+
+                        // Mapeia os clientes importados para garantir que tenham todas as propriedades padrão
+                        const clientesCorrigidos = clientesImportados.map(cliente => ({
+                            data: cliente.data,
+                            // Garante que o nome tenha o formato (Produto) ao importar (e remove se houver duplicidade)
+                            nome: cliente.Produto && !cliente.nome.includes(`(${cliente.Produto})`)
+                                ? `${cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${cliente.Produto})`
+                                : cliente.nome,
+                            telefone: cliente.telefone,
+                            avisado: cliente.avisado || false, // Garante que 'avisado' seja boolean
+                            debito: cliente.debito || false,   // Garante que 'debito' seja boolean
+                            Produto: cliente.Produto || "Não informado", // Garante que 'Produto' exista
+                            arquivado: cliente.arquivado || false, // Garante que 'arquivado' exista
+                            oculto: cliente.oculto || false     // Garante que 'oculto' exista
+                        }));
+
+                        // Filtra para adicionar apenas clientes que não existem na lista atual
+                        const novosClientesUnicos = clientesCorrigidos.filter(novoCliente =>
+                            !clientes.some(existente =>
+                                existente.nome === novoCliente.nome &&
+                                existente.data === novoCliente.data &&
+                                existente.telefone === novoCliente.telefone &&
+                                existente.Produto === novoCliente.Produto // Considera o produto na unicidade
+                            )
+                        );
+
+                        clientes = [...clientes, ...novosClientesUnicos];
+
+                        // Após a importação, redefina os filtros para exibir o estado padrão
+                        clientesFiltrados = [];
+                        modoExibicaoArquivados = false;
+                        modoExibicaoOcultos = false;
+                        filtroProduto = null;
+                        document.getElementById("searchInput").value = "";
+
+                        exibirTabela();
+                        salvarClientes();
+                        exibirAlerta(`Clientes importados com sucesso! Foram adicionados ${novosClientesUnicos.length} novos clientes.`);
+                        atualizarUltimaAtualizacao("clientes importados");
+                    } catch (error) {
+                        exibirAlerta("Erro ao importar JSON. Verifique o arquivo.");
+                        console.error("Erro ao importar:", error);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
         function filtrarHoje() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -922,12 +1013,13 @@
             clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarContadores(); // Atualiza os contadores
+            atualizarContadores();
             atualizarUltimaAtualizacao("filtrado por vencendo hoje");
         }
+
         function filtrarAmanha() {
             const amanha = new Date();
             amanha.setDate(amanha.getDate() + 1);
@@ -938,12 +1030,13 @@
             clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarContadores(); // Atualiza os contadores
+            atualizarContadores();
             atualizarUltimaAtualizacao("filtrado por vencendo amanhã");
         }
+
         function filtrarVencidos() {
             const hoje = new Date();
             clientesFiltrados = clientes.filter(cliente => {
@@ -956,33 +1049,40 @@
             });
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarContadores(); // Atualiza os contadores
+            atualizarContadores();
             atualizarUltimaAtualizacao("filtrado por vencidos");
         }
+
         function filtrarDebito() {
             clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarContadores(); // Atualiza os contadores
+            atualizarContadores();
             atualizarUltimaAtualizacao("filtrado por débito");
         }
+
         function exibirTodos() {
             clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
-            clientes.forEach(cliente => cliente.oculto = false);
+            modoExibicaoArquivados = false; // Garante que o modo arquivado está desativado
+            modoExibicaoOcultos = false; // Garante que o modo oculto está desativado
+            filtroProduto = null;
+            // No modo "exibirTodos", reexiba todos, inclusive os ocultos. Arquivados permanecem ocultos por padrão.
+            // Para realmente "exibir todos", incluindo aqueles marcados como ocultos para WhatsApp:
+            clientes.forEach(cliente => cliente.oculto = false); // <--- Isso "desoculta" todos.
+
             document.getElementById("searchInput").value = "";
-            exibirTabela();
-            atualizarContadores(); // Atualiza os contadores
+            exibirTabela(); // Chama exibirTabela para atualizar a UI
+            atualizarContadores();
             atualizarUltimaAtualizacao("exibindo todos os clientes");
         }
+
+
         function confirmarLimparTodos() {
             exibirConfirmacaoGenerica(
                 "Limpar Todos os Clientes",
@@ -991,13 +1091,13 @@
                 true
             );
         }
+
         function confirmarDesfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
                 return;
             }
 
-            // Simula o estado para verificar se a próxima ação de desfazer limparia a lista
             const estadoPrevistoAposDesfazer = historicoClientes.length > 1 ?
                 JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 2])) : [];
 
@@ -1017,6 +1117,7 @@
                 );
             }
         }
+
         function confirmarRefazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
@@ -1029,18 +1130,20 @@
                 false
             );
         }
+
         function limparTodos() {
             salvarEstadoNoHistorico();
             clientes = [];
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             exibirTabela();
             salvarClientes();
             exibirAlerta("Todos os clientes foram limpos!");
             atualizarUltimaAtualizacao("lista limpa");
         }
+
         function desfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
@@ -1053,20 +1156,21 @@
             clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1]));
 
             salvarClientes();
-            exibirTodos();
+            exibirTodos(); // Reexibe todos para garantir que o estado desfeito seja visível
             exibirAlerta("Última ação desfeita!");
             atualizarUltimaAtualizacao("última ação desfeita");
         }
+
         function refazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
                 return;
             }
 
-            salvarEstadoNoHistorico(false); // Não limpa o redoHistory, pois estamos usando ele
+            salvarEstadoNoHistorico(false);
             clientes = redoHistory.pop();
             salvarClientes();
-            exibirTodos();
+            exibirTodos(); // Reexibe todos para garantir que o estado refeito seja visível
             exibirAlerta("Última ação refeita!");
             atualizarUltimaAtualizacao("última ação refeita");
         }
@@ -1076,7 +1180,6 @@
             const modalEdicao = document.getElementById("modalEdicao");
             modalEdicao.style.display = "flex";
 
-            // Remove "(UniTv)" ou "(Duplecast)" do nome para exibir o nome "limpo" no campo de edição
             const nomeLimpo = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
 
             modalEdicao.innerHTML = `
@@ -1118,12 +1221,14 @@
             document.addEventListener("keydown", fecharComEsc);
             atualizarUltimaAtualizacao("início da edição");
         }
+
         function proximoCampo(event, proximoId) {
             if (event.key === "Enter") {
                 event.preventDefault();
                 document.getElementById(proximoId)?.focus();
             }
         }
+
         function salvarEdicao(index) {
             salvarEstadoNoHistorico();
             const clienteParaAtualizar = clientesExibidos[index];
@@ -1145,7 +1250,6 @@
                 return;
             }
 
-            // Remove o produto existente do nome antes de adicionar o novo
             let nomeSemProduto = novoNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
             let nomeComNovoProduto = `${nomeSemProduto} (${novoProduto})`;
 
@@ -1153,22 +1257,29 @@
             clientes[clienteOriginalIndex].telefone = novoTelefone;
             clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
             clientes[clienteOriginalIndex].Produto = novoProduto;
+            // Não altere 'arquivado' ou 'oculto' na edição, mantenha o estado atual
+            // clientes[clienteOriginalIndex].arquivado = false;
+            // clientes[clienteOriginalIndex].oculto = false;
 
+            // Após a edição, redefina os filtros para exibir o estado padrão
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
-            clientes.forEach(cliente => cliente.oculto = false);
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
+            clientes.forEach(cliente => cliente.oculto = false); // Reexibe ocultos ao editar
+
             exibirTabela();
             salvarClientes();
             fecharModal();
             atualizarUltimaAtualizacao("cliente editado");
         }
+
         function formatarParaInputDate(data) {
             let [dia, mes, ano] = data.split("/");
             return `${ano}-${mes}-${dia}`;
         }
+
         function excluir(index) {
             const cliente = clientesExibidos[index];
             clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
@@ -1177,17 +1288,20 @@
             }
             atualizarUltimaAtualizacao("confirmar exclusão");
         }
+
         function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
                 salvarEstadoNoHistorico();
                 clientes.splice(clienteIndexParaExcluir, 1);
 
+                // Após a exclusão, redefina os filtros para exibir o estado padrão
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto
+                filtroProduto = null;
                 clientes.forEach(cliente => cliente.oculto = false);
                 document.getElementById("searchInput").value = "";
+
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
@@ -1195,17 +1309,21 @@
                 atualizarUltimaAtualizacao("cliente excluído");
             }
         }
+
         function toggleAvisado(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
+                // Ao mudar status de avisado, pode querer que ele não esteja oculto
+                clientes[clienteOriginalIndex].oculto = false;
             }
             exibirTabela();
             salvarClientes();
             atualizarUltimaAtualizacao("status de avisado alterado");
         }
+
         function toggleDebito(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
@@ -1217,57 +1335,37 @@
             salvarClientes();
             atualizarUltimaAtualizacao("status de débito alterado");
         }
+
         function salvarClientes() {
             localStorage.setItem('clientes', JSON.stringify(clientes));
         }
-        function importarClientes() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = () => {
-                    try {
-                        salvarEstadoNoHistorico();
-                        const clientesImportados = JSON.parse(reader.result);
 
-                        const clientesCorrigidos = clientesImportados.map(cliente => ({
-                            data: cliente.data,
-                            // Garante que o nome tenha o formato (Produto) ao importar
-                            nome: cliente.Produto && !cliente.nome.includes(`(${cliente.Produto})`)
-                                ? `${cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${cliente.Produto})`
-                                : cliente.nome,
-                            telefone: cliente.telefone,
-                            avisado: cliente.avisado,
-                            debito: cliente.debito,
-                            Produto: cliente.Produto || "Não informado",
-                            arquivado: cliente.arquivado || false,
-                            oculto: cliente.oculto || false
-                        }));
-
-                        const novosClientesUnicos = clientesCorrigidos.filter(novoCliente =>
-                            !clientes.some(existente =>
-                                existente.nome === novoCliente.nome &&
-                                existente.data === novoCliente.data &&
-                                existente.telefone === novoCliente.telefone
-                            )
-                        );
-
-                        clientes = [...clientes, ...novosClientesUnicos];
-
-                        exibirTabela();
-                        salvarClientes();
-                        exibirAlerta("Clientes importados com sucesso!");
-                        atualizarUltimaAtualizacao("clientes importados");
-                    } catch (error) {
-                        exibirAlerta("Erro ao importar JSON. Verifique o arquivo.");
-                        console.error("Erro ao importar:", error);
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
+        function loadClientes() {
+            try {
+                const storedClientes = localStorage.getItem('clientes');
+                if (storedClientes) {
+                    const parsedClientes = JSON.parse(storedClientes);
+                    // Garante que cada cliente carregado do localStorage tenha todas as propriedades
+                    // especialmente 'arquivado' e 'oculto' caso o JSON salvo seja de uma versão antiga
+                    clientes = parsedClientes.map(c => ({
+                        data: c.data,
+                        nome: c.nome,
+                        telefone: c.telefone,
+                        avisado: c.avisado || false,
+                        debito: c.debito || false,
+                        Produto: c.Produto || "Não informado",
+                        arquivado: c.arquivado || false,
+                        oculto: c.oculto || false
+                    }));
+                } else {
+                    clientes = [];
+                }
+            } catch (e) {
+                console.error("Erro ao carregar clientes do localStorage:", e);
+                clientes = []; // Reseta clientes em caso de erro no localStorage
+                localStorage.removeItem('clientes'); // Limpa dados corrompidos
+            }
+            atualizarUltimaAtualizacao("clientes carregados");
         }
 
         function compartilharWhatsApp() {
@@ -1275,23 +1373,26 @@
             window.open(url, '_blank');
             atualizarUltimaAtualizacao("compartilhado via WhatsApp");
         }
+
         function pesquisarClientes() {
             const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
 
-            if (termoPesquisa !== '') {
-                clientesFiltrados = [];
-                modoExibicaoArquivados = false;
-                modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto ao pesquisar
-            }
-            exibirTabela();
+            // Ao pesquisar, zera os outros modos de filtro para a pesquisa ser abrangente
+            clientesFiltrados = [];
+            modoExibicaoArquivados = false;
+            modoExibicaoOcultos = false;
+            filtroProduto = null;
+
+            exibirTabela(); // exibirTabela já lida com o termoPesquisa
             atualizarUltimaAtualizacao("pesquisa realizada");
         }
+
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
-            exibirTodos();
+            exibirTodos(); // Volta para a exibição padrão (não arquivados, não ocultos)
             atualizarUltimaAtualizacao("pesquisa limpa");
         }
+
         // --- FUNÇÕES DE AJUSTES ---
         const SETTINGS_KEY = 'inputSettings';
         const DEFAULT_INPUT_WIDTH_PERCENT = 16;
@@ -1306,6 +1407,7 @@
             }
             atualizarUltimaAtualizacao("ajustes acessados");
         }
+
         function applyInputWidth(widthPercent) {
             const inputs = document.querySelectorAll('.configurable-input');
             inputs.forEach(input => {
@@ -1314,11 +1416,13 @@
                 input.style.width = 'auto';
             });
         }
+
         function updateInputWidth(value) {
             const widthValueSpan = document.getElementById('inputWidthValue');
             widthValueSpan.textContent = `${value}%`;
             applyInputWidth(value);
         }
+
         function saveSettings() {
             const inputWidth = document.getElementById('inputWidth').value;
             localStorage.setItem(SETTINGS_KEY, JSON.stringify({
@@ -1328,6 +1432,7 @@
             toggleSettingsArea();
             atualizarUltimaAtualizacao("ajustes salvos");
         }
+
         function loadSettings() {
             const savedSettings = localStorage.getItem(SETTINGS_KEY);
             let widthToApply = DEFAULT_INPUT_WIDTH_PERCENT;
@@ -1352,6 +1457,7 @@
             }
             applyInputWidth(widthToApply);
         }
+
         function resetSettings() {
             localStorage.removeItem(SETTINGS_KEY);
             exibirAlerta("Ajustes redefinidos para o padrão!");
@@ -1360,6 +1466,7 @@
             atualizarUltimaAtualizacao("ajustes redefinidos");
         }
         // --- FIM: FUNÇÕES DE AJUSTES ---
+
         // --- Funções de Contadores ---
         function atualizarContadores() {
             const hoje = new Date();
@@ -1367,25 +1474,29 @@
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
-            const countHoje = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto).length;
-            const countAmanha = clientes.filter(cliente => {
+            // Conta apenas clientes que não estão arquivados e não estão ocultos, exceto para o contador de ocultos
+            const clientesVisiveis = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
+
+            const countHoje = clientesVisiveis.filter(cliente => cliente.data === hojeFormatada).length;
+            const countAmanha = clientesVisiveis.filter(cliente => {
                 const amanha = new Date();
                 amanha.setDate(amanha.getDate() + 1);
                 const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
                     (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
                     amanha.getFullYear();
-                return cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto;
+                return cliente.data === amanhaFormatada;
             }).length;
-            const countVencidos = clientes.filter(cliente => {
+            const countVencidos = clientesVisiveis.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-                return dataCliente < hojeSemHora && !cliente.arquivado && !cliente.oculto;
+                return dataCliente < hojeSemHora;
             }).length;
-            const countDebito = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto).length;
-            const countOcultos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado).length;
-            const countArquivados = clientes.filter(cliente => cliente.arquivado).length;
+            const countDebito = clientesVisiveis.filter(cliente => cliente.debito).length;
+
+            const countOcultos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado).length; // Ocultos não arquivados
+            const countArquivados = clientes.filter(cliente => cliente.arquivado).length; // Arquivados (independente de oculto/avisado)
 
             updateBadge('badgeHoje', countHoje);
             updateBadge('badgeAmanha', countAmanha);
@@ -1394,6 +1505,7 @@
             updateBadge('badgeOcultos', countOcultos);
             updateBadge('badgeArquivados', countArquivados);
         }
+
         function updateBadge(badgeId, count) {
             const badge = document.getElementById(badgeId);
             if (badge) {
@@ -1409,8 +1521,10 @@
 
         // Nova função para mostrar a contagem de produtos
         function mostrarContagemProdutos() {
-            const countUniTv = clientes.filter(cliente => cliente.Produto === 'UniTv' && !cliente.arquivado && !cliente.oculto).length;
-            const countDuplecast = clientes.filter(cliente => cliente.Produto === 'Duplecast' && !cliente.arquivado && !cliente.oculto).length;
+            // Conta apenas clientes que não estão arquivados e não estão ocultos para os contadores de produto
+            const clientesNaoArquivadosNaoOcultos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto);
+            const countUniTv = clientesNaoArquivadosNaoOcultos.filter(cliente => cliente.Produto === 'UniTv').length;
+            const countDuplecast = clientesNaoArquivadosNaoOcultos.filter(cliente => cliente.Produto === 'Duplecast').length;
 
             document.getElementById('countUniTv').textContent = countUniTv;
             document.getElementById('countDuplecast').textContent = countDuplecast;
@@ -1434,15 +1548,15 @@
                 let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data && c.telefone === clienteParaAtualizar.telefone);
 
                 if (clienteOriginalIndex !== -1) {
-                    // Remove o produto existente do nome antes de adicionar o novo
                     let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                     clientes[clienteOriginalIndex].Produto = novoProduto;
-                    clientes[clienteOriginalIndex].nome = `${nomeSemProduto} (${novoProduto})`; // Atualiza o nome com o novo produto
+                    clientes[clienteOriginalIndex].nome = `${nomeSemProduto} (${novoProduto})`;
                 }
+                // Após a alteração de produto, redefina os filtros para exibir o estado padrão
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
-                filtroProduto = null; // Limpa o filtro de produto
+                filtroProduto = null;
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
@@ -1452,36 +1566,35 @@
             }
         }
 
-
         function inicializarExibicaoClientes() {
-            const hoje = new Date();
-            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                hoje.getFullYear();
+            // Carrega os clientes do localStorage primeiro
+            loadClientes();
 
-            clientesFiltrados = clientes.filter(cliente => {
-                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
-                const dataCliente = new Date(ano, mes - 1, dia);
+            // Preenche o campo de data com a data atual (YYYY-MM-DD)
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0'); // Mês começa do 0, então +1
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('dataInput').value = `${year}-${month}-${day}`;
 
-                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-                const isVencendoHoje = cliente.data === hojeFormatada;
-                const isVencido = dataCliente < hojeSemHora;
-
-                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto;
-            });
+            // Em vez de filtrar automaticamente por vencendo hoje/vencido na inicialização,
+            // vamos exibir a lista padrão (não arquivados, não ocultos).
+            clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
-            filtroProduto = null; // Limpa o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
-            exibirTabela();
+
+            exibirTabela(); // Exibe a tabela com o filtro padrão
             atualizarUltimaAtualizacao("inicialização da página");
         }
+
         // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
-        salvarEstadoNoHistorico();
-        loadSettings();
-        inicializarExibicaoClientes();
+        inicializarExibicaoClientes(); // Chama a nova função de inicialização
+        salvarEstadoNoHistorico(); // Salva o estado inicial no histórico (após carregar os dados)
+        loadSettings(); // Carrega as configurações de interface
     </script>
 </body>
 
