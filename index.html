@@ -9,26 +9,22 @@
         td {
             white-space: nowrap;
         }
-
         td button {
             display: inline-block;
             margin-right: 5px;
         }
-
         td {
             display: flex;
             flex-wrap: nowrap;
             align-items: center;
             gap: 5px;
         }
-
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
             background-color: #f0f8ff;
             color: #333;
         }
-
         .container {
             width: 100%;
             max-width: 2000px;
@@ -38,13 +34,11 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
         h1,
         h3 {
             text-align: center;
             color: #0066cc;
         }
-
         input[type="text"],
         input[type="tel"],
         input[type="date"],
@@ -55,24 +49,20 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
-
         .input-group-horizontal {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 10px;
         }
-
         .input-group-horizontal input {
             flex: 1;
             min-width: 150px;
             margin-bottom: 0;
         }
-
         .configurable-input {
             /* Largura será definida pelo JavaScript, agora com 16% como padrão */
         }
-
         button {
             background-color: #0066cc;
             color: #fff;
@@ -85,11 +75,9 @@
             position: relative;
             /* Necessário para posicionar o badge */
         }
-
         button:hover {
             background-color: #004d99;
         }
-
         /* Estilo para o novo botão de débito */
         .btn-debito-segurar {
             background-color: #ffcc00;
@@ -97,58 +85,47 @@
             color: #333;
             /* Texto escuro para contraste */
         }
-
         .btn-debito-segurar:hover {
             background-color: #e6b800;
             /* Amarelo um pouco mais escuro no hover */
         }
-
         /* Novo estilo para o botão de confirmação perigosa (vermelho) */
         .modal-confirm-danger {
             background-color: #dc3545;
             /* Vermelho */
             color: #fff;
         }
-
         .modal-confirm-danger:hover {
             background-color: #c82333;
             /* Vermelho mais escuro */
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
             display: none;
         }
-
         th,
         td {
             padding: 10px;
             border: 1px solid #ccc;
             text-align: left;
         }
-
         .avisado {
             background-color: #007bff !important;
         }
-
         .debito {
             background-color: #ffa500 !important;
         }
-
         .vencendo-hoje {
             background-color: #ffff99 !important;
         }
-
         .vencido {
             background-color: #ff6666 !important;
         }
-
         .center {
             text-align: center;
         }
-
         .modal {
             display: none;
             position: fixed;
@@ -161,7 +138,6 @@
             align-items: center;
             z-index: 1000;
         }
-
         .modal-content {
             background-color: #fff;
             padding: 20px;
@@ -171,7 +147,6 @@
             max-width: 400px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-
         .modal button {
             background-color: #0066cc;
             color: #fff;
@@ -181,11 +156,9 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         .modal button:hover {
             background-color: #004d99;
         }
-
         .settings-icon {
             position: fixed;
             bottom: 20px;
@@ -204,11 +177,9 @@
             z-index: 999;
             transition: background-color 0.3s;
         }
-
         .settings-icon:hover {
             background-color: #004d99;
         }
-
         #settingsArea {
             display: none;
             background-color: #f9f9f9;
@@ -217,19 +188,16 @@
             margin-top: 30px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
         #settingsArea label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
         }
-
         #settingsArea input[type="range"],
         #settingsArea input[type="number"] {
             width: calc(100% - 22px);
             margin-bottom: 15px;
         }
-
         /* Estilo para o badge numérico */
         .notification-badge {
             position: absolute;
@@ -378,6 +346,20 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
+
+        <div id="modalConflitoIdNome" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Conflito de Cliente por ID</h3>
+                <p>O cliente importado possui o mesmo ID final de telefone (<span id="conflitoId"></span>) que um cliente existente, mas os nomes são diferentes.</p>
+                <p><b>Cliente Existente:</b> <span id="conflitoNomeExistente"></span></p>
+                <p><b>Cliente Importado:</b> <span id="conflitoNomeImportado"></span></p>
+                <p>O que deseja fazer?</p>
+                <button id="btnConflitoManterExistente">Manter o Existente</button>
+                <button id="btnConflitoUsarImportado">Atualizar Cliente Existente</button>
+                <button id="btnConflitoManterAmbos">Manter Ambos (Criar Novo Cliente)</button>
+                <button onclick="cancelarConflitoIdNome()">Cancelar Importação Deste</button>
+            </div>
+        </div>
     </div>
     <script>
         document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
@@ -386,16 +368,20 @@
         let clienteIndexParaExcluir = null;
         let clienteIndexParaDuplicar = null;
         let clienteIndexParaRenovarDebito = null;
-        let clienteIndexParaAlterarProduto = null; // NOVO: Para alterar produto
+        let clienteIndexParaAlterarProduto = null;
         let modoExibicaoArquivados = false;
         let modoExibicaoOcultos = false;
         let modoExibicaoVerDepois = false;
         let modoExibicaoDesativados = false;
-        let filtroProduto = null; // NOVO: Variável para controlar o filtro por produto
+        let filtroProduto = null;
         let historicoClientes = [];
         let redoHistory = [];
         const MAX_HISTORY_STATES = 10;
         let confirmActionCallback = null;
+
+        // Variáveis para gerenciar o processo de importação com conflitos
+        let clientesParaProcessarImportacao = [];
+        let currentIndexImportacao = 0;
 
         // --- Função para atualizar a data e hora da última atualização ---
         function atualizarUltimaAtualizacao(acao = "dados atualizados") {
@@ -410,7 +396,6 @@
                 hour12: false
             };
             const formattedDateTime = now.toLocaleString('pt-BR', options);
-            // Comentado pois o segundo código não tem o elemento 'ultimaAtualizacaoInfo'
             // document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Atualização: ${formattedDateTime} (${acao})`;
         }
 
@@ -460,7 +445,7 @@
             document.getElementById("modalExclusao").style.display = "none";
             document.getElementById("modalRenovarComDebito").style.display = "none";
             document.getElementById("modalConfirmacaoGenerica").style.display = "none";
-            // NOVO: Adiciona os modals de produto
+            document.getElementById("modalConflitoIdNome").style.display = "none";
             document.getElementById("modalContagemProdutos").style.display = "none";
             document.getElementById("modalEscolherProduto").style.display = "none";
 
@@ -513,37 +498,48 @@
             const dataInput = document.getElementById("dataInput").value.trim();
             const nomeInput = document.getElementById("nomeInput").value.trim();
             const telefoneInput = document.getElementById("telefoneInput").value.trim();
-            const produtoSelecionado = document.querySelector('input[name="produto"]:checked').value; // NOVO: Captura o produto
+            const produtoSelecionado = document.querySelector('input[name="produto"]:checked').value;
+
             if (!dataInput || !nomeInput || !telefoneInput) {
                 return exibirAlerta("Por favor, insira a data, o nome e o telefone do cliente.");
+            }
+
+            const telefoneLimpo = telefoneInput.replace(/[^\d]/g, '');
+            if (telefoneLimpo.length < 5) {
+                return exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
+            }
+            const clienteId = telefoneLimpo.slice(-5); // Pega os últimos 5 dígitos como ID
+
+            // Verifica se já existe um cliente com este ID (telefone final)
+            const clienteExistenteComMesmoId = clientes.find(c => c.id === clienteId);
+            if (clienteExistenteComMesmoId) {
+                // Se encontrar, avisa o usuário e não adiciona
+                return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
 
             salvarEstadoNoHistorico();
             const dataParts = dataInput.split("-");
             const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
-            const telefoneLimpo = telefoneInput.replace(/[^\d]/g, '');
 
-            // NOVO: Adiciona o produto ao nome e ao objeto cliente
             let nomeComProduto = nomeInput;
             if (produtoSelecionado === "UniTv" || produtoSelecionado === "Duplecast") {
                 nomeComProduto = `${nomeInput} (${produtoSelecionado})`;
             }
 
             clientes.push({
+                id: clienteId, // NOVO: Adiciona o ID ao cliente
                 data: dataFormatada,
-                nome: nomeComProduto, // Nome já com o produto
+                nome: nomeComProduto,
                 telefone: telefoneLimpo,
                 avisado: false,
                 debito: false,
-                Produto: produtoSelecionado, // NOVO: Armazena o produto separadamente
+                Produto: produtoSelecionado,
                 arquivado: false,
                 oculto: false,
                 verDepois: false,
                 desativado: false
             });
 
-            // Limpa os campos após adicionar, mas mantém a data preenchida para o próximo
-            // document.getElementById("dataInput").value = ""; // Removido para manter a data preenchida
             document.getElementById("nomeInput").value = "";
             document.getElementById("telefoneInput").value = "";
 
@@ -556,7 +552,7 @@
             salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.nome === clienteParaArquivar.nome && c.data === clienteParaArquivar.data && c.telefone === clienteParaArquivar.telefone);
+            let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id); // Usando ID
             if (clienteOriginal) {
                 clienteOriginal.arquivado = true;
                 clienteOriginal.oculto = false;
@@ -568,7 +564,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
+            filtroProduto = null;
             exibirTabela();
             salvarClientes();
             atualizarUltimaAtualizacao("cliente arquivado");
@@ -578,7 +574,7 @@
             salvarEstadoNoHistorico();
             let clienteParaDesarquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.nome === clienteParaDesarquivar.nome && c.data === clienteParaDesarquivar.data && c.telefone === clienteParaDesarquivar.telefone);
+            let clienteOriginal = clientes.find(c => c.id === clienteParaDesarquivar.id); // Usando ID
             if (clienteOriginal) {
                 clienteOriginal.arquivado = false;
             }
@@ -587,7 +583,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
+            filtroProduto = null;
             exibirTabela();
             salvarClientes();
             atualizarUltimaAtualizacao("cliente desarquivado");
@@ -599,7 +595,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarUltimaAtualizacao("filtrado por arquivados");
@@ -611,7 +607,7 @@
             modoExibicaoOcultos = true;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarUltimaAtualizacao("filtrado por avisados");
@@ -623,7 +619,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = true;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarUltimaAtualizacao("filtrado por ver depois");
@@ -635,13 +631,12 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = true;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarUltimaAtualizacao("filtrado por desativados");
         }
 
-        // NOVO: Função para filtrar por produto (vinda do primeiro código)
         function filtrarPorProduto(produto) {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -662,17 +657,15 @@
             let clientesParaProcessar;
 
             if (termoPesquisa !== '') {
-                // Se há pesquisa, ignora todos os outros filtros e busca em todos os clientes
                 clientesParaProcessar = clientes.filter(cliente =>
                     (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
                 );
-                // Limpa os modos de exibição para a pesquisa ser abrangente
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
-                filtroProduto = null; // NOVO: Limpa filtro de produto
+                filtroProduto = null;
             } else if (modoExibicaoArquivados) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.arquivado);
             } else if (modoExibicaoOcultos) {
@@ -681,12 +674,12 @@
                 clientesParaProcessar = clientes.filter(cliente => cliente.verDepois && !cliente.arquivado && !cliente.oculto && !cliente.desativado);
             } else if (modoExibicaoDesativados) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.desativado);
-            } else if (filtroProduto) { // NOVO: Filtra por produto
+            } else if (filtroProduto) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.Produto === filtroProduto && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             }
             else if (clientesFiltrados.length > 0) {
                 clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
-            } else { // Exibição padrão: não arquivados, não ocultos, não verDepois, não desativados
+            } else {
                 clientesParaProcessar = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             }
 
@@ -750,7 +743,6 @@
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                     `;
                 } else {
-                    // NOVO: Adiciona o botão de alterar produto aqui
                     const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                     botoesAcao = `
                         <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
@@ -759,7 +751,7 @@
                                 class="btn-debito-segurar"
                                 onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
                         <button title="Marcar/Desmarcar Ver Depois" onclick="toggleVerDepois(${index})">${cliente.verDepois ? "Desmarcar Ver Depois" : "Ver Depois"}</button>
-                        <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button> 
+                        <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                         <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
@@ -767,7 +759,6 @@
                     `;
                 }
 
-                // NOVO: Exibe o nome do cliente removendo a parte do produto, e adiciona o produto entre parênteses ao lado do link
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                 tr.innerHTML = `
                     <td>
@@ -792,7 +783,7 @@
 
         function renovarAutomatico(index) {
             const cliente = clientesExibidos[index];
-            const produtoCliente = cliente.Produto || "Não informado"; // NOVO: Obtém o produto do cliente
+            const produtoCliente = cliente.Produto || "Não informado";
 
             if (produtoCliente === "Não informado") {
                 exibirAlerta("O produto do cliente não está informado! Por favor, edite o cliente e defina o produto antes de renovar.");
@@ -800,9 +791,8 @@
             }
 
             salvarEstadoNoHistorico();
-            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+            let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
             if (clienteOriginal) {
-                // NOVO: Lógica de renovação baseada no produto
                 if (produtoCliente === "Duplecast") {
                     renovarProximoMes(clienteOriginal);
                 } else if (produtoCliente === "UniTv") {
@@ -821,7 +811,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
+            filtroProduto = null;
             exibirTabela();
             salvarClientes();
             atualizarUltimaAtualizacao("cliente renovado");
@@ -831,7 +821,7 @@
             if (clienteIndexParaRenovarDebito !== null) {
                 salvarEstadoNoHistorico();
                 const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
-                const produtoCliente = cliente.Produto || "Não informado"; // NOVO: Obtém o produto do cliente
+                const produtoCliente = cliente.Produto || "Não informado";
 
                 if (produtoCliente === "Não informado") {
                     exibirAlerta("O produto do cliente não está informado! Por favor, edite o cliente e defina o produto antes de renovar.");
@@ -839,9 +829,8 @@
                     return;
                 }
 
-                let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+                let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
                 if (clienteOriginal) {
-                    // NOVO: Lógica de renovação baseada no produto
                     if (produtoCliente === "Duplecast") {
                         renovarProximoMes(clienteOriginal);
                     } else if (produtoCliente === "UniTv") {
@@ -861,7 +850,7 @@
                 modoExibicaoOcultos = false;
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
-                filtroProduto = null; // NOVO: Reseta o filtro de produto
+                filtroProduto = null;
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
@@ -904,13 +893,35 @@
                 salvarEstadoNoHistorico();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
+                // Para duplicar, precisamos gerar um NOVO ID único
+                let novoTelefoneBase = clienteOriginal.telefone;
+                let novoId = clienteOriginal.id;
+                let contadorDuplicacao = 1;
+                while (clientes.some(c => c.id === novoId)) {
+                    // Tenta criar um ID único adicionando sufixo ao telefone
+                    novoTelefoneBase = clienteOriginal.telefone + '_' + contadorDuplicacao;
+                    novoId = novoTelefoneBase.slice(-5);
+                    if (novoTelefoneBase.length < 5) {
+                        novoId = "DUP" + String(contadorDuplicacao).padStart(3, '0'); // Fallback para ID mais único
+                    } else {
+                        novoId = novoTelefoneBase.slice(-5);
+                    }
+                    contadorDuplicacao++;
+                    if (contadorDuplicacao > 100) {
+                        exibirAlerta("Não foi possível gerar um ID único para a duplicação. Tente novamente.");
+                        fecharModal();
+                        return;
+                    }
+                }
+
                 const novoCliente = {
+                    id: novoId,
                     data: clienteOriginal.data,
-                    nome: clienteOriginal.nome,
-                    telefone: clienteOriginal.telefone,
+                    nome: clienteOriginal.nome + " (Cópia)",
+                    telefone: novoTelefoneBase,
                     avisado: false,
                     debito: false,
-                    Produto: clienteOriginal.Produto || "Não informado", // NOVO: Copia a propriedade Produto
+                    Produto: clienteOriginal.Produto || "Não informado",
                     arquivado: false,
                     oculto: false,
                     verDepois: false,
@@ -922,7 +933,7 @@
                 modoExibicaoOcultos = false;
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
-                filtroProduto = null; // NOVO: Reseta o filtro de produto
+                filtroProduto = null;
                 exibirTabela();
                 salvarClientes();
                 fecharModal();
@@ -957,7 +968,6 @@
                 saudacao = "Boa noite";
             }
 
-            // NOVO: Remove a informação do produto do nome ao criar a mensagem
             const nomeParaMensagem = clienteNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
 
             let mensagem;
@@ -981,7 +991,7 @@
                 }
             }, 100);
 
-            let clienteOriginal = clientes.find(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+            let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
                 clienteOriginal.oculto = true;
             }
@@ -989,15 +999,16 @@
             salvarClientes();
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada");
         }
+
         function exportarClientes() {
-            // Antes de exportar, garanta que todos os clientes tenham as propriedades esperadas
             const clientesParaExportar = clientes.map(c => ({
+                id: c.id,
                 data: c.data,
                 nome: c.nome,
                 telefone: c.telefone,
                 avisado: c.avisado || false,
                 debito: c.debito || false,
-                Produto: c.Produto || "Não informado", // NOVO: Garante que 'Produto' esteja no objeto
+                Produto: c.Produto || "Não informado",
                 arquivado: c.arquivado || false,
                 oculto: c.oculto || false,
                 verDepois: c.verDepois || false,
@@ -1013,68 +1024,174 @@
             atualizarUltimaAtualizacao("clientes exportados");
         }
 
-        function importarClientes() {
+        async function importarClientes() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
-            input.onchange = (e) => {
+            input.onchange = async (e) => {
                 const file = e.target.files[0];
                 const reader = new FileReader();
-                reader.onload = () => {
+                reader.onload = async () => {
                     try {
-                        salvarEstadoNoHistorico();
-                        const clientesImportados = JSON.parse(reader.result);
+                        salvarEstadoNoHistorico(); // Salva o estado atual antes de começar a importação
 
-                        // Mapeia os clientes importados para garantir que tenham todas as propriedades padrão
-                        const clientesCorrigidos = clientesImportados.map(cliente => ({
-                            data: cliente.data,
-                            // Garante que o nome tenha o formato (Produto) ao importar (e remove se houver duplicidade)
-                            nome: cliente.Produto && !cliente.nome.includes(`(${cliente.Produto})`) ?
-                                `${cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${cliente.Produto})` :
-                                cliente.nome,
-                            telefone: cliente.telefone,
-                            avisado: cliente.avisado || false,
-                            debito: cliente.debito || false,
-                            Produto: cliente.Produto || "Não informado", // NOVO: Garante que 'Produto' exista
-                            arquivado: cliente.arquivado || false,
-                            oculto: cliente.oculto || false,
-                            verDepois: cliente.verDepois || false,
-                            desativado: cliente.desativado || false
-                        }));
+                        const clientesImportadosRaw = JSON.parse(reader.result);
+                        clientesParaProcessarImportacao = clientesImportadosRaw.map(c => {
+                            const telefoneLimpo = c.telefone ? String(c.telefone).replace(/[^\d]/g, '') : '';
+                            const id = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
 
-                        // Filtra para adicionar apenas clientes que não existem na lista atual
-                        const novosClientesUnicos = clientesCorrigidos.filter(novoCliente =>
-                            !clientes.some(existente =>
-                                existente.nome === novoCliente.nome &&
-                                existente.data === novoCliente.data &&
-                                existente.telefone === novoCliente.telefone &&
-                                existente.Produto === novoCliente.Produto // NOVO: Considera o produto na unicidade
-                            )
-                        );
+                            const nomeAjustado = c.Produto && !c.nome.includes(`(${c.Produto})`) ?
+                                `${c.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${c.Produto})` :
+                                c.nome;
 
-                        clientes = [...clientes, ...novosClientesUnicos];
+                            return {
+                                id: id,
+                                data: c.data,
+                                nome: nomeAjustado,
+                                telefone: telefoneLimpo,
+                                avisado: c.avisado || false,
+                                debito: c.debito || false,
+                                Produto: c.Produto || "Não informado",
+                                arquivado: c.arquivado || false,
+                                oculto: c.oculto || false,
+                                verDepois: c.verDepois || false,
+                                desativado: c.desativado || false
+                            };
+                        });
 
-                        // Após a importação, redefina os filtros para exibir o estado padrão
+                        currentIndexImportacao = 0;
+                        let novosClientesAdicionados = 0;
+                        let clientesAtualizados = 0;
+                        let clientesIgnorados = 0;
+
+                        while (currentIndexImportacao < clientesParaProcessarImportacao.length) {
+                            const clienteImportado = clientesParaProcessarImportacao[currentIndexImportacao];
+
+                            if (!clienteImportado.id) {
+                                console.warn(`Cliente ignorado na importação por não ter um ID válido (telefone curto):`, clienteImportado);
+                                clientesIgnorados++;
+                                currentIndexImportacao++;
+                                continue;
+                            }
+
+                            const indexClienteExistente = clientes.findIndex(c => c.id === clienteImportado.id);
+
+                            if (indexClienteExistente !== -1) {
+                                // Cliente com o mesmo ID já existe
+                                const clienteExistente = clientes[indexClienteExistente];
+
+                                const nomeExistenteBase = clienteExistente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                                const nomeImportadoBase = clienteImportado.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+
+                                if (nomeExistenteBase.toLowerCase() !== nomeImportadoBase.toLowerCase()) {
+                                    // Conflito de nome com mesmo ID, pede decisão ao usuário
+                                    const acao = await perguntarConflitoIdNome(clienteExistente, clienteImportado);
+
+                                    if (acao === 'usarImportado') {
+                                        clientes[indexClienteExistente] = clienteImportado;
+                                        clientesAtualizados++;
+                                    } else if (acao === 'manterExistente') {
+                                        clientesIgnorados++;
+                                    } else if (acao === 'manterAmbos') { // Handle "Manter Ambos"
+                                        let newId = clienteImportado.id;
+                                        let counter = 1;
+                                        let originalTelefone = clienteImportado.telefone; // Keep original telefone for base
+                                        while (clientes.some(c => c.id === newId)) {
+                                            const tempTelefone = originalTelefone + '-' + counter; // Append suffix to phone
+                                            newId = tempTelefone.slice(-5); // Re-derive ID from suffixed phone
+                                            counter++;
+                                            if (counter > 1000) { // Safety break
+                                                console.error("Could not generate a unique ID for 'Manter Ambos' option.");
+                                                break;
+                                            }
+                                        }
+                                        // Create a new client object with the original imported data, but a new unique ID and modified phone
+                                        const newClientForBoth = { ...clienteImportado, id: newId, telefone: originalTelefone + '-' + (counter -1) };
+                                        clientes.push(newClientForBoth);
+                                        novosClientesAdicionados++;
+                                    }
+                                } else {
+                                    // Mesmo ID e mesmo nome (base), atualiza a data se a importada for mais recente
+                                    const [diaExistente, mesExistente, anoExistente] = clienteExistente.data.split("/").map(Number);
+                                    const dataObjExistente = new Date(anoExistente, mesExistente - 1, diaExistente);
+
+                                    const [diaImportado, mesImportado, anoImportado] = clienteImportado.data.split("/").map(Number);
+                                    const dataObjImportado = new Date(anoImportado, mesImportado - 1, diaImportado);
+
+                                    if (dataObjImportado > dataObjExistente) {
+                                        clientes[indexClienteExistente] = clienteImportado;
+                                        clientesAtualizados++;
+                                    } else {
+                                        // Update other fields even if date is not newer, if they are different.
+                                        // This ensures consistency without forcing a date update.
+                                        clientes[indexClienteExistente].nome = clienteImportado.nome;
+                                        clientes[indexClienteExistente].telefone = clienteImportado.telefone;
+                                        clientes[indexClienteExistente].Produto = clienteImportado.Produto;
+                                        clientes[indexClienteExistente].avisado = clienteImportado.avisado;
+                                        clientes[indexClienteExistente].debito = clienteImportado.debito;
+                                        clientes[indexClienteExistente].arquivado = clienteImportado.arquivado;
+                                        clientes[indexClienteExistente].oculto = clienteImportado.oculto;
+                                        clientes[indexClienteExistente].verDepois = clienteImportado.verDepois;
+                                        clientes[indexClienteExistente].desativado = clienteImportado.desativado;
+                                        clientesAtualizados++;
+                                    }
+                                }
+                            } else {
+                                clientes.push(clienteImportado);
+                                novosClientesAdicionados++;
+                            }
+                            currentIndexImportacao++;
+                        }
+
                         clientesFiltrados = [];
                         modoExibicaoArquivados = false;
                         modoExibicaoOcultos = false;
                         modoExibicaoVerDepois = false;
                         modoExibicaoDesativados = false;
-                        filtroProduto = null; // NOVO: Reseta o filtro de produto
+                        filtroProduto = null;
                         document.getElementById("searchInput").value = "";
 
                         exibirTabela();
                         salvarClientes();
-                        exibirAlerta(`Clientes importados com sucesso! Foram adicionados ${novosClientesUnicos.length} novos clientes.`);
-                        atualizarUltimaAtualizacao("clientes importados");
+                        exibirAlerta(`Importação concluída: ${novosClientesAdicionados} novos clientes adicionados, ${clientesAtualizados} clientes atualizados, ${clientesIgnorados} ignorados.`);
+                        atualizarUltimaAtualizacao("clientes importados/atualizados por ID");
+
                     } catch (error) {
-                        exibirAlerta("Erro ao importar JSON. Verifique o arquivo.");
+                        exibirAlerta("Erro ao importar JSON. Verifique o arquivo ou formato.");
                         console.error("Erro ao importar:", error);
                     }
                 };
                 reader.readAsText(file);
             };
             input.click();
+        }
+
+        function perguntarConflitoIdNome(clienteExistente, clienteImportado) {
+            return new Promise((resolve, reject) => {
+                document.getElementById('conflitoId').textContent = clienteExistente.id;
+                document.getElementById('conflitoNomeExistente').textContent = clienteExistente.nome;
+                document.getElementById('conflitoNomeImportado').textContent = clienteImportado.nome;
+
+                document.getElementById('modalConflitoIdNome').style.display = 'flex';
+
+                document.getElementById('btnConflitoManterExistente').onclick = () => {
+                    fecharModal();
+                    resolve('manterExistente');
+                };
+                document.getElementById('btnConflitoUsarImportado').onclick = () => {
+                    fecharModal();
+                    resolve('usarImportado');
+                };
+                // New handler for "Manter Ambos"
+                document.getElementById('btnConflitoManterAmbos').onclick = () => {
+                    fecharModal();
+                    resolve('manterAmbos');
+                };
+                window.cancelarConflitoIdNome = () => {
+                    fecharModal();
+                    resolve('cancelar');
+                };
+            });
         }
 
         function filtrarHoje() {
@@ -1088,7 +1205,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1107,7 +1224,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1128,7 +1245,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1141,7 +1258,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Desativa filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1154,8 +1271,8 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
-            clientes.forEach(cliente => cliente.oculto = false); // <--- Isso "desoculta" todos.
+            filtroProduto = null;
+            clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1218,7 +1335,7 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
+            filtroProduto = null;
             exibirTabela();
             salvarClientes();
             exibirAlerta("Todos os clientes foram limpos!");
@@ -1237,7 +1354,7 @@
             clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1]));
 
             salvarClientes();
-            exibirTodos(); // Reexibe todos para garantir que o estado desfeito seja visível
+            exibirTodos();
             exibirAlerta("Última ação desfeita!");
             atualizarUltimaAtualizacao("última ação desfeita");
         }
@@ -1251,7 +1368,7 @@
             salvarEstadoNoHistorico(false);
             clientes = redoHistory.pop();
             salvarClientes();
-            exibirTodos(); // Reexibe todos para garantir que o estado refeito seja visível
+            exibirTodos();
             exibirAlerta("Última ação refeita!");
             atualizarUltimaAtualizacao("última ação refeita");
         }
@@ -1261,7 +1378,6 @@
             const modalEdicao = document.getElementById("modalEdicao");
             modalEdicao.style.display = "flex";
 
-            // NOVO: Remove a parte do produto do nome para preencher o campo de edição
             const nomeLimpo = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
 
             modalEdicao.innerHTML = `
@@ -1314,7 +1430,7 @@
         function salvarEdicao(index) {
             salvarEstadoNoHistorico();
             const clienteParaAtualizar = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data && c.telefone === clienteParaAtualizar.telefone);
+            let clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaAtualizar.id);
 
             if (clienteOriginalIndex === -1) {
                 exibirAlerta("Cliente não encontrado na lista principal!");
@@ -1325,29 +1441,41 @@
             let novoNome = document.getElementById("novoNome").value.trim();
             let novoTelefone = document.getElementById("novoTelefone").value.trim();
             let novaData = document.getElementById("novaData").value.trim();
-            let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value; // NOVO: Captura o produto editado
+            let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value;
 
             if (!novoNome || !novaData) {
                 exibirAlerta("Nome e data são obrigatórios!");
                 return;
             }
 
-            // NOVO: Ajusta o nome para incluir o produto
+            const telefoneLimpoEditado = novoTelefone.replace(/[^\d]/g, '');
+            if (telefoneLimpoEditado.length < 5) {
+                exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
+                return;
+            }
+            const novoId = telefoneLimpoEditado.slice(-5);
+
+            if (novoId !== clienteParaAtualizar.id && clientes.some(c => c.id === novoId && c.id !== clienteParaAtualizar.id)) {
+                exibirAlerta(`O novo telefone final (${novoId}) já está em uso por outro cliente. Por favor, escolha um telefone diferente.`);
+                return;
+            }
+
             let nomeSemProduto = novoNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
             let nomeComNovoProduto = `${nomeSemProduto} (${novoProduto})`;
 
-            clientes[clienteOriginalIndex].nome = nomeComNovoProduto; // NOVO: Atualiza o nome com o produto
-            clientes[clienteOriginalIndex].telefone = novoTelefone;
+            clientes[clienteOriginalIndex].id = novoId;
+            clientes[clienteOriginalIndex].nome = nomeComNovoProduto;
+            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado;
             clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
-            clientes[clienteOriginalIndex].Produto = novoProduto; // NOVO: Atualiza a propriedade Produto
+            clientes[clienteOriginalIndex].Produto = novoProduto;
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
-            clientes.forEach(cliente => cliente.oculto = false); // Reexibe ocultos ao editar
+            filtroProduto = null;
+            clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
 
             exibirTabela();
@@ -1363,7 +1491,7 @@
 
         function excluir(index) {
             const cliente = clientesExibidos[index];
-            clienteIndexParaExcluir = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+            clienteIndexParaExcluir = clientes.findIndex(c => c.id === cliente.id);
             if (clienteIndexParaExcluir !== -1) {
                 document.getElementById("modalExclusao").style.display = "flex";
             }
@@ -1380,7 +1508,7 @@
                 modoExibicaoOcultos = false;
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
-                filtroProduto = null; // NOVO: Reseta o filtro de produto
+                filtroProduto = null;
                 clientes.forEach(cliente => cliente.oculto = false);
                 document.getElementById("searchInput").value = "";
 
@@ -1395,10 +1523,10 @@
         function toggleAvisado(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+            let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
-                clientes[clienteOriginalIndex].oculto = false; // Ao marcar/desmarcar avisado, ele não estará oculto
+                clientes[clienteOriginalIndex].oculto = false;
             }
             exibirTabela();
             salvarClientes();
@@ -1408,7 +1536,7 @@
         function toggleDebito(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+            let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
             }
@@ -1420,10 +1548,10 @@
         function toggleVerDepois(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+            let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].verDepois = !clientes[clienteOriginalIndex].verDepois;
-                if (clientes[clienteOriginalIndex].verDepois) { // Se marcou "Ver Depois", oculta dos outros filtros
+                if (clientes[clienteOriginalIndex].verDepois) {
                     clientes[clienteOriginalIndex].oculto = false;
                     clientes[clienteOriginalIndex].arquivado = false;
                     clientes[clienteOriginalIndex].desativado = false;
@@ -1437,10 +1565,10 @@
         function toggleDesativado(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.nome === cliente.nome && c.data === cliente.data && c.telefone === cliente.telefone);
+            let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
-                if (clientes[clienteOriginalIndex].desativado) { // Se desativado, remove de outros status para não aparecer em listas ativas
+                if (clientes[clienteOriginalIndex].desativado) {
                     clientes[clienteOriginalIndex].avisado = false;
                     clientes[clienteOriginalIndex].debito = false;
                     clientes[clienteOriginalIndex].oculto = false;
@@ -1453,26 +1581,23 @@
             atualizarUltimaAtualizacao("status de desativado alterado");
         }
 
-        // NOVO: Função para abrir o modal de escolha de produto
         function abrirModalAlterarProduto(index) {
             clienteIndexParaAlterarProduto = index;
             document.getElementById('modalEscolherProduto').style.display = 'flex';
             atualizarUltimaAtualizacao("escolhendo produto para alteração");
         }
 
-        // NOVO: Função para confirmar a alteração do produto do cliente
         function alterarProdutoClienteConfirm(novoProduto) {
             if (clienteIndexParaAlterarProduto !== null) {
                 salvarEstadoNoHistorico();
                 const clienteParaAtualizar = clientesExibidos[clienteIndexParaAlterarProduto];
-                let clienteOriginalIndex = clientes.findIndex(c => c.nome === clienteParaAtualizar.nome && c.data === clienteParaAtualizar.data && c.telefone === clienteParaAtualizar.telefone);
+                let clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaAtualizar.id);
 
                 if (clienteOriginalIndex !== -1) {
                     let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                     clientes[clienteOriginalIndex].Produto = novoProduto;
                     clientes[clienteOriginalIndex].nome = `${nomeSemProduto} (${novoProduto})`;
                 }
-                // Após a alteração de produto, redefina os filtros para exibir o estado padrão
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
                 modoExibicaoOcultos = false;
@@ -1497,26 +1622,31 @@
                 const storedClientes = localStorage.getItem('clientes');
                 if (storedClientes) {
                     const parsedClientes = JSON.parse(storedClientes);
-                    // Garante que cada cliente carregado do localStorage tenha todas as propriedades
-                    clientes = parsedClientes.map(c => ({
-                        data: c.data,
-                        nome: c.nome,
-                        telefone: c.telefone,
-                        avisado: c.avisado || false,
-                        debito: c.debito || false,
-                        Produto: c.Produto || "Não informado", // NOVO: Garante que 'Produto' exista
-                        arquivado: c.arquivado || false,
-                        oculto: c.oculto || false,
-                        verDepois: c.verDepois || false,
-                        desativado: c.desativado || false
-                    }));
+                    clientes = parsedClientes.map(c => {
+                        const telefoneLimpo = c.telefone ? String(c.telefone).replace(/[^\d]/g, '') : '';
+                        const clienteId = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
+
+                        return {
+                            id: c.id || clienteId,
+                            data: c.data,
+                            nome: c.nome,
+                            telefone: c.telefone,
+                            avisado: c.avisado || false,
+                            debito: c.debito || false,
+                            Produto: c.Produto || "Não informado",
+                            arquivado: c.arquivado || false,
+                            oculto: c.oculto || false,
+                            verDepois: c.verDepois || false,
+                            desativado: c.desativado || false
+                        };
+                    }).filter(c => c.id !== null);
                 } else {
                     clientes = [];
                 }
             } catch (e) {
                 console.error("Erro ao carregar clientes do localStorage:", e);
-                clientes = []; // Reseta clientes em caso de erro no localStorage
-                localStorage.removeItem('clientes'); // Limpa dados corrompidos
+                clientes = [];
+                localStorage.removeItem('clientes');
             }
             atualizarUltimaAtualizacao("clientes carregados");
         }
@@ -1530,21 +1660,19 @@
         function pesquisarClientes() {
             const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
 
-            // Ao pesquisar, zera os outros modos de filtro para a pesquisa ser abrangente
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
-
-            exibirTabela(); // exibirTabela já lida com o termoPesquisa
+            filtroProduto = null;
+            exibirTabela();
             atualizarUltimaAtualizacao("pesquisa realizada");
         }
 
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
-            exibirTodos(); // Volta para a exibição padrão
+            exibirTodos();
             atualizarUltimaAtualizacao("pesquisa limpa");
         }
 
@@ -1629,7 +1757,6 @@
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
-            // Conta apenas clientes que não estão arquivados, ocultos, verDepois ou desativados para os filtros principais
             const clientesVisiveisParaFiltros = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
 
             const countHoje = clientesVisiveisParaFiltros.filter(cliente => cliente.data === hojeFormatada).length;
@@ -1650,7 +1777,6 @@
             }).length;
             const countDebito = clientesVisiveisParaFiltros.filter(cliente => cliente.debito).length;
 
-            // Contadores para os filtros de "estado" (que não excluem uns aos outros, apenas filtram por si mesmos)
             const countOcultos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado).length;
             const countArquivados = clientes.filter(cliente => cliente.arquivado).length;
             const countVerDepois = clientes.filter(cliente => cliente.verDepois).length;
@@ -1679,9 +1805,7 @@
         }
         // --- FIM: Funções de Contadores ---
 
-        // NOVO: Função para mostrar a contagem de produtos (vinda do primeiro código)
         function mostrarContagemProdutos() {
-            // Conta apenas clientes que não estão arquivados, ocultos, verDepois ou desativados para os contadores de produto
             const clientesNaoArquivadosNaoOcultos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             const countUniTv = clientesNaoArquivadosNaoOcultos.filter(cliente => cliente.Produto === 'UniTv').length;
             const countDuplecast = clientesNaoArquivadosNaoOcultos.filter(cliente => cliente.Produto === 'Duplecast').length;
@@ -1694,17 +1818,14 @@
         }
 
         function inicializarExibicaoClientes() {
-            // Carrega os clientes do localStorage primeiro
             loadClientes();
 
-            // Preenche o campo de data com a data atual (YYYY-MM-DD)
             const today = new Date();
             const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0'); // Mês começa do 0, então +1
+            const month = String(today.getMonth() + 1).padStart(2, '0');
             const day = String(today.getDate()).padStart(2, '0');
             document.getElementById('dataInput').value = `${year}-${month}-${day}`;
 
-            // Ao inicializar, mostra os clientes vencendo hoje ou vencidos que NÃO estão arquivados, ocultos, verDepois ou desativados
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
@@ -1725,18 +1846,17 @@
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
-            filtroProduto = null; // NOVO: Reseta o filtro de produto
+            filtroProduto = null;
             document.getElementById("searchInput").value = "";
 
-            exibirTabela(); // Exibe a tabela com o filtro padrão
+            exibirTabela();
             atualizarUltimaAtualizacao("inicialização da página");
         }
-
         // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
-        inicializarExibicaoClientes(); // Chama a nova função de inicialização
-        salvarEstadoNoHistorico(); // Salva o estado inicial no histórico (após carregar os dados)
-        loadSettings(); // Carrega as configurações de interface
+        inicializarExibicaoClientes();
+        salvarEstadoNoHistorico();
+        loadSettings();
     </script>
 </body>
 </html>
