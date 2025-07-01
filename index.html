@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -220,7 +219,6 @@
         <h1>Controle de Clientes</h1>
         <button onclick="importarClientes()">Importar Clientes (JSON)</button>
         <button onclick="exportarClientes()">Exportar Clientes (JSON)</button>
-
         <h3>Adicionar Cliente</h3>
         <div class="input-group-horizontal">
             <input type="date" id="dataInput" class="configurable-input" required>
@@ -943,10 +941,16 @@
         }
 
         function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
-            const telefoneLimpo = clienteTelefone.replace(/\D/g, '');
-            if (!telefoneLimpo) {
+            let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, ''); // Remove todos os não-dígitos
+            if (!telefoneParaWhatsApp) {
                 exibirAlerta("Número de telefone inválido!");
                 return;
+            }
+
+            // Verifica se o número já começa com '55' (código do Brasil)
+            // Se não começar, adiciona '55' ao início
+            if (!telefoneParaWhatsApp.startsWith('55')) {
+                telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
             }
 
             const cliente = clientesExibidos[index];
@@ -977,7 +981,7 @@
                 mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data}O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
             }
 
-            const url = `https://wa.me/${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`;
+            const url = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagem)}`;
             const link = document.createElement("a");
             link.href = url;
             link.target = "_blank";
@@ -1448,7 +1452,7 @@
                 return;
             }
 
-            const telefoneLimpoEditado = novoTelefone.replace(/[^\d]/g, '');
+            const telefoneLimpoEditado = novoTelefone.replace(/[^\d]/g, ''); // Garante que o telefone esteja limpo
             if (telefoneLimpoEditado.length < 5) {
                 exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
                 return;
@@ -1465,7 +1469,7 @@
 
             clientes[clienteOriginalIndex].id = novoId;
             clientes[clienteOriginalIndex].nome = nomeComNovoProduto;
-            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado;
+            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado; // Salva o telefone limpo
             clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
             clientes[clienteOriginalIndex].Produto = novoProduto;
 
@@ -1573,7 +1577,7 @@
                     clientes[clienteOriginalIndex].debito = false;
                     clientes[clienteOriginalIndex].oculto = false;
                     clientes[clienteOriginalIndex].verDepois = false;
-                    clientes[clienteOriginalIndex].arquivado = false;
+                    clientes[clienteOriginalLixeira].arquivado = false;
                 }
             }
             exibirTabela();
