@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -250,6 +249,9 @@
 </head>
 
 <body>
+    <div id="ultimaAtualizacaoInfo" style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
+        Última Alteração: Nunca
+    </div>
     <div class="container">
         <h1>Controle de Clientes</h1>
         <button onclick="importarClientes()">Importar Clientes (JSON)</button>
@@ -396,8 +398,7 @@
         </div>
     </div>
     <script>
-        document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
-        let clientes = []; // Inicializado como array vazio, será preenchido por loadClientes()
+        let clientes = [];
         let clientesFiltrados = [];
         let clienteIndexParaExcluir = null;
         let clienteIndexParaDuplicar = null;
@@ -413,12 +414,10 @@
         const MAX_HISTORY_STATES = 10;
         let confirmActionCallback = null;
 
-        // Variáveis para gerenciar o processo de importação com conflitos
         let clientesParaProcessarImportacao = [];
         let currentIndexImportacao = 0;
 
-        // --- Função para atualizar a data e hora da última atualização ---
-        function atualizarUltimaAtualizacao(acao = "dados atualizados") {
+        function atualizarUltimaAtualizacao(acao = "dados atualizados", clienteNome = "") {
             const now = new Date();
             const options = {
                 year: 'numeric',
@@ -430,10 +429,20 @@
                 hour12: false
             };
             const formattedDateTime = now.toLocaleString('pt-BR', options);
-            // document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Atualização: ${formattedDateTime} (${acao})`;
-        }
+            
+            let fullMessage = `Última Alteração: ${formattedDateTime}`;
+            if (clienteNome) {
+                const nomeLimpoParaMsg = clienteNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                fullMessage += ` - ${nomeLimpoParaMsg} (${acao})`;
+            } else {
+                fullMessage += ` (${acao})`;
+            }
 
-        // --- Fim da função de atualização ---
+            localStorage.setItem('ultimaAtualizacaoCliente', fullMessage);
+            document.getElementById('ultimaAtualizacaoInfo').textContent = fullMessage;
+
+            console.log(fullMessage);
+        }
 
         function salvarEstadoNoHistorico(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
@@ -542,12 +551,10 @@
             if (telefoneLimpo.length < 5) {
                 return exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
             }
-            const clienteId = telefoneLimpo.slice(-5); // Pega os últimos 5 dígitos como ID
+            const clienteId = telefoneLimpo.slice(-5);
 
-            // Verifica se já existe um cliente com este ID (telefone final)
             const clienteExistenteComMesmoId = clientes.find(c => c.id === clienteId);
             if (clienteExistenteComMesmoId) {
-                // Se encontrar, avisa o usuário e não adiciona
                 return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
 
@@ -561,7 +568,7 @@
             }
 
             clientes.push({
-                id: clienteId, // NOVO: Adiciona o ID ao cliente
+                id: clienteId,
                 data: dataFormatada,
                 nome: nomeComProduto,
                 telefone: telefoneLimpo,
@@ -579,14 +586,14 @@
 
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("cliente adicionado");
+            atualizarUltimaAtualizacao("adicionado", nomeInput);
         }
 
         function arquivar(index) {
             salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id); // Usando ID
+            let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id);
             if (clienteOriginal) {
                 clienteOriginal.arquivado = true;
                 clienteOriginal.oculto = false;
@@ -601,14 +608,14 @@
             filtroProduto = null;
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("cliente arquivado");
+            atualizarUltimaAtualizacao("arquivado", clienteParaArquivar.nome);
         }
 
         function desarquivar(index) {
             salvarEstadoNoHistorico();
             let clienteParaDesarquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.id === clienteParaDesarquivar.id); // Usando ID
+            let clienteOriginal = clientes.find(c => c.id === clienteParaDesarquivar.id);
             if (clienteOriginal) {
                 clienteOriginal.arquivado = false;
             }
@@ -620,7 +627,7 @@
             filtroProduto = null;
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("cliente desarquivado");
+            atualizarUltimaAtualizacao("desarquivado", clienteParaDesarquivar.nome);
         }
 
         function filtrarArquivados() {
@@ -632,7 +639,6 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarUltimaAtualizacao("filtrado por arquivados");
         }
 
         function filtrarOcultos() {
@@ -644,7 +650,6 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarUltimaAtualizacao("filtrado por avisados");
         }
 
         function filtrarVerDepois() {
@@ -656,7 +661,6 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarUltimaAtualizacao("filtrado por ver depois");
         }
 
         function filtrarDesativados() {
@@ -668,7 +672,6 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarUltimaAtualizacao("filtrado por desativados");
         }
 
         function filtrarPorProduto(produto) {
@@ -681,7 +684,6 @@
             document.getElementById("searchInput").value = "";
             fecharModal();
             exibirTabela();
-            atualizarUltimaAtualizacao(`filtrado por produto: ${produto}`);
         }
 
         let clientesExibidos = [];
@@ -811,7 +813,6 @@
             clienteIndexParaRenovarDebito = index;
             document.getElementById("modalRenovarComDebito").style.display = "flex";
             document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
-            atualizarUltimaAtualizacao("confirmar renovação com débito");
         }
 
         function renovarAutomatico(index) {
@@ -824,16 +825,10 @@
             }
 
             salvarEstadoNoHistorico();
-            let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
+            let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
-                if (produtoCliente === "Duplecast") {
-                    renovarProximoMes(clienteOriginal);
-                } else if (produtoCliente === "UniTv") {
-                    renovar30(clienteOriginal);
-                } else {
-                    exibirAlerta("Tipo de produto desconhecido para renovação automática.");
-                    return;
-                }
+                // Ambos os produtos agora utilizam a lógica de renovação do Duplecast
+                renovarProximoMes(clienteOriginal); 
                 clienteOriginal.debito = false;
                 clienteOriginal.oculto = false;
                 clienteOriginal.verDepois = false;
@@ -847,7 +842,7 @@
             filtroProduto = null;
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("cliente renovado");
+            atualizarUltimaAtualizacao("renovado automaticamente", cliente.nome);
         }
 
         function confirmarRenovacaoComDebito() {
@@ -862,17 +857,10 @@
                     return;
                 }
 
-                let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
+                let clienteOriginal = clientes.find(c => c.id === cliente.id);
                 if (clienteOriginal) {
-                    if (produtoCliente === "Duplecast") {
-                        renovarProximoMes(clienteOriginal);
-                    } else if (produtoCliente === "UniTv") {
-                        renovar30(clienteOriginal);
-                    } else {
-                        exibirAlerta("Tipo de produto desconhecido para renovação automática.");
-                        fecharModal();
-                        return;
-                    }
+                    // Ambos os produtos agora utilizam a lógica de renovação do Duplecast
+                    renovarProximoMes(clienteOriginal);
                     clienteOriginal.debito = true;
                     clienteOriginal.oculto = false;
                     clienteOriginal.verDepois = false;
@@ -889,10 +877,11 @@
                 fecharModal();
                 clienteIndexParaRenovarDebito = null;
                 exibirAlerta("Cliente renovado e marcado como DÉBITO!");
-                atualizarUltimaAtualizacao("cliente renovado com débito");
+                atualizarUltimaAtualizacao("renovado com débito", cliente.nome);
             }
         }
 
+        // Esta função não é mais chamada diretamente pelo tipo de produto
         function renovar30(clienteObj) {
             clienteObj.data = incrementarData(clienteObj.data, 30);
         }
@@ -918,7 +907,6 @@
         function duplicarCliente(index) {
             clienteIndexParaDuplicar = index;
             document.getElementById("modalConfirmacao").style.display = "flex";
-            atualizarUltimaAtualizacao("confirmar duplicação");
         }
 
         function confirmarDuplicacao() {
@@ -926,16 +914,14 @@
                 salvarEstadoNoHistorico();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
-                // Para duplicar, precisamos gerar um NOVO ID único
                 let novoTelefoneBase = clienteOriginal.telefone;
                 let novoId = clienteOriginal.id;
                 let contadorDuplicacao = 1;
                 while (clientes.some(c => c.id === novoId)) {
-                    // Tenta criar um ID único adicionando sufixo ao telefone
                     novoTelefoneBase = clienteOriginal.telefone + '_' + contadorDuplicacao;
                     novoId = novoTelefoneBase.slice(-5);
                     if (novoTelefoneBase.length < 5) {
-                        novoId = "DUP" + String(contadorDuplicacao).padStart(3, '0'); // Fallback para ID mais único
+                        novoId = "DUP" + String(contadorDuplicacao).padStart(3, '0');
                     } else {
                         novoId = novoTelefoneBase.slice(-5);
                     }
@@ -971,19 +957,17 @@
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaDuplicar = null;
-                atualizarUltimaAtualizacao("cliente duplicado");
+                atualizarUltimaAtualizacao("duplicado", clienteOriginal.nome);
             }
         }
 
         function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
-            let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, ''); // Remove todos os não-dígitos
+            let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, '');
             if (!telefoneParaWhatsApp) {
                 exibirAlerta("Número de telefone inválido!");
                 return;
             }
 
-            // Verifica se o número já começa com '55' (código do Brasil)
-            // Se não começar, adiciona '55' ao início
             if (!telefoneParaWhatsApp.startsWith('55')) {
                 telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
             }
@@ -1036,7 +1020,7 @@
             }
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("mensagem WhatsApp enviada");
+            atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
         }
 
         function exportarClientes() {
@@ -1072,7 +1056,7 @@
                 const reader = new FileReader();
                 reader.onload = async () => {
                     try {
-                        salvarEstadoNoHistorico(); // Salva o estado atual antes de começar a importação
+                        salvarEstadoNoHistorico();
 
                         const clientesImportadosRaw = JSON.parse(reader.result);
                         clientesParaProcessarImportacao = clientesImportadosRaw.map(c => {
@@ -1116,14 +1100,12 @@
                             const indexClienteExistente = clientes.findIndex(c => c.id === clienteImportado.id);
 
                             if (indexClienteExistente !== -1) {
-                                // Cliente com o mesmo ID já existe
                                 const clienteExistente = clientes[indexClienteExistente];
 
                                 const nomeExistenteBase = clienteExistente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                                 const nomeImportadoBase = clienteImportado.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
 
                                 if (nomeExistenteBase.toLowerCase() !== nomeImportadoBase.toLowerCase()) {
-                                    // Conflito de nome com mesmo ID, pede decisão ao usuário
                                     const acao = await perguntarConflitoIdNome(clienteExistente, clienteImportado);
 
                                     if (acao === 'usarImportado') {
@@ -1131,26 +1113,29 @@
                                         clientesAtualizados++;
                                     } else if (acao === 'manterExistente') {
                                         clientesIgnorados++;
-                                    } else if (acao === 'manterAmbos') { // Handle "Manter Ambos"
+                                    } else if (acao === 'manterAmbos') {
                                         let newId = clienteImportado.id;
                                         let counter = 1;
-                                        let originalTelefone = clienteImportado.telefone; // Keep original telefone for base
+                                        let originalTelefone = clienteImportado.telefone;
                                         while (clientes.some(c => c.id === newId)) {
-                                            const tempTelefone = originalTelefone + '-' + counter; // Append suffix to phone
-                                            newId = tempTelefone.slice(-5); // Re-derive ID from suffixed phone
+                                            const tempTelefone = originalTelefone + '-' + counter;
+                                            newId = tempTelefone.slice(-5);
+                                            if (tempTelefone.length < 5) {
+                                                newId = "DUP" + String(counter).padStart(3, '0');
+                                            } else {
+                                                newId = tempTelefone.slice(-5);
+                                            }
                                             counter++;
-                                            if (counter > 1000) { // Safety break
+                                            if (counter > 1000) {
                                                 console.error("Could not generate a unique ID for 'Manter Ambos' option.");
                                                 break;
                                             }
                                         }
-                                        // Create a new client object with the original imported data, but a new unique ID and modified phone
                                         const newClientForBoth = { ...clienteImportado, id: newId, telefone: originalTelefone + '-' + (counter - 1) };
                                         clientes.push(newClientForBoth);
                                         novosClientesAdicionados++;
                                     }
                                 } else {
-                                    // Mesmo ID e mesmo nome (base), atualiza a data se a importada for mais recente
                                     const [diaExistente, mesExistente, anoExistente] = clienteExistente.data.split("/").map(Number);
                                     const dataObjExistente = new Date(anoExistente, mesExistente - 1, diaExistente);
 
@@ -1161,8 +1146,6 @@
                                         clientes[indexClienteExistente] = clienteImportado;
                                         clientesAtualizados++;
                                     } else {
-                                        // Update other fields even if date is not newer, if they are different.
-                                        // This ensures consistency without forcing a date update.
                                         clientes[indexClienteExistente].nome = clienteImportado.nome;
                                         clientes[indexClienteExistente].telefone = clienteImportado.telefone;
                                         clientes[indexClienteExistente].Produto = clienteImportado.Produto;
@@ -1221,7 +1204,6 @@
                     fecharModal();
                     resolve('usarImportado');
                 };
-                // New handler for "Manter Ambos"
                 document.getElementById('btnConflitoManterAmbos').onclick = () => {
                     fecharModal();
                     resolve('manterAmbos');
@@ -1248,7 +1230,6 @@
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
-            atualizarUltimaAtualizacao("filtrado por vencendo hoje");
         }
 
         function filtrarAmanha() {
@@ -1267,7 +1248,6 @@
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
-            atualizarUltimaAtualizacao("filtrado por vencendo amanhã");
         }
 
         function filtrarVencidos() {
@@ -1288,11 +1268,10 @@
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
-            atualizarUltimaAtualizacao("filtrado por vencidos");
         }
 
         function filtrarDebito() {
-            clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+            clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
@@ -1301,7 +1280,6 @@
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
-            atualizarUltimaAtualizacao("filtrado por débito");
         }
 
         function exibirTodos() {
@@ -1315,7 +1293,6 @@
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
-            atualizarUltimaAtualizacao("exibindo todos os clientes");
         }
 
         function confirmarLimparTodos() {
@@ -1395,7 +1372,7 @@
             salvarClientes();
             exibirTodos();
             exibirAlerta("Última ação desfeita!");
-            atualizarUltimaAtualizacao("última ação desfeita");
+            atualizarUltimaAtualizacao("ação desfeita");
         }
 
         function refazer() {
@@ -1409,7 +1386,7 @@
             salvarClientes();
             exibirTodos();
             exibirAlerta("Última ação refeita!");
-            atualizarUltimaAtualizacao("última ação refeita");
+            atualizarUltimaAtualizacao("ação refeita");
         }
 
         function editar(index) {
@@ -1456,7 +1433,6 @@
             });
             document.getElementById("salvarBtn").addEventListener("click", () => salvarEdicao(index));
             document.addEventListener("keydown", fecharComEsc);
-            atualizarUltimaAtualizacao("início da edição");
         }
 
         function proximoCampo(event, proximoId) {
@@ -1487,7 +1463,7 @@
                 return;
             }
 
-            const telefoneLimpoEditado = novoTelefone.replace(/[^\d]/g, ''); // Garante que o telefone esteja limpo
+            const telefoneLimpoEditado = novoTelefone.replace(/[^\d]/g, '');
             if (telefoneLimpoEditado.length < 5) {
                 exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
                 return;
@@ -1504,7 +1480,7 @@
 
             clientes[clienteOriginalIndex].id = novoId;
             clientes[clienteOriginalIndex].nome = nomeComNovoProduto;
-            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado; // Salva o telefone limpo
+            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado;
             clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
             clientes[clienteOriginalIndex].Produto = novoProduto;
 
@@ -1520,7 +1496,7 @@
             exibirTabela();
             salvarClientes();
             fecharModal();
-            atualizarUltimaAtualizacao("cliente editado");
+            atualizarUltimaAtualizacao("editado", nomeComNovoProduto);
         }
 
         function formatarParaInputDate(data) {
@@ -1534,12 +1510,12 @@
             if (clienteIndexParaExcluir !== -1) {
                 document.getElementById("modalExclusao").style.display = "flex";
             }
-            atualizarUltimaAtualizacao("confirmar exclusão");
         }
 
         function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
                 salvarEstadoNoHistorico();
+                const nomeClienteExcluido = clientes[clienteIndexParaExcluir].nome;
                 clientes.splice(clienteIndexParaExcluir, 1);
 
                 clientesFiltrados = [];
@@ -1555,7 +1531,7 @@
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaExcluir = null;
-                atualizarUltimaAtualizacao("cliente excluído");
+                atualizarUltimaAtualizacao("excluído", nomeClienteExcluido);
             }
         }
 
@@ -1569,7 +1545,7 @@
             }
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("status de avisado alterado");
+            atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
         }
 
         function toggleDebito(index) {
@@ -1581,7 +1557,7 @@
             }
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("status de débito alterado");
+            atualizarUltimaAtualizacao(`status débito alterado para ${clientes[clienteOriginalIndex].debito ? 'sim' : 'não'}`, cliente.nome);
         }
 
         function toggleVerDepois(index) {
@@ -1598,7 +1574,7 @@
             }
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("status de ver depois alterado");
+            atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
 
         function toggleDesativado(index) {
@@ -1612,18 +1588,17 @@
                     clientes[clienteOriginalIndex].debito = false;
                     clientes[clienteOriginalIndex].oculto = false;
                     clientes[clienteOriginalIndex].verDepois = false;
-                    clientes[clienteOriginalIndex].arquivado = false; // CORREÇÃO AQUI: era clienteOriginalLixeira
+                    clientes[clienteOriginalIndex].arquivado = false;
                 }
             }
             exibirTabela();
             salvarClientes();
-            atualizarUltimaAtualizacao("status de desativado alterado");
+            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
         }
 
         function abrirModalAlterarProduto(index) {
             clienteIndexParaAlterarProduto = index;
             document.getElementById('modalEscolherProduto').style.display = 'flex';
-            atualizarUltimaAtualizacao("escolhendo produto para alteração");
         }
 
         function alterarProdutoClienteConfirm(novoProduto) {
@@ -1648,7 +1623,7 @@
                 fecharModal();
                 clienteIndexParaAlterarProduto = null;
                 exibirAlerta(`Produto do cliente alterado para ${novoProduto}!`);
-                atualizarUltimaAtualizacao(`produto do cliente alterado para ${novoProduto}`);
+                atualizarUltimaAtualizacao(`produto alterado para ${novoProduto}`, clienteParaAtualizar.nome);
             }
         }
 
@@ -1687,13 +1662,17 @@
                 clientes = [];
                 localStorage.removeItem('clientes');
             }
-            atualizarUltimaAtualizacao("clientes carregados");
+            const ultimaAtualizacaoSalva = localStorage.getItem('ultimaAtualizacaoCliente');
+            if (ultimaAtualizacaoSalva) {
+                document.getElementById('ultimaAtualizacaoInfo').textContent = ultimaAtualizacaoSalva;
+            } else {
+                document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Alteração: Nunca`;
+            }
         }
 
         function compartilharWhatsApp() {
             const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
             window.open(url, '_blank');
-            atualizarUltimaAtualizacao("compartilhado via WhatsApp");
         }
 
         function pesquisarClientes() {
@@ -1705,19 +1684,14 @@
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
+            document.getElementById("searchInput").value = "";
             exibirTabela();
-            atualizarUltimaAtualizacao("pesquisa realizada");
         }
 
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
             exibirTodos();
-            atualizarUltimaAtualizacao("pesquisa limpa");
         }
-
-        // --- FUNÇÕES DE AJUSTES ---
-        const SETTINGS_KEY = 'inputSettings';
-        const DEFAULT_INPUT_WIDTH_PERCENT = 16;
 
         function toggleSettingsArea() {
             const settingsArea = document.getElementById('settingsArea');
@@ -1727,7 +1701,6 @@
                 settingsArea.style.display = 'block';
                 loadSettings();
             }
-            atualizarUltimaAtualizacao("ajustes acessados");
         }
 
         function applyInputWidth(widthPercent) {
@@ -1752,7 +1725,6 @@
             }));
             exibirAlerta("Ajustes salvos com sucesso!");
             toggleSettingsArea();
-            atualizarUltimaAtualizacao("ajustes salvos");
         }
 
         function loadSettings() {
@@ -1763,7 +1735,8 @@
                 try {
                     const settings = JSON.parse(savedSettings);
                     widthToApply = settings.width || DEFAULT_INPUT_WIDTH_PERCENT;
-                } catch (e) {
+                }
+                catch (e) {
                     console.error("Erro ao carregar ajustes do localStorage:", e);
                     localStorage.removeItem(SETTINGS_KEY);
                 }
@@ -1785,11 +1758,8 @@
             exibirAlerta("Ajustes redefinidos para o padrão!");
             loadSettings();
             toggleSettingsArea();
-            atualizarUltimaAtualizacao("ajustes redefinidos");
         }
-        // --- FIM: FUNÇÕES DE AJUSTES ---
 
-        // --- Funções de Contadores ---
         function atualizarContadores() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -1842,7 +1812,6 @@
                 }
             }
         }
-        // --- FIM: Funções de Contadores ---
 
         function mostrarContagemProdutos() {
             const clientesNaoArquivadosNaoOcultos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
@@ -1853,7 +1822,6 @@
             document.getElementById('countDuplecast').textContent = countDuplecast;
 
             document.getElementById('modalContagemProdutos').style.display = 'flex';
-            atualizarUltimaAtualizacao("contagem de produtos exibida");
         }
 
         function inicializarExibicaoClientes() {
@@ -1889,9 +1857,7 @@
             document.getElementById("searchInput").value = "";
 
             exibirTabela();
-            atualizarUltimaAtualizacao("inicialização da página");
         }
-        // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
         inicializarExibicaoClientes();
         salvarEstadoNoHistorico();
