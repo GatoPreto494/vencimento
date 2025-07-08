@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -1806,17 +1807,17 @@
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
-                clientes[clienteOriginalIndex].verDepois = !clientes[clienteOriginalIndex].verDepois;
-                if (clientes[clienteOriginalIndex].verDepois) {
-                    clientes[clienteOriginalIndex].oculto = false; // "Ver Depois" não é "Oculto por aviso"
-                    clientes[clienteOriginalIndex].arquivado = false;
-                    clientes[clienteOriginalIndex].desativado = false;
+                clientes[originalClienteIndex].verDepois = !clientes[originalClienteIndex].verDepois;
+                if (clientes[originalClienteIndex].verDepois) {
+                    clientes[originalClienteIndex].oculto = false; // "Ver Depois" não é "Oculto por aviso"
+                    clientes[originalClienteIndex].arquivado = false;
+                    clientes[originalClienteIndex].desativado = false;
                 }
             }
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
-            atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[originalClienteIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
 
         function toggleDesativado(index) {
@@ -1824,19 +1825,19 @@
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
-                clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
-                if (clientes[clienteOriginalIndex].desativado) {
-                    clientes[clienteOriginalIndex].avisado = false;
-                    clientes[clienteOriginalIndex].debito = false;
-                    clientes[clienteOriginalIndex].oculto = false; // Desativado não é "Oculto por aviso"
-                    clientes[clienteOriginalIndex].verDepois = false;
-                    clientes[clienteOriginalIndex].arquivado = false;
+                clientes[originalClienteIndex].desativado = !clientes[originalClienteIndex].desativado;
+                if (clientes[originalClienteIndex].desativado) {
+                    clientes[originalClienteIndex].avisado = false;
+                    clientes[originalClienteIndex].debito = false;
+                    clientes[originalClienteIndex].oculto = false; // Desativado não é "Oculto por aviso"
+                    clientes[originalClienteIndex].verDepois = false;
+                    clientes[originalClienteIndex].arquivado = false;
                 }
             }
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
-            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[originalClienteIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
         }
 
         function abrirModalAlterarProduto(index) {
@@ -1852,8 +1853,8 @@
 
                 if (clienteOriginalIndex !== -1) {
                     let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
-                    clientes[clienteOriginalIndex].Produto = novoProduto;
-                    clientes[clienteOriginalIndex].nome = `${nomeSemProduto} (${novoProduto})`;
+                    clientes[originalClienteIndex].Produto = novoProduto;
+                    clientes[originalClienteIndex].nome = `${nomeSemProduto} (${novoProduto})`;
                 }
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
@@ -2088,7 +2089,7 @@
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-                // Considera apenas vencidos e que não estão ocultos, arquivados, verDepois ou desativados
+                // Considera apenas vencidos e que NÃO estão ocultos, arquivados, verDepois ou desativados
                 return dataCliente < hojeSemHora && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             }).sort((a, b) => {
                 // Opcional: Ordena por data de vencimento (os mais antigos primeiro)
@@ -2146,17 +2147,20 @@
             const day = String(today.getDate()).padStart(2, '0');
             document.getElementById('dataInput').value = `${year}-${month}-${day}`;
 
-            // A inicialização agora exibe na tabela principal apenas os clientes NÃO ocultos
+            const hojeFormatada = today.getDate().toString().padStart(2, '0') + "/" +
+                                  (today.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                                  today.getFullYear();
+
+            // Filtra clientes para a exibição inicial: vencendo hoje OU vencidos,
+            // E que NÃO estão arquivados, ocultos, verDepois ou desativados.
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
-
                 const hojeSemHora = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
-                // Na inicialização, mostramos vencendo hoje ou vencidos, que NÃO estão arquivados, ocultos, verDepois ou desativados
                 return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
             });
 
