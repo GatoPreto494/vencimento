@@ -270,6 +270,42 @@
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
+
+        /* Estilos para a nova seção de clientes avisados */
+        #clientesAvisadosSection {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        #clientesAvisadosList {
+            list-style: none;
+            padding: 0;
+        }
+
+        #clientesAvisadosList li {
+            background-color: #e0f2f7;
+            /* Um azul claro para destaque */
+            border: 1px solid #b3e5fc;
+            margin-bottom: 8px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #clientesAvisadosList li .client-info {
+            flex-grow: 1;
+        }
+
+        #clientesAvisadosList li button {
+            margin-left: 5px;
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 
@@ -314,8 +350,6 @@
                 style="display:none;"></span></button>
         <button onclick="filtrarDebito()">Clientes com Débito <span id="badgeDebito" class="notification-badge"
                 style="display:none;"></span></button>
-        <button onclick="filtrarOcultos()">Clientes Avisados (WhatsApp) <span id="badgeOcultos"
-                class="notification-badge" style="display:none;"></span></button>
         <button onclick="filtrarVerDepois()">Ver Depois <span id="badgeVerDepois" class="notification-badge"
                 style="display:none;"></span></button>
         <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge"
@@ -342,7 +376,13 @@
         </table>
         <button onclick="compartilharWhatsApp()">Compartilhar no WhatsApp</button>
 
-        <h3>Data Atual</h3>
+        <hr> <div id="clientesAvisadosSection">
+            <h3>Clientes Avisados (WhatsApp) <span id="badgeOcultos" class="notification-badge"
+                    style="display:none;"></span></h3>
+            <ul id="clientesAvisadosList">
+                </ul>
+        </div>
+        <hr> <h3>Data Atual</h3>
         <p id="dataAtual"></p>
 
         <div class="settings-icon" onclick="toggleSettingsArea()" title="Ajustes">⚙️</div>
@@ -442,7 +482,7 @@
         let clienteIndexParaRenovarDebito = null;
         let clienteIndexParaAlterarProduto = null;
         let modoExibicaoArquivados = false;
-        let modoExibicaoOcultos = false;
+        let modoExibicaoOcultos = false; // Este agora será usado para a seção dedicada, não para o filtro principal.
         let modoExibicaoVerDepois = false;
         let modoExibicaoDesativados = false;
         let filtroProduto = null;
@@ -626,7 +666,7 @@
                 debito: false,
                 Produto: produtoSelecionado,
                 arquivado: false,
-                oculto: false,
+                oculto: false, // Por padrão, ao adicionar, não está oculto (não foi avisado)
                 verDepois: false,
                 desativado: false
             });
@@ -634,48 +674,54 @@
             document.getElementById("nomeInput").value = "";
             document.getElementById("telefoneInput").value = "";
 
-            exibirTabela();
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao("adicionado", nomeInput);
         }
 
         function arquivar(index) {
             salvarEstadoNoHistorico();
-            let clienteParaArquivar = clientesExibidos[index];
+            let clienteParaArquivar = clientesExibidos[index]; // Note: clientesExibidos refere-se à tabela principal
 
             let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id); // Usando ID
             if (clienteOriginal) {
                 clienteOriginal.arquivado = true;
-                clienteOriginal.oculto = false;
+                clienteOriginal.oculto = false; // Quando arquivado, não está mais "oculto por aviso"
                 clienteOriginal.verDepois = false;
                 clienteOriginal.desativado = false;
             }
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
+            modoExibicaoOcultos = false; // Resetar para o comportamento de filtro
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
-            exibirTabela();
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao("arquivado", clienteParaArquivar.nome);
         }
 
         function desarquivar(index) {
             salvarEstadoNoHistorico();
+            // Ao desarquivar de uma lista de "arquivados", o index se refere a clientesExibidos
             let clienteParaDesarquivar = clientesExibidos[index];
 
             let clienteOriginal = clientes.find(c => c.id === clienteParaDesarquivar.id); // Usando ID
             if (clienteOriginal) {
                 clienteOriginal.arquivado = false;
+                // Ao desarquivar, ele pode ou não ser oculto, dependendo do estado anterior.
+                // Não vamos forçar 'oculto: false' aqui.
             }
             clientesFiltrados = [];
-            modoExibicaoArquivados = true;
+            modoExibicaoArquivados = true; // Manter no modo arquivados para que a tabela seja atualizada corretamente
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
-            exibirTabela();
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao("desarquivado", clienteParaDesarquivar.nome);
         }
@@ -688,19 +734,29 @@
             modoExibicaoDesativados = false;
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
-            exibirTabela();
+            exibirTabela(); // Apenas a tabela principal usará este filtro
+            exibirClientesAvisados(); // Certifica-se de que a seção avisados não seja afetada por este filtro
         }
 
-        function filtrarOcultos() {
-            clientesFiltrados = [];
+        // A função filtrarOcultos não será mais para exibir na tabela principal,
+        // mas sim para um caso onde se queira VER apenas a lista de ocultos (seção já faz isso)
+        // ou se o filtro for ativado por um botão antigo (melhor remover o botão "Clientes Avisados (WhatsApp)" do "Filtros e Ações").
+        // Vou manter a função, mas ela não fará sentido se a nova seção for usada.
+        // Seção já trata os "avisados/ocultos", então este botão de filtro pode ser redundante.
+        // Vamos renomear para `mostrarApenasOcultosPorFiltro` para clareza, caso a funcionalidade seja mantida.
+        // No HTML, o botão "Clientes Avisados (WhatsApp)" agora só tem o badge e não tem mais onclick para filtrar.
+        function mostrarApenasOcultosPorFiltro() { // Renomeada de filtrarOcultos
+            clientesFiltrados = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
             modoExibicaoArquivados = false;
-            modoExibicaoOcultos = true;
+            modoExibicaoOcultos = true; // Mantém a flag para exibirTabela
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
-            exibirTabela();
+            exibirTabela(); // Exibe na tabela principal, útil para uma "revisão" de avisados.
+            exibirClientesAvisados(); // Atualiza a seção, que não muda pelo filtro principal.
         }
+
 
         function filtrarVerDepois() {
             clientesFiltrados = [];
@@ -711,6 +767,7 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção também
         }
 
         function filtrarDesativados() {
@@ -722,6 +779,7 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção também
         }
 
         function filtrarPorProduto(produto) {
@@ -734,6 +792,7 @@
             document.getElementById("searchInput").value = "";
             fecharModal();
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção também
         }
 
         let clientesExibidos = [];
@@ -742,29 +801,35 @@
 
             let clientesParaProcessar;
             if (termoPesquisa !== '') {
+                // Ao pesquisar, mostre todos os que correspondem, independente do status oculto/arquivado/etc.
                 clientesParaProcessar = clientes.filter(cliente =>
                     (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
                 );
+                // Reseta todos os modos de exibição quando há uma pesquisa ativa.
                 clientesFiltrados = [];
                 modoExibicaoArquivados = false;
-                modoExibicaoOcultos = false;
+                modoExibicaoOcultos = false; // Importante: a pesquisa pode mostrar ocultos
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
             } else if (modoExibicaoArquivados) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.arquivado);
-            } else if (modoExibicaoOcultos) {
-                clientesParaProcessar = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
             } else if (modoExibicaoVerDepois) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.verDepois && !cliente.arquivado && !cliente.oculto && !cliente.desativado);
             } else if (modoExibicaoDesativados) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.desativado);
             } else if (filtroProduto) {
                 clientesParaProcessar = clientes.filter(cliente => cliente.Produto === filtroProduto && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
-            }
-            else if (clientesFiltrados.length > 0) {
-                clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+            } else if (clientesFiltrados.length > 0) {
+                // Se houver filtro ativo (hoje, amanhã, vencidos, débito)
+                // Certifique-se de que os clientes avisados não apareçam aqui, a menos que o filtro 'ocultos' esteja ativo
+                if (modoExibicaoOcultos) { // Se o filtro 'mostrarApenasOcultosPorFiltro' foi clicado
+                    clientesParaProcessar = clientesFiltrados; // clientesFiltrados já contem os ocultos
+                } else {
+                    clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+                }
             } else {
+                // Exibição padrão: todos que NÃO estão arquivados, ocultos, verDepois ou desativados
                 clientesParaProcessar = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             }
 
@@ -827,7 +892,7 @@
                         <button title="Reativar Cliente" onclick="toggleDesativado(${index})">Reativar</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                     `;
-                } else {
+                } else { // Botões para a tabela principal (não avisados, não arquivados, etc.)
                     const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                     botoesAcao = `
                         <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
@@ -858,6 +923,90 @@
             });
             atualizarContadores();
         }
+
+        // --- NOVA FUNÇÃO: Exibir Clientes Avisados na Seção Dedicada ---
+        function exibirClientesAvisados() {
+            const clientesAvisadosList = document.getElementById('clientesAvisadosList');
+            clientesAvisadosList.innerHTML = ''; // Limpa a lista existente
+
+            const avisados = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
+
+            if (avisados.length === 0) {
+                clientesAvisadosList.innerHTML = '<li>Nenhum cliente avisado para exibir.</li>';
+                return;
+            }
+
+            avisados.sort((a, b) => {
+                const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
+                const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
+                const dataA = new Date(anoA, mesA - 1, diaA);
+                const dataB = new Date(anoB, mesB - 1, diaB);
+                return dataA - dataB;
+            });
+
+
+            avisados.forEach(cliente => {
+                const li = document.createElement('li');
+                const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                li.innerHTML = `
+                    <div class="client-info">
+                        <strong>${nomeExibicaoBase}</strong> (${cliente.Produto || 'N/I'}) - Vencimento: ${cliente.data}
+                    </div>
+                    <div class="client-actions">
+                        <button title="Reexibir Cliente (Tira do Avisados)" onclick="toggleOcultoFromAvisados('${cliente.id}')">Reexibir</button>
+                        <button title="Editar Cliente" onclick="editarClienteById('${cliente.id}')">Edit</button>
+                        <button title="Excluir Cliente" onclick="excluirClienteById('${cliente.id}')">❌</button>
+                    </div>
+                `;
+                clientesAvisadosList.appendChild(li);
+            });
+        }
+
+        // Nova função para reexibir/desmarcar oculto diretamente da seção de avisados
+        function toggleOcultoFromAvisados(clientId) {
+            salvarEstadoNoHistorico();
+            const clienteOriginalIndex = clientes.findIndex(c => c.id === clientId);
+            if (clienteOriginalIndex !== -1) {
+                clientes[clienteOriginalIndex].oculto = false; // Desmarca como oculto
+                clientes[clienteOriginalIndex].avisado = false; // Opcional: também desmarca como avisado, se desejar
+                exibirTabela(); // Atualiza a tabela principal
+                exibirClientesAvisados(); // Remove da lista de avisados
+                salvarClientes();
+                atualizarUltimaAtualizacao("reexibido", clientes[clienteOriginalIndex].nome);
+            }
+        }
+
+        // Função auxiliar para editar cliente pelo ID, para uso na seção de avisados
+        function editarClienteById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                // Precisamos adaptar o `editar` para aceitar o index na lista `clientes` principal
+                // ou passar o objeto diretamente para a função de edição.
+                // A forma mais simples é encontrar o index do cliente dentro de clientesExibidos
+                // se a função `editar` espera um index de `clientesExibidos`.
+                // Como `editar` recebe `index` e usa `clientesExibidos[index]`, precisamos fazer um truque:
+                const tempClientesExibidos = [clientes[index]]; // Crie uma array temporária com o cliente para editar
+                const originalClientesExibidos = clientesExibidos; // Salve o estado original
+                clientesExibidos = tempClientesExibidos; // Defina para o cliente que será editado
+                editar(0); // Chame editar com index 0, pois ele é o primeiro (e único) na tempClientesExibidos
+                clientesExibidos = originalClientesExibidos; // Restaure
+            }
+        }
+
+        // Função auxiliar para excluir cliente pelo ID, para uso na seção de avisados
+        function excluirClienteById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                // Similar à edição, adapte para a exclusão.
+                const tempClientesExibidos = [clientes[index]];
+                const originalClientesExibidos = clientesExibidos;
+                clientesExibidos = tempClientesExibidos;
+                excluir(0); // Chame excluir com index 0
+                clientesExibidos = originalClientesExibidos;
+            }
+        }
+        // --- FIM: NOVA FUNÇÃO ---
+
 
         function pedirConfirmacaoRenovacaoDebito(index) {
             clienteIndexParaRenovarDebito = index;
@@ -897,6 +1046,7 @@
             modoExibicaoDesativados = false;
             filtroProduto = null;
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao("renovado automaticamente", cliente.nome);
         }
@@ -936,6 +1086,7 @@
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
                 exibirTabela();
+                exibirClientesAvisados(); // Atualiza a nova seção
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaRenovarDebito = null;
@@ -1018,6 +1169,7 @@
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
                 exibirTabela();
+                exibirClientesAvisados(); // Atualiza a nova seção
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaDuplicar = null;
@@ -1082,9 +1234,10 @@
 
             let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
-                clienteOriginal.oculto = true;
+                clienteOriginal.oculto = true; // Marcar como oculto quando a mensagem é enviada
             }
-            exibirTabela();
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Atualiza a nova seção de avisados
             salvarClientes();
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
         }
@@ -1250,7 +1403,8 @@
                     filtroProduto = null;
                     document.getElementById("searchInput").value = "";
 
-                    exibirTabela();
+                    exibirTabela(); // Atualiza a tabela principal
+                    exibirClientesAvisados(); // Atualiza a nova seção
                     salvarClientes();
                     exibirAlerta(`Importação concluída: ${novosClientesAdicionados} novos clientes adicionados, ${clientesAtualizados} clientes atualizados, ${clientesIgnorados} ignorados.`);
                     atualizarUltimaAtualizacao("clientes importados/atualizados por ID");
@@ -1297,6 +1451,7 @@
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
+            // Filtra clientes que vencem hoje E não estão ocultos, arquivados, verDepois ou desativados
             clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -1315,6 +1470,7 @@
                 (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 amanha.getFullYear();
 
+            // Filtra clientes que vencem amanhã E não estão ocultos, arquivados, verDepois ou desativados
             clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -1334,6 +1490,7 @@
                 const dataClienteSemHora = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
+                // Filtra clientes vencidos E não estão ocultos, arquivados, verDepois ou desativados
                 return dataClienteSemHora < hojeSemHora && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
             });
             modoExibicaoArquivados = false;
@@ -1362,13 +1519,13 @@
         function exibirTodos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
+            modoExibicaoOcultos = false; // Garante que o modo de filtro de ocultos esteja desativado
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
-            clientes.forEach(cliente => cliente.oculto = false);
             document.getElementById("searchInput").value = "";
-            exibirTabela();
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Garante que a seção avisados seja atualizada
             atualizarContadores();
         }
 
@@ -1430,6 +1587,7 @@
             modoExibicaoDesativados = false;
             filtroProduto = null;
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             exibirAlerta("Todos os clientes foram limpos!");
             atualizarUltimaAtualizacao("lista limpa");
@@ -1447,7 +1605,7 @@
             clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1]));
 
             salvarClientes();
-            exibirTodos();
+            exibirTodos(); // Chama exibirTodos para reexibir e atualizar ambas as seções
             exibirAlerta("Última ação desfeita!");
             atualizarUltimaAtualizacao("ação desfeita");
         }
@@ -1461,13 +1619,13 @@
             salvarEstadoNoHistorico(false);
             clientes = redoHistory.pop();
             salvarClientes();
-            exibirTodos();
+            exibirTodos(); // Chama exibirTodos para reexibir e atualizar ambas as seções
             exibirAlerta("Última ação refeita!");
             atualizarUltimaAtualizacao("ação refeita");
         }
 
         function editar(index) {
-            let cliente = clientesExibidos[index];
+            let cliente = clientesExibidos[index]; // Note: clientesExibidos pode ser filtrado, então o index é relativo a ele.
             const modalEdicao = document.getElementById("modalEdicao");
             modalEdicao.style.display = "flex";
 
@@ -1494,6 +1652,10 @@
                 </div>
             `;
             document.getElementById("novoNome").focus();
+            // Para salvar a edição, precisamos do index original do cliente na array `clientes`
+            const originalClienteIndex = clientes.findIndex(c => c.id === cliente.id);
+            document.getElementById("salvarBtn").onclick = () => salvarEdicao(originalClienteIndex);
+
             document.getElementById("novoNome").addEventListener("keydown", (e) => proximoCampo(e, "novoTelefone"));
             document.getElementById("novoTelefone").addEventListener("keydown", (e) => proximoCampo(e, "novaData"));
             document.getElementById("novaData").addEventListener("keydown", (e) => {
@@ -1505,10 +1667,9 @@
             document.getElementById("salvarBtn").addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    salvarEdicao(index);
+                    salvarEdicao(originalClienteIndex);
                 }
             });
-            document.getElementById("salvarBtn").addEventListener("click", () => salvarEdicao(index));
             document.addEventListener("keydown", fecharComEsc);
         }
 
@@ -1519,16 +1680,10 @@
             }
         }
 
-        function salvarEdicao(index) {
+        // `index` agora se refere ao index do cliente na array `clientes` original, não em `clientesExibidos`
+        function salvarEdicao(originalClienteIndex) {
             salvarEstadoNoHistorico();
-            const clienteParaAtualizar = clientesExibidos[index];
-            let clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaAtualizar.id);
-
-            if (clienteOriginalIndex === -1) {
-                exibirAlerta("Erro ao salvar edição: Cliente não encontrado na lista principal!"); // Mensagem mais clara
-                fecharModal();
-                return;
-            }
+            const clienteParaAtualizar = clientes[originalClienteIndex]; // Use o index direto na array principal
 
             let novoNome = document.getElementById("novoNome").value.trim();
             let novoTelefone = document.getElementById("novoTelefone").value.trim();
@@ -1547,6 +1702,7 @@
             }
             const novoId = telefoneLimpoEditado.slice(-5);
 
+            // Verifica se o novo ID já existe E não é o ID do próprio cliente que está sendo editado
             if (novoId !== clienteParaAtualizar.id && clientes.some(c => c.id === novoId && c.id !== clienteParaAtualizar.id)) {
                 exibirAlerta(`O novo telefone final (${novoId}) já está em uso por outro cliente. Por favor, escolha um telefone diferente.`);
                 return;
@@ -1555,22 +1711,23 @@
             let nomeSemProduto = novoNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
             let nomeComNovoProduto = `${nomeSemProduto} (${novoProduto})`;
 
-            clientes[clienteOriginalIndex].id = novoId;
-            clientes[clienteOriginalIndex].nome = nomeComNovoProduto;
-            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado; // Salva o telefone limpo
-            clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
-            clientes[clienteOriginalIndex].Produto = novoProduto;
+            clientes[originalClienteIndex].id = novoId; // Atualiza o ID se o telefone mudou
+            clientes[originalClienteIndex].nome = nomeComNovoProduto;
+            clientes[originalClienteIndex].telefone = telefoneLimpoEditado; // Salva o telefone limpo
+            clientes[originalClienteIndex].data = novaData.split("-").reverse().join("/");
+            clientes[originalClienteIndex].Produto = novoProduto;
 
+            // Resetar modos de exibição e filtros para forçar uma re-renderização completa
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
-            clientes.forEach(cliente => cliente.oculto = false); // Não resetar todos os ocultos na edição
             document.getElementById("searchInput").value = "";
 
-            exibirTabela();
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Atualiza a nova seção de avisados
             salvarClientes();
             fecharModal();
             atualizarUltimaAtualizacao("editado", nomeComNovoProduto);
@@ -1582,8 +1739,8 @@
         }
 
         function excluir(index) {
-            const cliente = clientesExibidos[index];
-            clienteIndexParaExcluir = clientes.findIndex(c => c.id === cliente.id);
+            const cliente = clientesExibidos[index]; // Cliente da lista atualmente exibida
+            clienteIndexParaExcluir = clientes.findIndex(c => c.id === cliente.id); // Encontra o index na lista principal
             if (clienteIndexParaExcluir !== -1) {
                 document.getElementById("modalExclusao").style.display = "flex";
             }
@@ -1601,10 +1758,10 @@
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
-                clientes.forEach(cliente => cliente.oculto = false);
                 document.getElementById("searchInput").value = "";
 
-                exibirTabela();
+                exibirTabela(); // Atualiza a tabela principal
+                exibirClientesAvisados(); // Atualiza a nova seção
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaExcluir = null;
@@ -1614,13 +1771,19 @@
 
         function toggleAvisado(index) {
             salvarEstadoNoHistorico();
-            let cliente = clientesExibidos[index];
+            let cliente = clientesExibidos[index]; // Da tabela principal
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
-                clientes[clienteOriginalIndex].oculto = false;
+                // Se marcar como avisado, também o torna oculto da tabela principal
+                if (clientes[clienteOriginalIndex].avisado) {
+                    clientes[clienteOriginalIndex].oculto = true;
+                } else {
+                    clientes[clienteOriginalIndex].oculto = false;
+                }
             }
-            exibirTabela();
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
         }
@@ -1633,6 +1796,7 @@
                 clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
             }
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao(`status débito alterado para ${clientes[clienteOriginalIndex].debito ? 'sim' : 'não'}`, cliente.nome);
         }
@@ -1644,12 +1808,13 @@
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].verDepois = !clientes[clienteOriginalIndex].verDepois;
                 if (clientes[clienteOriginalIndex].verDepois) {
-                    clientes[clienteOriginalIndex].oculto = false;
+                    clientes[clienteOriginalIndex].oculto = false; // "Ver Depois" não é "Oculto por aviso"
                     clientes[clienteOriginalIndex].arquivado = false;
                     clientes[clienteOriginalIndex].desativado = false;
                 }
             }
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
@@ -1663,12 +1828,13 @@
                 if (clientes[clienteOriginalIndex].desativado) {
                     clientes[clienteOriginalIndex].avisado = false;
                     clientes[clienteOriginalIndex].debito = false;
-                    clientes[clienteOriginalIndex].oculto = false;
+                    clientes[clienteOriginalIndex].oculto = false; // Desativado não é "Oculto por aviso"
                     clientes[clienteOriginalIndex].verDepois = false;
                     clientes[clienteOriginalIndex].arquivado = false;
                 }
             }
             exibirTabela();
+            exibirClientesAvisados(); // Atualiza a nova seção
             salvarClientes();
             atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
         }
@@ -1696,6 +1862,7 @@
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
                 exibirTabela();
+                exibirClientesAvisados(); // Atualiza a nova seção
                 salvarClientes();
                 fecharModal();
                 clienteIndexParaAlterarProduto = null;
@@ -1726,7 +1893,7 @@
                             debito: c.debito || false,
                             Produto: c.Produto || "Não informado",
                             arquivado: c.arquivado || false,
-                            oculto: c.oculto || false,
+                            oculto: c.oculto || false, // Manter o status oculto carregado do localStorage
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false
                         };
@@ -1757,11 +1924,12 @@
             // A pesquisa agora é tratada diretamente na exibirTabela com base no input
             // Não precisamos de lógica de filtro separada aqui, apenas forçar a atualização da tabela
             exibirTabela();
+            exibirClientesAvisados(); // Garante que a seção avisados também se atualize se for o caso
         }
 
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
-            exibirTodos();
+            exibirTodos(); // Chama exibirTodos para reexibir tudo e atualizar ambas as seções
         }
 
         // --- FUNÇÕES DE AJUSTES ---
@@ -1842,10 +2010,11 @@
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
-            const clientesVisiveisParaFiltros = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+            // Clientes que são exibidos na tabela principal (NÃO OCULTOS, ARQUIVADOS, VERDEPOIS, DESATIVADOS)
+            const clientesNaTabelaPrincipal = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
 
-            const countHoje = clientesVisiveisParaFiltros.filter(cliente => cliente.data === hojeFormatada).length;
-            const countAmanha = clientesVisiveisParaFiltros.filter(cliente => {
+            const countHoje = clientesNaTabelaPrincipal.filter(cliente => cliente.data === hojeFormatada).length;
+            const countAmanha = clientesNaTabelaPrincipal.filter(cliente => {
                 const amanha = new Date();
                 amanha.setDate(amanha.getDate() + 1);
                 const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
@@ -1853,15 +2022,16 @@
                     amanha.getFullYear();
                 return cliente.data === amanhaFormatada;
             }).length;
-            const countVencidos = clientesVisiveisParaFiltros.filter(cliente => {
+            const countVencidos = clientesNaTabelaPrincipal.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
                 return dataCliente < hojeSemHora;
             }).length;
-            const countDebito = clientesVisiveisParaFiltros.filter(cliente => cliente.debito).length;
+            const countDebito = clientesNaTabelaPrincipal.filter(cliente => cliente.debito).length;
 
+            // O contador de ocultos agora conta para o badge na nova seção.
             const countOcultos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado).length;
             const countArquivados = clientes.filter(cliente => cliente.arquivado).length;
             const countVerDepois = clientes.filter(cliente => cliente.verDepois).length;
@@ -1871,20 +2041,20 @@
             updateBadge('badgeAmanha', countAmanha);
             updateBadge('badgeVencidos', countVencidos);
             updateBadge('badgeDebito', countDebito);
-            updateBadge('badgeOcultos', countOcultos);
+            updateBadge('badgeOcultos', countOcultos); // Badge da nova seção
             updateBadge('badgeArquivados', countArquivados);
             updateBadge('badgeVerDepois', countVerDepois);
             updateBadge('badgeDesativados', countDesativados);
 
             // Atualiza o contador do botão central de mensagens
-            const vencidosNaoOcultos = clientes.filter(cliente => {
+            const vencidosNaoOcultosParaMensagem = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-                // Considera apenas vencidos e que não estão ocultos, arquivados, verDepois ou desativados
+                // Considera apenas vencidos e que NÃO estão ocultos, arquivados, verDepois ou desativados
                 return dataCliente < hojeSemHora && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             });
-            updateBadge('badgeCentralMessage', vencidosNaoOcultos.length);
+            updateBadge('badgeCentralMessage', vencidosNaoOcultosParaMensagem.length);
         }
 
         function updateBadge(badgeId, count) {
@@ -1976,22 +2146,21 @@
             const day = String(today.getDate()).padStart(2, '0');
             document.getElementById('dataInput').value = `${year}-${month}-${day}`;
 
-            const hoje = new Date();
-            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                hoje.getFullYear();
-
+            // A inicialização agora exibe na tabela principal apenas os clientes NÃO ocultos
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
 
-                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+                const hojeSemHora = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
+                // Na inicialização, mostramos vencendo hoje ou vencidos, que NÃO estão arquivados, ocultos, verDepois ou desativados
                 return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
             });
+
+            // Reseta os modos de exibição de filtro, pois a página está sendo carregada com uma exibição padrão.
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
@@ -1999,7 +2168,8 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
 
-            exibirTabela();
+            exibirTabela(); // Preenche a tabela principal (clientes não avisados, etc.)
+            exibirClientesAvisados(); // Preenche a nova seção de clientes avisados
             prepararClientesVencidosParaMensagem(); // Prepara a lista para o botão central ao carregar a página
         }
         // Inicialização
