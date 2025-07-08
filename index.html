@@ -245,11 +245,37 @@
             line-height: 1;
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
         }
+
+        /* Novo estilo para o botão central de mensagens */
+        #centralMessageButton {
+            display: block;
+            margin: 20px auto;
+            /* Centraliza o botão */
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background-color: #28a745;
+            /* Verde vibrante */
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        #centralMessageButton:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        #centralMessageButton:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 
 <body>
-    <div id="ultimaAtualizacaoInfo" style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
+    <div id="ultimaAtualizacaoInfo"
+        style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
         Última Alteração: Nunca
     </div>
     <div class="container">
@@ -273,6 +299,10 @@
         </div>
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
 
+        <button id="centralMessageButton" onclick="enviarProximoClienteVencido()">
+            Enviar Mensagem para Próximo Vencido
+            <span id="badgeCentralMessage" class="notification-badge" style="display:none;"></span>
+        </button>
         <h3>Filtros e Ações</h3>
         <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge"
                 style="display:none;"></span></button>
@@ -398,7 +428,9 @@
         </div>
     </div>
     <script>
-        let clientes = [];
+        // REMOVA OU COMENTE A LINHA ABAIXO!
+        // document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
+        let clientes = []; // Inicializado como array vazio, será preenchido por loadClientes()
         let clientesFiltrados = [];
         let clienteIndexParaExcluir = null;
         let clienteIndexParaDuplicar = null;
@@ -414,9 +446,15 @@
         const MAX_HISTORY_STATES = 10;
         let confirmActionCallback = null;
 
+        // Variáveis para gerenciar o processo de importação com conflitos
         let clientesParaProcessarImportacao = [];
         let currentIndexImportacao = 0;
 
+        // Variáveis para o botão de mensagem central
+        let clientesVencidosParaMensagem = [];
+        let indiceClienteVencidoAtual = 0;
+
+        // --- Função para atualizar a data e hora da última alteração de dados ---
         function atualizarUltimaAtualizacao(acao = "dados atualizados", clienteNome = "") {
             const now = new Date();
             const options = {
@@ -429,20 +467,25 @@
                 hour12: false
             };
             const formattedDateTime = now.toLocaleString('pt-BR', options);
-            
+
             let fullMessage = `Última Alteração: ${formattedDateTime}`;
             if (clienteNome) {
+                // Remove o "(UniTv)" ou "(Duplecast)" do nome para a mensagem
                 const nomeLimpoParaMsg = clienteNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                 fullMessage += ` - ${nomeLimpoParaMsg} (${acao})`;
             } else {
                 fullMessage += ` (${acao})`;
             }
 
+            // Salva a mensagem completa no localStorage
             localStorage.setItem('ultimaAtualizacaoCliente', fullMessage);
             document.getElementById('ultimaAtualizacaoInfo').textContent = fullMessage;
 
+            // Opcional: Loga a mensagem no console para depuração
             console.log(fullMessage);
         }
+
+        // --- Fim da função de atualização ---
 
         function salvarEstadoNoHistorico(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
@@ -551,10 +594,12 @@
             if (telefoneLimpo.length < 5) {
                 return exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
             }
-            const clienteId = telefoneLimpo.slice(-5);
+            const clienteId = telefoneLimpo.slice(-5); // Pega os últimos 5 dígitos como ID
 
+            // Verifica se já existe um cliente com este ID (telefone final)
             const clienteExistenteComMesmoId = clientes.find(c => c.id === clienteId);
-            if (clienteExistenteComMesmoId) {
+            if (clienteExistenteComesmoId) {
+                // Se encontrar, avisa o usuário e não adiciona
                 return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
 
@@ -568,7 +613,7 @@
             }
 
             clientes.push({
-                id: clienteId,
+                id: clienteId, // NOVO: Adiciona o ID ao cliente
                 data: dataFormatada,
                 nome: nomeComProduto,
                 telefone: telefoneLimpo,
@@ -593,7 +638,7 @@
             salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id);
+            let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id); // Usando ID
             if (clienteOriginal) {
                 clienteOriginal.arquivado = true;
                 clienteOriginal.oculto = false;
@@ -615,7 +660,7 @@
             salvarEstadoNoHistorico();
             let clienteParaDesarquivar = clientesExibidos[index];
 
-            let clienteOriginal = clientes.find(c => c.id === clienteParaDesarquivar.id);
+            let clienteOriginal = clientes.find(c => c.id === clienteParaDesarquivar.id); // Usando ID
             if (clienteOriginal) {
                 clienteOriginal.arquivado = false;
             }
@@ -813,6 +858,8 @@
             clienteIndexParaRenovarDebito = index;
             document.getElementById("modalRenovarComDebito").style.display = "flex";
             document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
+            // Não chame atualizarUltimaAtualizacao aqui
+            // atualizarUltimaAtualizacao("confirmar renovação com débito");
         }
 
         function renovarAutomatico(index) {
@@ -825,10 +872,16 @@
             }
 
             salvarEstadoNoHistorico();
-            let clienteOriginal = clientes.find(c => c.id === cliente.id);
+            let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
             if (clienteOriginal) {
-                // Ambos os produtos agora utilizam a lógica de renovação do Duplecast
-                renovarProximoMes(clienteOriginal); 
+                if (produtoCliente === "Duplecast") {
+                    renovarProximoMes(clienteOriginal);
+                } else if (produtoCliente === "UniTv") {
+                    renovar30(clienteOriginal);
+                } else {
+                    exibirAlerta("Tipo de produto desconhecido para renovação automática.");
+                    return;
+                }
                 clienteOriginal.debito = false;
                 clienteOriginal.oculto = false;
                 clienteOriginal.verDepois = false;
@@ -857,10 +910,17 @@
                     return;
                 }
 
-                let clienteOriginal = clientes.find(c => c.id === cliente.id);
+                let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
                 if (clienteOriginal) {
-                    // Ambos os produtos agora utilizam a lógica de renovação do Duplecast
-                    renovarProximoMes(clienteOriginal);
+                    if (produtoCliente === "Duplecast") {
+                        renovarProximoMes(clienteOriginal);
+                    } else if (produtoCliente === "UniTv") {
+                        renovar30(clienteOriginal);
+                    } else {
+                        exibirAlerta("Tipo de produto desconhecido para renovação automática.");
+                        fecharModal();
+                        return;
+                    }
                     clienteOriginal.debito = true;
                     clienteOriginal.oculto = false;
                     clienteOriginal.verDepois = false;
@@ -881,7 +941,6 @@
             }
         }
 
-        // Esta função não é mais chamada diretamente pelo tipo de produto
         function renovar30(clienteObj) {
             clienteObj.data = incrementarData(clienteObj.data, 30);
         }
@@ -907,6 +966,8 @@
         function duplicarCliente(index) {
             clienteIndexParaDuplicar = index;
             document.getElementById("modalConfirmacao").style.display = "flex";
+            // Não chame atualizarUltimaAtualizacao aqui
+            // atualizarUltimaAtualizacao("confirmar duplicação");
         }
 
         function confirmarDuplicacao() {
@@ -914,14 +975,16 @@
                 salvarEstadoNoHistorico();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
+                // Para duplicar, precisamos gerar um NOVO ID único
                 let novoTelefoneBase = clienteOriginal.telefone;
                 let novoId = clienteOriginal.id;
                 let contadorDuplicacao = 1;
                 while (clientes.some(c => c.id === novoId)) {
+                    // Tenta criar um ID único adicionando sufixo ao telefone
                     novoTelefoneBase = clienteOriginal.telefone + '_' + contadorDuplicacao;
                     novoId = novoTelefoneBase.slice(-5);
                     if (novoTelefoneBase.length < 5) {
-                        novoId = "DUP" + String(contadorDuplicacao).padStart(3, '0');
+                        novoId = "DUP" + String(contadorDuplicacao).padStart(3, '0'); // Fallback para ID mais único
                     } else {
                         novoId = novoTelefoneBase.slice(-5);
                     }
@@ -962,12 +1025,14 @@
         }
 
         function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
-            let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, '');
+            let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, ''); // Remove todos os não-dígitos
             if (!telefoneParaWhatsApp) {
                 exibirAlerta("Número de telefone inválido!");
                 return;
             }
 
+            // Verifica se o número já começa com '55' (código do Brasil)
+            // Se não começar, adiciona '55' ao início
             if (!telefoneParaWhatsApp.startsWith('55')) {
                 telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
             }
@@ -1047,145 +1112,157 @@
             atualizarUltimaAtualizacao("clientes exportados");
         }
 
-        async function importarClientes() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = async () => {
-                    try {
-                        salvarEstadoNoHistorico();
+        async function importarClientes(file = null) {
+            let fileToImport = file;
 
-                        const clientesImportadosRaw = JSON.parse(reader.result);
-                        clientesParaProcessarImportacao = clientesImportadosRaw.map(c => {
-                            const telefoneLimpo = c.telefone ? String(c.telefone).replace(/[^\d]/g, '') : '';
-                            const id = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
+            if (!fileToImport) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.click(); // Abre o seletor de arquivos
 
-                            const nomeAjustado = c.Produto && !c.nome.includes(`(${c.Produto})`) ?
-                                `${c.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${c.Produto})` :
-                                c.nome;
+                fileToImport = await new Promise(resolve => {
+                    input.onchange = (e) => resolve(e.target.files[0]);
+                });
 
-                            return {
-                                id: id,
-                                data: c.data,
-                                nome: nomeAjustado,
-                                telefone: telefoneLimpo,
-                                avisado: c.avisado || false,
-                                debito: c.debito || false,
-                                Produto: c.Produto || "Não informado",
-                                arquivado: c.arquivado || false,
-                                oculto: c.oculto || false,
-                                verDepois: c.verDepois || false,
-                                desativado: c.desativado || false
-                            };
-                        });
+                if (!fileToImport) {
+                    return; // Usuário cancelou a seleção
+                }
+            }
 
-                        currentIndexImportacao = 0;
-                        let novosClientesAdicionados = 0;
-                        let clientesAtualizados = 0;
-                        let clientesIgnorados = 0;
 
-                        while (currentIndexImportacao < clientesParaProcessarImportacao.length) {
-                            const clienteImportado = clientesParaProcessarImportacao[currentIndexImportacao];
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    salvarEstadoNoHistorico(); // Salva o estado atual antes de começar a importação
 
-                            if (!clienteImportado.id) {
-                                console.warn(`Cliente ignorado na importação por não ter um ID válido (telefone curto):`, clienteImportado);
-                                clientesIgnorados++;
-                                currentIndexImportacao++;
-                                continue;
-                            }
+                    const clientesImportadosRaw = JSON.parse(reader.result);
+                    clientesParaProcessarImportacao = clientesImportadosRaw.map(c => {
+                        const telefoneLimpo = c.telefone ? String(c.telefone).replace(/[^\d]/g, '') : '';
+                        const id = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
 
-                            const indexClienteExistente = clientes.findIndex(c => c.id === clienteImportado.id);
+                        const nomeAjustado = c.Produto && !c.nome.includes(`(${c.Produto})`) ?
+                            `${c.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${c.Produto})` :
+                            c.nome;
 
-                            if (indexClienteExistente !== -1) {
-                                const clienteExistente = clientes[indexClienteExistente];
+                        return {
+                            id: id,
+                            data: c.data,
+                            nome: nomeAjustado,
+                            telefone: telefoneLimpo,
+                            avisado: c.avisado || false,
+                            debito: c.debito || false,
+                            Produto: c.Produto || "Não informado",
+                            arquivado: c.arquivado || false,
+                            oculto: c.oculto || false,
+                            verDepois: c.verDepois || false,
+                            desativado: c.desativado || false
+                        };
+                    });
 
-                                const nomeExistenteBase = clienteExistente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
-                                const nomeImportadoBase = clienteImportado.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                    currentIndexImportacao = 0;
+                    let novosClientesAdicionados = 0;
+                    let clientesAtualizados = 0;
+                    let clientesIgnorados = 0;
 
-                                if (nomeExistenteBase.toLowerCase() !== nomeImportadoBase.toLowerCase()) {
-                                    const acao = await perguntarConflitoIdNome(clienteExistente, clienteImportado);
+                    while (currentIndexImportacao < clientesParaProcessarImportacao.length) {
+                        const clienteImportado = clientesParaProcessarImportacao[currentIndexImportacao];
 
-                                    if (acao === 'usarImportado') {
-                                        clientes[indexClienteExistente] = clienteImportado;
-                                        clientesAtualizados++;
-                                    } else if (acao === 'manterExistente') {
-                                        clientesIgnorados++;
-                                    } else if (acao === 'manterAmbos') {
-                                        let newId = clienteImportado.id;
-                                        let counter = 1;
-                                        let originalTelefone = clienteImportado.telefone;
-                                        while (clientes.some(c => c.id === newId)) {
-                                            const tempTelefone = originalTelefone + '-' + counter;
-                                            newId = tempTelefone.slice(-5);
-                                            if (tempTelefone.length < 5) {
-                                                newId = "DUP" + String(counter).padStart(3, '0');
-                                            } else {
-                                                newId = tempTelefone.slice(-5);
-                                            }
-                                            counter++;
-                                            if (counter > 1000) {
-                                                console.error("Could not generate a unique ID for 'Manter Ambos' option.");
-                                                break;
-                                            }
-                                        }
-                                        const newClientForBoth = { ...clienteImportado, id: newId, telefone: originalTelefone + '-' + (counter - 1) };
-                                        clientes.push(newClientForBoth);
-                                        novosClientesAdicionados++;
-                                    }
-                                } else {
-                                    const [diaExistente, mesExistente, anoExistente] = clienteExistente.data.split("/").map(Number);
-                                    const dataObjExistente = new Date(anoExistente, mesExistente - 1, diaExistente);
-
-                                    const [diaImportado, mesImportado, anoImportado] = clienteImportado.data.split("/").map(Number);
-                                    const dataObjImportado = new Date(anoImportado, mesImportado - 1, diaImportado);
-
-                                    if (dataObjImportado > dataObjExistente) {
-                                        clientes[indexClienteExistente] = clienteImportado;
-                                        clientesAtualizados++;
-                                    } else {
-                                        clientes[indexClienteExistente].nome = clienteImportado.nome;
-                                        clientes[indexClienteExistente].telefone = clienteImportado.telefone;
-                                        clientes[indexClienteExistente].Produto = clienteImportado.Produto;
-                                        clientes[indexClienteExistente].avisado = clienteImportado.avisado;
-                                        clientes[indexClienteExistente].debito = clienteImportado.debito;
-                                        clientes[indexClienteExistente].arquivado = clienteImportado.arquivado;
-                                        clientes[indexClienteExistente].oculto = clienteImportado.oculto;
-                                        clientes[indexClienteExistente].verDepois = clienteImportado.verDepois;
-                                        clientes[indexClienteExistente].desativado = clienteImportado.desativado;
-                                        clientesAtualizados++;
-                                    }
-                                }
-                            } else {
-                                clientes.push(clienteImportado);
-                                novosClientesAdicionados++;
-                            }
+                        if (!clienteImportado.id) {
+                            console.warn(`Cliente ignorado na importação por não ter um ID válido (telefone curto):`, clienteImportado);
+                            clientesIgnorados++;
                             currentIndexImportacao++;
+                            continue;
                         }
 
-                        clientesFiltrados = [];
-                        modoExibicaoArquivados = false;
-                        modoExibicaoOcultos = false;
-                        modoExibicaoVerDepois = false;
-                        modoExibicaoDesativados = false;
-                        filtroProduto = null;
-                        document.getElementById("searchInput").value = "";
+                        const indexClienteExistente = clientes.findIndex(c => c.id === clienteImportado.id);
 
-                        exibirTabela();
-                        salvarClientes();
-                        exibirAlerta(`Importação concluída: ${novosClientesAdicionados} novos clientes adicionados, ${clientesAtualizados} clientes atualizados, ${clientesIgnorados} ignorados.`);
-                        atualizarUltimaAtualizacao("clientes importados/atualizados por ID");
+                        if (indexClienteExistente !== -1) {
+                            // Cliente com o mesmo ID já existe
+                            const clienteExistente = clientes[indexClienteExistente];
 
-                    } catch (error) {
-                        exibirAlerta("Erro ao importar JSON. Verifique o arquivo ou formato.");
-                        console.error("Erro ao importar:", error);
+                            const nomeExistenteBase = clienteExistente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                            const nomeImportadoBase = clienteImportado.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+
+                            if (nomeExistenteBase.toLowerCase() !== nomeImportadoBase.toLowerCase()) {
+                                // Conflito de nome com mesmo ID, pede decisão ao usuário
+                                const acao = await perguntarConflitoIdNome(clienteExistente, clienteImportado);
+
+                                if (acao === 'usarImportado') {
+                                    clientes[indexClienteExistente] = clienteImportado;
+                                    clientesAtualizados++;
+                                } else if (acao === 'manterExistente') {
+                                    clientesIgnorados++;
+                                } else if (acao === 'manterAmbos') { // Handle "Manter Ambos"
+                                    let newId = clienteImportado.id;
+                                    let counter = 1;
+                                    let originalTelefone = clienteImportado.telefone; // Keep original telefone for base
+                                    while (clientes.some(c => c.id === newId)) {
+                                        const tempTelefone = originalTelefone + '-' + counter; // Append suffix to phone
+                                        newId = tempTelefone.slice(-5); // Re-derive ID from suffixed phone
+                                        counter++;
+                                        if (counter > 1000) { // Safety break
+                                            console.error("Could not generate a unique ID for 'Manter Ambos' option.");
+                                            break;
+                                        }
+                                    }
+                                    // Create a new client object with the original imported data, but a new unique ID and modified phone
+                                    const newClientForBoth = { ...clienteImportado, id: newId, telefone: originalTelefone + '-' + (counter - 1) };
+                                    clientes.push(newClientForBoth);
+                                    novosClientesAdicionados++;
+                                }
+                            } else {
+                                // Mesmo ID e mesmo nome (base), atualiza a data se a importada for mais recente
+                                const [diaExistente, mesExistente, anoExistente] = clienteExistente.data.split("/").map(Number);
+                                const dataObjExistente = new Date(anoExistente, mesExistente - 1, diaExistente);
+
+                                const [diaImportado, mesImportado, anoImportado] = clienteImportado.data.split("/").map(Number);
+                                const dataObjImportado = new Date(anoImportado, mesImportado - 1, diaImportado);
+
+                                if (dataObjImportado > dataObjExistente) {
+                                    clientes[indexClienteExistente] = clienteImportado;
+                                    clientesAtualizados++;
+                                } else {
+                                    // Update other fields even if date is not newer, if they are different.
+                                    // This ensures consistency without forcing a date update.
+                                    clientes[indexClienteExistente].nome = clienteImportado.nome;
+                                    clientes[indexClienteExistente].telefone = clienteImportado.telefone;
+                                    clientes[indexClienteExistente].Produto = clienteImportado.Produto;
+                                    clientes[indexClienteExistente].avisado = clienteImportado.avisado;
+                                    clientes[indexClienteExistente].debito = clienteImportado.debito;
+                                    clientes[indexClienteExistente].arquivado = clienteImportado.arquivado;
+                                    clientes[indexClienteExistente].oculto = clienteImportado.oculto;
+                                    clientes[indexClienteExistente].verDepois = clienteImportado.verDepois;
+                                    clientes[indexClienteExistente].desativado = clienteImportado.desativado;
+                                    clientesAtualizados++;
+                                }
+                            }
+                        } else {
+                            clientes.push(clienteImportado);
+                            novosClientesAdicionados++;
+                        }
+                        currentIndexImportacao++;
                     }
-                };
-                reader.readAsText(file);
+
+                    clientesFiltrados = [];
+                    modoExibicaoArquivados = false;
+                    modoExibicaoOcultos = false;
+                    modoExibicaoVerDepois = false;
+                    modoExibicaoDesativados = false;
+                    filtroProduto = null;
+                    document.getElementById("searchInput").value = "";
+
+                    exibirTabela();
+                    salvarClientes();
+                    exibirAlerta(`Importação concluída: ${novosClientesAdicionados} novos clientes adicionados, ${clientesAtualizados} clientes atualizados, ${clientesIgnorados} ignorados.`);
+                    atualizarUltimaAtualizacao("clientes importados/atualizados por ID");
+
+                } catch (error) {
+                    exibirAlerta("Erro ao importar JSON. Verifique o arquivo ou formato.");
+                    console.error("Erro ao importar:", error);
+                }
             };
-            input.click();
+            reader.readAsText(fileToImport);
         }
 
         function perguntarConflitoIdNome(clienteExistente, clienteImportado) {
@@ -1204,6 +1281,7 @@
                     fecharModal();
                     resolve('usarImportado');
                 };
+                // New handler for "Manter Ambos"
                 document.getElementById('btnConflitoManterAmbos').onclick = () => {
                     fecharModal();
                     resolve('manterAmbos');
@@ -1463,7 +1541,7 @@
                 return;
             }
 
-            const telefoneLimpoEditado = novoTelefone.replace(/[^\d]/g, '');
+            const telefoneLimpoEditado = novoTelefone.replace(/[^\d]/g, ''); // Garante que o telefone esteja limpo
             if (telefoneLimpoEditado.length < 5) {
                 exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
                 return;
@@ -1480,7 +1558,7 @@
 
             clientes[clienteOriginalIndex].id = novoId;
             clientes[clienteOriginalIndex].nome = nomeComNovoProduto;
-            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado;
+            clientes[clienteOriginalIndex].telefone = telefoneLimpoEditado; // Salva o telefone limpo
             clientes[clienteOriginalIndex].data = novaData.split("-").reverse().join("/");
             clientes[clienteOriginalIndex].Produto = novoProduto;
 
@@ -1515,7 +1593,7 @@
         function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
                 salvarEstadoNoHistorico();
-                const nomeClienteExcluido = clientes[clienteIndexParaExcluir].nome;
+                const nomeClienteExcluido = clientes[clienteIndexParaExcluir].nome; // Pega o nome antes de excluir
                 clientes.splice(clienteIndexParaExcluir, 1);
 
                 clientesFiltrados = [];
@@ -1588,7 +1666,7 @@
                     clientes[clienteOriginalIndex].debito = false;
                     clientes[clienteOriginalIndex].oculto = false;
                     clientes[clienteOriginalIndex].verDepois = false;
-                    clientes[clienteOriginalIndex].arquivado = false;
+                    clientes[clienteOriginalIndex].arquivado = false; // CORREÇÃO AQUI
                 }
             }
             exibirTabela();
@@ -1662,6 +1740,7 @@
                 clientes = [];
                 localStorage.removeItem('clientes');
             }
+            // Carrega a data da última atualização do localStorage ao iniciar
             const ultimaAtualizacaoSalva = localStorage.getItem('ultimaAtualizacaoCliente');
             if (ultimaAtualizacaoSalva) {
                 document.getElementById('ultimaAtualizacaoInfo').textContent = ultimaAtualizacaoSalva;
@@ -1692,6 +1771,10 @@
             document.getElementById("searchInput").value = "";
             exibirTodos();
         }
+
+        // --- FUNÇÕES DE AJUSTES ---
+        const SETTINGS_KEY = 'inputSettings';
+        const DEFAULT_INPUT_WIDTH_PERCENT = 16;
 
         function toggleSettingsArea() {
             const settingsArea = document.getElementById('settingsArea');
@@ -1735,8 +1818,7 @@
                 try {
                     const settings = JSON.parse(savedSettings);
                     widthToApply = settings.width || DEFAULT_INPUT_WIDTH_PERCENT;
-                }
-                catch (e) {
+                } catch (e) {
                     console.error("Erro ao carregar ajustes do localStorage:", e);
                     localStorage.removeItem(SETTINGS_KEY);
                 }
@@ -1759,7 +1841,9 @@
             loadSettings();
             toggleSettingsArea();
         }
+        // --- FIM: FUNÇÕES DE AJUSTES ---
 
+        // --- Funções de Contadores ---
         function atualizarContadores() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -1799,6 +1883,15 @@
             updateBadge('badgeArquivados', countArquivados);
             updateBadge('badgeVerDepois', countVerDepois);
             updateBadge('badgeDesativados', countDesativados);
+
+            // Atualiza o contador do botão central de mensagens
+            const vencidosNaoOcultos = clientes.filter(cliente => {
+                const [dia, mes, ano] = cliente.data.split("/").map(Number);
+                const dataCliente = new Date(ano, mes - 1, dia);
+                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+                return dataCliente < hojeSemHora && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+            });
+            updateBadge('badgeCentralMessage', vencidosNaoOcultos.length);
         }
 
         function updateBadge(badgeId, count) {
@@ -1812,6 +1905,7 @@
                 }
             }
         }
+        // --- FIM: Funções de Contadores ---
 
         function mostrarContagemProdutos() {
             const clientesNaoArquivadosNaoOcultos = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
@@ -1823,6 +1917,64 @@
 
             document.getElementById('modalContagemProdutos').style.display = 'flex';
         }
+
+        // --- Lógica para o botão central de mensagens ---
+        function prepararClientesVencidosParaMensagem() {
+            const hoje = new Date();
+            clientesVencidosParaMensagem = clientes.filter(cliente => {
+                const [dia, mes, ano] = cliente.data.split("/").map(Number);
+                const dataCliente = new Date(ano, mes - 1, dia);
+                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+                // Considera apenas vencidos e que não estão ocultos, arquivados, verDepois ou desativados
+                return dataCliente < hojeSemHora && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+            }).sort((a, b) => {
+                // Opcional: Ordena por data de vencimento (os mais antigos primeiro)
+                const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
+                const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
+                const dataA = new Date(anoA, mesA - 1, diaA);
+                const dataB = new Date(anoB, mesB - 1, diaB);
+                return dataA - dataB;
+            });
+            indiceClienteVencidoAtual = 0;
+            atualizarContadores(); // Atualiza o badge do botão central
+        }
+
+        function enviarProximoClienteVencido() {
+            // Se a lista de clientes vencidos ainda não foi preparada ou está vazia, prepara
+            if (clientesVencidosParaMensagem.length === 0 || indiceClienteVencidoAtual >= clientesVencidosParaMensagem.length) {
+                prepararClientesVencidosParaMensagem();
+            }
+
+            if (clientesVencidosParaMensagem.length === 0) {
+                exibirAlerta("Não há clientes vencidos para enviar mensagem no momento.");
+                return;
+            }
+
+            const cliente = clientesVencidosParaMensagem[indiceClienteVencidoAtual];
+            const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+
+            // Envia a mensagem (reutilizando a função existente)
+            // Para garantir que enviarMensagemWhatsApp funcione com o cliente correto,
+            // vamos adaptar a chamada para passar o objeto cliente diretamente.
+            // A função `enviarMensagemWhatsApp` original espera um `index` que aponta para `clientesExibidos`.
+            // Para evitar modificar `clientesExibidos` globalmente, vamos simular isso para a chamada.
+            const originalClientesExibidos = clientesExibidos; // Salva o estado atual de clientesExibidos
+            clientesExibidos = [cliente]; // Temporariamente, clientesExibidos tem apenas o cliente atual
+            
+            enviarMensagemWhatsApp(nomeExibicaoBase, cliente.telefone, 0); // Chama com index 0 porque `cliente` é o único elemento
+
+            clientesExibidos = originalClientesExibidos; // Restaura clientesExibidos
+
+            // Move para o próximo cliente
+            indiceClienteVencidoAtual++;
+            if (indiceClienteVencidoAtual >= clientesVencidosParaMensagem.length) {
+                exibirAlerta("Todas as mensagens para clientes vencidos foram enviadas (ou a lista foi percorrida). Clique novamente para recarregar a lista.");
+                prepararClientesVencidosParaMensagem(); // Prepara a lista novamente caso queira circular
+            }
+            atualizarContadores(); // Atualiza o badge após o envio
+        }
+        // --- FIM: Lógica para o botão central de mensagens ---
+
 
         function inicializarExibicaoClientes() {
             loadClientes();
@@ -1857,10 +2009,12 @@
             document.getElementById("searchInput").value = "";
 
             exibirTabela();
+            prepararClientesVencidosParaMensagem(); // Prepara a lista para o botão central ao carregar a página
         }
+        // Inicialização
         document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
         inicializarExibicaoClientes();
-        salvarEstadoNoHistorico();
+        salvarEstadoNoHistorico(); // Garante o primeiro estado para o histórico de "desfazer"
         loadSettings();
     </script>
 </body>
