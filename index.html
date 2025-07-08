@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -272,7 +271,6 @@
         }
     </style>
 </head>
-
 <body>
     <div id="ultimaAtualizacaoInfo"
         style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
@@ -282,6 +280,7 @@
         <h1>Controle de Clientes</h1>
         <button onclick="importarClientes()">Importar Clientes (JSON)</button>
         <button onclick="exportarClientes()">Exportar Clientes (JSON)</button>
+
         <h3>Adicionar Cliente</h3>
         <div class="input-group-horizontal">
             <input type="date" id="dataInput" class="configurable-input" required>
@@ -303,6 +302,7 @@
             Enviar Mensagem para Próximo Vencido
             <span id="badgeCentralMessage" class="notification-badge" style="display:none;"></span>
         </button>
+
         <h3>Filtros e Ações</h3>
         <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge"
                 style="display:none;"></span></button>
@@ -339,6 +339,7 @@
             <tbody id="tabelaClientes"></tbody>
         </table>
         <button onclick="compartilharWhatsApp()">Compartilhar no WhatsApp</button>
+
         <h3>Data Atual</h3>
         <p id="dataAtual"></p>
 
@@ -364,6 +365,7 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
+
         <div id="modalExclusao" class="modal">
             <div class="modal-content">
                 <h3>Confirmar Exclusão</h3>
@@ -372,6 +374,7 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
+
         <div id="modalRenovarComDebito" class="modal">
             <div class="modal-content">
                 <h3>Renovar com Débito?</h3>
@@ -380,6 +383,7 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
+
         <div id="modalConfirmacaoGenerica" class="modal">
             <div class="modal-content">
                 <h3 id="modalConfirmacaoGenericaTitulo">Confirmação</h3>
@@ -388,6 +392,7 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
+
         <div id="modalEdicao" class="modal" style="display: none;"></div>
         <div id="modalAlerta" class="modal" style="display: none;"></div>
 
@@ -428,8 +433,6 @@
         </div>
     </div>
     <script>
-        // REMOVA OU COMENTE A LINHA ABAIXO!
-        // document.body.innerHTML = document.body.innerHTML.replace(/\s+/g, " ").trim();
         let clientes = []; // Inicializado como array vazio, será preenchido por loadClientes()
         let clientesFiltrados = [];
         let clienteIndexParaExcluir = null;
@@ -598,7 +601,7 @@
 
             // Verifica se já existe um cliente com este ID (telefone final)
             const clienteExistenteComMesmoId = clientes.find(c => c.id === clienteId);
-            if (clienteExistenteComesmoId) {
+            if (clienteExistenteComMesmoId) {
                 // Se encontrar, avisa o usuário e não adiciona
                 return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
@@ -858,8 +861,6 @@
             clienteIndexParaRenovarDebito = index;
             document.getElementById("modalRenovarComDebito").style.display = "flex";
             document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
-            // Não chame atualizarUltimaAtualizacao aqui
-            // atualizarUltimaAtualizacao("confirmar renovação com débito");
         }
 
         function renovarAutomatico(index) {
@@ -966,8 +967,6 @@
         function duplicarCliente(index) {
             clienteIndexParaDuplicar = index;
             document.getElementById("modalConfirmacao").style.display = "flex";
-            // Não chame atualizarUltimaAtualizacao aqui
-            // atualizarUltimaAtualizacao("confirmar duplicação");
         }
 
         function confirmarDuplicacao() {
@@ -1130,7 +1129,6 @@
                 }
             }
 
-
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
@@ -1144,7 +1142,6 @@
                         const nomeAjustado = c.Produto && !c.nome.includes(`(${c.Produto})`) ?
                             `${c.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')} (${c.Produto})` :
                             c.nome;
-
                         return {
                             id: id,
                             data: c.data,
@@ -1159,7 +1156,6 @@
                             desativado: c.desativado || false
                         };
                     });
-
                     currentIndexImportacao = 0;
                     let novosClientesAdicionados = 0;
                     let clientesAtualizados = 0;
@@ -1349,7 +1345,8 @@
         }
 
         function filtrarDebito() {
-            clientesFiltrados = [];
+            // CORREÇÃO: Aplica o filtro de débito corretamente
+            clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
@@ -1526,7 +1523,7 @@
             let clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaAtualizar.id);
 
             if (clienteOriginalIndex === -1) {
-                exibirAlerta("Cliente não encontrado na lista principal!");
+                exibirAlerta("Erro ao salvar edição: Cliente não encontrado na lista principal!"); // Mensagem mais clara
                 fecharModal();
                 return;
             }
@@ -1568,7 +1565,7 @@
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
-            clientes.forEach(cliente => cliente.oculto = false);
+            clientes.forEach(cliente => cliente.oculto = false); // Não resetar todos os ocultos na edição
             document.getElementById("searchInput").value = "";
 
             exibirTabela();
@@ -1666,7 +1663,7 @@
                     clientes[clienteOriginalIndex].debito = false;
                     clientes[clienteOriginalIndex].oculto = false;
                     clientes[clienteOriginalIndex].verDepois = false;
-                    clientes[clienteOriginalIndex].arquivado = false; // CORREÇÃO AQUI
+                    clientes[clienteOriginalIndex].arquivado = false;
                 }
             }
             exibirTabela();
@@ -1755,15 +1752,8 @@
         }
 
         function pesquisarClientes() {
-            const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
-
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            document.getElementById("searchInput").value = "";
+            // A pesquisa agora é tratada diretamente na exibirTabela com base no input
+            // Não precisamos de lógica de filtro separada aqui, apenas forçar a atualização da tabela
             exibirTabela();
         }
 
@@ -1889,6 +1879,7 @@
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+                // Considera apenas vencidos e que não estão ocultos, arquivados, verDepois ou desativados
                 return dataCliente < hojeSemHora && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             });
             updateBadge('badgeCentralMessage', vencidosNaoOcultos.length);
@@ -1960,7 +1951,6 @@
             // Para evitar modificar `clientesExibidos` globalmente, vamos simular isso para a chamada.
             const originalClientesExibidos = clientesExibidos; // Salva o estado atual de clientesExibidos
             clientesExibidos = [cliente]; // Temporariamente, clientesExibidos tem apenas o cliente atual
-            
             enviarMensagemWhatsApp(nomeExibicaoBase, cliente.telefone, 0); // Chama com index 0 porque `cliente` é o único elemento
 
             clientesExibidos = originalClientesExibidos; // Restaura clientesExibidos
@@ -1974,7 +1964,6 @@
             atualizarContadores(); // Atualiza o badge após o envio
         }
         // --- FIM: Lógica para o botão central de mensagens ---
-
 
         function inicializarExibicaoClientes() {
             loadClientes();
@@ -2018,5 +2007,4 @@
         loadSettings();
     </script>
 </body>
-
 </html>
