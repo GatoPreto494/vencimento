@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -271,6 +272,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="ultimaAtualizacaoInfo"
         style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
@@ -278,6 +280,10 @@
     </div>
     <div class="container">
         <h1>Controle de Clientes</h1>
+        <button id="centralMessageButton" onclick="enviarProximoClienteVencido()">
+            Enviar Mensagem para Próximo Vencido
+            <span id="badgeCentralMessage" class="notification-badge" style="display:none;"></span>
+        </button>
         <button onclick="importarClientes()">Importar Clientes (JSON)</button>
         <button onclick="exportarClientes()">Exportar Clientes (JSON)</button>
 
@@ -298,10 +304,6 @@
         </div>
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
 
-        <button id="centralMessageButton" onclick="enviarProximoClienteVencido()">
-            Enviar Mensagem para Próximo Vencido
-            <span id="badgeCentralMessage" class="notification-badge" style="display:none;"></span>
-        </button>
 
         <h3>Filtros e Ações</h3>
         <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge"
@@ -2007,4 +2009,5 @@
         loadSettings();
     </script>
 </body>
+
 </html>
