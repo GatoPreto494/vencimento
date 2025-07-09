@@ -1,7 +1,5 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -309,7 +307,6 @@
         }
     </style>
 </head>
-
 <body>
     <div id="ultimaAtualizacaoInfo"
         style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
@@ -340,7 +337,6 @@
             </label>
         </div>
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
-
 
         <h3>Filtros e Ações</h3>
         <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge"
@@ -377,13 +373,15 @@
         </table>
         <button onclick="compartilharWhatsApp()">Compartilhar no WhatsApp</button>
 
-        <hr> <div id="clientesAvisadosSection">
+        <hr>
+        <div id="clientesAvisadosSection">
             <h3>Clientes Avisados (WhatsApp) <span id="badgeOcultos" class="notification-badge"
                     style="display:none;"></span></h3>
             <ul id="clientesAvisadosList">
-                </ul>
+            </ul>
         </div>
-        <hr> <h3>Data Atual</h3>
+        <hr>
+        <h3>Data Atual</h3>
         <p id="dataAtual"></p>
 
         <div class="settings-icon" onclick="toggleSettingsArea()" title="Ajustes">⚙️</div>
@@ -758,7 +756,6 @@
             exibirClientesAvisados(); // Atualiza a seção, que não muda pelo filtro principal.
         }
 
-
         function filtrarVerDepois() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -945,7 +942,6 @@
                 return dataA - dataB;
             });
 
-
             avisados.forEach(cliente => {
                 const li = document.createElement('li');
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
@@ -955,8 +951,17 @@
                     </div>
                     <div class="client-actions">
                         <button title="Reexibir Cliente (Tira do Avisados)" onclick="toggleOcultoFromAvisados('${cliente.id}')">Reexibir</button>
+                        <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">+</button>
+                        <button title="Renovar Automático" onclick="renovarAutomaticoById('${cliente.id}')">🔁</button>
+                        <button title="Renovar com Débito (Confirmação)"
+                                class="btn-debito-segurar"
+                                onclick="pedirConfirmacaoRenovacaoDebitoById('${cliente.id}')">DÉBITO</button>
+                        <button title="Marcar/Desmarcar Ver Depois" onclick="toggleVerDepoisById('${cliente.id}')">${cliente.verDepois ? "Desmarcar Ver Depois" : "Ver Depois"}</button>
+                        <button title="Alterar Produto" onclick="abrirModalAlterarProdutoById('${cliente.id}')">Produto</button>
                         <button title="Editar Cliente" onclick="editarClienteById('${cliente.id}')">Edit</button>
                         <button title="Excluir Cliente" onclick="excluirClienteById('${cliente.id}')">❌</button>
+                        <button title="Arquivar Cliente" onclick="arquivarById('${cliente.id}')">📂</button>
+                        <button title="Desativar Cliente" onclick="toggleDesativadoById('${cliente.id}')">Desativar</button>
                     </div>
                 `;
                 clientesAvisadosList.appendChild(li);
@@ -977,37 +982,97 @@
             }
         }
 
-        // Função auxiliar para editar cliente pelo ID, para uso na seção de avisados
+        // Funções auxiliares para uso dos botões por ID (na seção de avisados)
+        function duplicarClienteById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                clientesExibidos = [clientes[index]]; // Temporariamente define o cliente como o único exibido
+                duplicarCliente(0); // Chama a função original com index 0
+                exibirTabela(); // Restaura a exibição normal
+            }
+        }
+
+        function renovarAutomaticoById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                clientesExibidos = [clientes[index]];
+                renovarAutomatico(0);
+                exibirTabela();
+            }
+        }
+
+        function pedirConfirmacaoRenovacaoDebitoById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                clientesExibidos = [clientes[index]];
+                pedirConfirmacaoRenovacaoDebito(0);
+                exibirTabela();
+            }
+        }
+
+        function toggleVerDepoisById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                clientesExibidos = [clientes[index]];
+                toggleVerDepois(0);
+                exibirTabela();
+            }
+        }
+
+        function abrirModalAlterarProdutoById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                clientesExibidos = [clientes[index]];
+                abrirModalAlterarProduto(0);
+                exibirTabela();
+            }
+        }
+
         function editarClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
-                // Precisamos adaptar o `editar` para aceitar o index na lista `clientes` principal
-                // ou passar o objeto diretamente para a função de edição.
-                // A forma mais simples é encontrar o index do cliente dentro de clientesExibidos
-                // se a função `editar` espera um index de `clientesExibidos`.
-                // Como `editar` recebe `index` e usa `clientesExibidos[index]`, precisamos fazer um truque:
-                const tempClientesExibidos = [clientes[index]]; // Crie uma array temporária com o cliente para editar
-                const originalClientesExibidos = clientesExibidos; // Salve o estado original
-                clientesExibidos = tempClientesExibidos; // Defina para o cliente que será editado
-                editar(0); // Chame editar com index 0, pois ele é o primeiro (e único) na tempClientesExibidos
-                clientesExibidos = originalClientesExibidos; // Restaure
+                // Ao editar um cliente pelo ID, precisamos que a função `editar` trabalhe com o índice correto na lista `clientes`
+                // e que o modal de edição seja preenchido corretamente.
+                // A função `editar` espera um `index` que se refere a `clientesExibidos`.
+                // Para simplificar e evitar duplicação de código, vamos "simular" que o cliente a ser editado
+                // é o primeiro na lista `clientesExibidos` antes de chamar `editar`.
+                const originalClientesExibidos = clientesExibidos; // Salva o estado atual
+                clientesExibidos = [clientes[index]]; // Define clientesExibidos temporariamente para conter apenas o cliente a ser editado
+                editar(0); // Chama `editar` com o índice 0, que agora aponta para o cliente correto
+                clientesExibidos = originalClientesExibidos; // Restaura clientesExibidos após a edição
             }
         }
 
-        // Função auxiliar para excluir cliente pelo ID, para uso na seção de avisados
         function excluirClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
-                // Similar à edição, adapte para a exclusão.
-                const tempClientesExibidos = [clientes[index]];
+                // Similar a editarClienteById, prepara clientesExibidos para que excluir(0) funcione
                 const originalClientesExibidos = clientesExibidos;
-                clientesExibidos = tempClientesExibidos;
-                excluir(0); // Chame excluir com index 0
+                clientesExibidos = [clientes[index]];
+                excluir(0);
                 clientesExibidos = originalClientesExibidos;
             }
         }
-        // --- FIM: NOVA FUNÇÃO ---
 
+        function arquivarById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                clientesExibidos = [clientes[index]];
+                arquivar(0);
+                clientesExibidos = originalClientesExibidos;
+            }
+        }
+
+        function toggleDesativadoById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                clientesExibidos = [clientes[index]];
+                toggleDesativado(0);
+                clientesExibidos = originalClientesExibidos;
+            }
+        }
+
+        // --- FIM: NOVA FUNÇÃO ---
 
         function pedirConfirmacaoRenovacaoDebito(index) {
             clienteIndexParaRenovarDebito = index;
@@ -1307,7 +1372,7 @@
                             debito: c.debito || false,
                             Produto: c.Produto || "Não informado",
                             arquivado: c.arquivado || false,
-                            oculto: c.oculto || false,
+                            oculto: c.oculto || false, // Manter o status oculto carregado do localStorage
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false
                         };
@@ -1885,6 +1950,11 @@
                         const telefoneLimpo = c.telefone ? String(c.telefone).replace(/[^\d]/g, '') : '';
                         const clienteId = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
 
+                        // **Alteração aqui para reexibir automaticamente os clientes avisados no refresh**
+                        // Se o cliente foi marcado como oculto/avisado, ele volta a ser exibido na tabela principal
+                        // Isso garante que após um refresh, a lista principal não esconda clientes "avisados" permanentemente.
+                        const isOcultoAposRefresh = false; // Força para false ao carregar
+
                         return {
                             id: c.id || clienteId,
                             data: c.data,
@@ -1894,7 +1964,7 @@
                             debito: c.debito || false,
                             Produto: c.Produto || "Não informado",
                             arquivado: c.arquivado || false,
-                            oculto: c.oculto || false, // Manter o status oculto carregado do localStorage
+                            oculto: isOcultoAposRefresh, // Sempre false ao carregar para reexibir
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false
                         };
@@ -2003,7 +2073,6 @@
             toggleSettingsArea();
         }
         // --- FIM: FUNÇÕES DE AJUSTES ---
-
         // --- Funções de Contadores ---
         function atualizarContadores() {
             const hoje = new Date();
@@ -2052,8 +2121,13 @@
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-                // Considera apenas vencidos e que NÃO estão ocultos, arquivados, verDepois ou desativados
-                return dataCliente < hojeSemHora && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+                const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" + (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" + hoje.getFullYear();
+
+                // Considera apenas vencidos OU vencendo hoje, e que NÃO estão ocultos, arquivados, verDepois ou desativados
+                const isVencendoHoje = cliente.data === hojeFormatada;
+                const isVencido = dataCliente < hojeSemHora;
+
+                return (isVencendoHoje || isVencido) && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             });
             updateBadge('badgeCentralMessage', vencidosNaoOcultosParaMensagem.length);
         }
@@ -2085,12 +2159,20 @@
         // --- Lógica para o botão central de mensagens ---
         function prepararClientesVencidosParaMensagem() {
             const hoje = new Date();
+            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                hoje.getFullYear();
+
             clientesVencidosParaMensagem = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-                // Considera apenas vencidos e que NÃO estão ocultos, arquivados, verDepois ou desativados
-                return dataCliente < hojeSemHora && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+
+                // Considera apenas vencidos OU vencendo hoje, e que NÃO estão ocultos, arquivados, verDepois ou desativados
+                const isVencendoHoje = cliente.data === hojeFormatada;
+                const isVencido = dataCliente < hojeSemHora;
+
+                return (isVencendoHoje || isVencido) && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             }).sort((a, b) => {
                 // Opcional: Ordena por data de vencimento (os mais antigos primeiro)
                 const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
@@ -2163,7 +2245,6 @@
 
                 return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
             });
-
             // Reseta os modos de exibição de filtro, pois a página está sendo carregada com uma exibição padrão.
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -2183,5 +2264,4 @@
         loadSettings();
     </script>
 </body>
-
 </html>
