@@ -102,6 +102,19 @@
             /* Amarelo um pouco mais escuro no hover */
         }
 
+        /* Novo estilo para o botão de renovar (Data Atual) */
+        .btn-renovar-data-atual {
+            background-color: #ffc107; /* Amarelo Bootstrap */
+            color: #212529; /* Texto escuro */
+            border: 1px solid #ffc107;
+        }
+
+        .btn-renovar-data-atual:hover {
+            background-color: #e0a800;
+            border-color: #d39e00;
+        }
+
+
         /* Novo estilo para o botão de confirmação perigosa (vermelho) */
         .modal-confirm-danger {
             background-color: #dc3545;
@@ -498,6 +511,10 @@
         let clientesVencidosParaMensagem = [];
         let indiceClienteVencidoAtual = 0;
 
+        // Variável para armazenar o ID do cliente para "Renovar HOJE"
+        let clienteIdParaRenovarHoje = null;
+
+
         // --- Função para atualizar a data e hora da última alteração de dados ---
         function atualizarUltimaAtualizacao(acao = "dados atualizados", clienteNome = "") {
             const now = new Date();
@@ -591,6 +608,7 @@
                 modalAlerta.innerHTML = "";
                 document.removeEventListener("keydown", fecharComEscOuEnter);
             }
+            clienteIdParaRenovarHoje = null; // Resetar após fechar o modal
         }
 
         function fecharComEsc(event) {
@@ -898,6 +916,9 @@
                         <button title="Renovar com Débito (Confirmação)"
                                 class="btn-debito-segurar"
                                 onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
+                        <button title="Renovar a Partir de Hoje"
+                                class="btn-renovar-data-atual"
+                                onclick="pedirConfirmacaoRenovarHoje(${index})">RENOVAR HOJE</button>
                         <button title="Marcar/Desmarcar Ver Depois" onclick="toggleVerDepois(${index})">${cliente.verDepois ? "Desmarcar Ver Depois" : "Ver Depois"}</button>
                         <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
@@ -956,6 +977,9 @@
                         <button title="Renovar com Débito (Confirmação)"
                                 class="btn-debito-segurar"
                                 onclick="pedirConfirmacaoRenovacaoDebitoById('${cliente.id}')">DÉBITO</button>
+                        <button title="Renovar a Partir de Hoje"
+                                class="btn-renovar-data-atual"
+                                onclick="pedirConfirmacaoRenovarHojeById('${cliente.id}')">RENOVAR HOJE</button>
                         <button title="Marcar/Desmarcar Ver Depois" onclick="toggleVerDepoisById('${cliente.id}')">${cliente.verDepois ? "Desmarcar Ver Depois" : "Ver Depois"}</button>
                         <button title="Alterar Produto" onclick="abrirModalAlterarProdutoById('${cliente.id}')">Produto</button>
                         <button title="Editar Cliente" onclick="editarClienteById('${cliente.id}')">Edit</button>
@@ -986,67 +1010,76 @@
         function duplicarClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]]; // Temporariamente define o cliente como o único exibido
                 duplicarCliente(0); // Chama a função original com index 0
-                exibirTabela(); // Restaura a exibição normal
+                clientesExibidos = originalClientesExibidos; // Restaura
             }
         }
 
         function renovarAutomaticoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]];
                 renovarAutomatico(0);
-                exibirTabela();
+                clientesExibidos = originalClientesExibidos;
             }
         }
 
         function pedirConfirmacaoRenovacaoDebitoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]];
                 pedirConfirmacaoRenovacaoDebito(0);
-                exibirTabela();
+                clientesExibidos = originalClientesExibidos;
             }
+        }
+
+        function pedirConfirmacaoRenovarHojeById(clientId) {
+            clienteIdParaRenovarHoje = clientId; // Armazena o ID do cliente
+            exibirConfirmacaoGenerica(
+                "Confirmar Renovação HOJE",
+                "Tem certeza que deseja renovar a data de vencimento deste cliente para **HOJE**?",
+                confirmarRenovarHoje, // Chama a nova função de confirmação
+                false // Não é uma ação perigosa (vermelha)
+            );
         }
 
         function toggleVerDepoisById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]];
                 toggleVerDepois(0);
-                exibirTabela();
+                clientesExibidos = originalClientesExibidos;
             }
         }
 
         function abrirModalAlterarProdutoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]];
                 abrirModalAlterarProduto(0);
-                exibirTabela();
+                clientesExibidos = originalClientesExibidos;
             }
         }
 
         function editarClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
-                // Ao editar um cliente pelo ID, precisamos que a função `editar` trabalhe com o índice correto na lista `clientes`
-                // e que o modal de edição seja preenchido corretamente.
-                // A função `editar` espera um `index` que se refere a `clientesExibidos`.
-                // Para simplificar e evitar duplicação de código, vamos "simular" que o cliente a ser editado
-                // é o primeiro na lista `clientesExibidos` antes de chamar `editar`.
-                const originalClientesExibidos = clientesExibidos; // Salva o estado atual
-                clientesExibidos = [clientes[index]]; // Define clientesExibidos temporariamente para conter apenas o cliente a ser editado
-                editar(0); // Chama `editar` com o índice 0, que agora aponta para o cliente correto
-                clientesExibidos = originalClientesExibidos; // Restaura clientesExibidos após a edição
+                const originalClientesExibidos = clientesExibidos;
+                clientesExibidos = [clientes[index]];
+                editar(0);
+                clientesExibidos = originalClientesExibidos;
             }
         }
 
         function excluirClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
-                // Similar a editarClienteById, prepara clientesExibidos para que excluir(0) funcione
                 const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]];
                 excluir(0);
@@ -1057,6 +1090,7 @@
         function arquivarById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]];
                 arquivar(0);
                 clientesExibidos = originalClientesExibidos;
@@ -1066,11 +1100,13 @@
         function toggleDesativadoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
-                clientesExibidos = [clientes[index]];
-                toggleDesativado(0);
-                clientesExibidos = originalClientesExibidos;
+                const originalClientesExibidos = clientesExibidos; // Salva o estado
+                clientesExibidos = [clientes[index]]; // Define temporariamente
+                toggleDesativado(0); // Chama a função com o índice 0 da lista temporária
+                clientesExibidos = originalClientesExibidos; // Restaura
             }
         }
+
 
         // --- FIM: NOVA FUNÇÃO ---
 
@@ -1116,6 +1152,54 @@
             salvarClientes();
             atualizarUltimaAtualizacao("renovado automaticamente", cliente.nome);
         }
+
+        // --- FUNÇÃO PARA PEDIR CONFIRMAÇÃO DO "RENOVAR HOJE" ---
+        function pedirConfirmacaoRenovarHoje(index) {
+            const cliente = clientesExibidos[index];
+            clienteIdParaRenovarHoje = cliente.id; // Armazena o ID do cliente clicado
+            exibirConfirmacaoGenerica(
+                "Confirmar Renovação HOJE",
+                `Tem certeza que deseja renovar a data de vencimento de **${cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')}** para **HOJE**?`,
+                confirmarRenovarHoje, // Chama a nova função de confirmação
+                false // Não é uma ação perigosa (vermelha)
+            );
+        }
+
+        // --- FUNÇÃO DE CONFIRMAÇÃO DO "RENOVAR HOJE" ---
+        function confirmarRenovarHoje() {
+            if (clienteIdParaRenovarHoje !== null) {
+                salvarEstadoNoHistorico();
+                let clienteOriginal = clientes.find(c => c.id === clienteIdParaRenovarHoje);
+
+                if (clienteOriginal) {
+                    const hoje = new Date();
+                    const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                                          (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                                          hoje.getFullYear();
+                    clienteOriginal.data = hojeFormatada;
+                    clienteOriginal.debito = false;
+                    clienteOriginal.oculto = false;
+                    clienteOriginal.verDepois = false;
+                    clienteOriginal.desativado = false;
+
+                    clientesFiltrados = [];
+                    modoExibicaoArquivados = false;
+                    modoExibicaoOcultos = false;
+                    modoExibicaoVerDepois = false;
+                    modoExibicaoDesativados = false;
+                    filtroProduto = null;
+
+                    exibirTabela();
+                    exibirClientesAvisados();
+                    salvarClientes();
+                    atualizarUltimaAtualizacao("renovado a partir da data atual", clienteOriginal.nome);
+                    exibirAlerta(`Cliente "${clienteOriginal.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')}" renovado para hoje!`);
+                }
+                clienteIdParaRenovarHoje = null; // Resetar após a ação
+            }
+        }
+        // --- FIM: NOVAS FUNÇÕES ---
+
 
         function confirmarRenovacaoComDebito() {
             if (clienteIndexParaRenovarDebito !== null) {
@@ -1890,13 +1974,13 @@
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
-                clientes[originalClienteIndex].desativado = !clientes[originalClienteIndex].desativado;
-                if (clientes[originalClienteIndex].desativado) {
-                    clientes[originalClienteIndex].avisado = false;
-                    clientes[originalClienteIndex].debito = false;
-                    clientes[originalClienteIndex].oculto = false; // Desativado não é "Oculto por aviso"
-                    clientes[originalClienteIndex].verDepois = false;
-                    clientes[originalClienteIndex].arquivado = false;
+                clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
+                if (clientes[clienteOriginalIndex].desativado) {
+                    clientes[clienteOriginalIndex].avisado = false;
+                    clientes[clienteOriginalIndex].debito = false;
+                    clientes[clienteOriginalIndex].oculto = false; // Desativado não é "Oculto por aviso"
+                    clientes[clienteOriginalIndex].verDepois = false;
+                    clientes[clienteOriginalIndex].arquivado = false;
                 }
             }
             exibirTabela();
@@ -1950,10 +2034,9 @@
                         const telefoneLimpo = c.telefone ? String(c.telefone).replace(/[^\d]/g, '') : '';
                         const clienteId = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
 
-                        // **Alteração aqui para reexibir automaticamente os clientes avisados no refresh**
-                        // Se o cliente foi marcado como oculto/avisado, ele volta a ser exibido na tabela principal
-                        // Isso garante que após um refresh, a lista principal não esconda clientes "avisados" permanentemente.
-                        const isOcultoAposRefresh = false; // Força para false ao carregar
+                        // Ao carregar, resetar o status 'oculto' para 'false'
+                        // Isso garante que clientes "avisados" sejam reexibidos na tabela principal após um refresh
+                        const isOcultoAposRefresh = false;
 
                         return {
                             id: c.id || clienteId,
@@ -1964,7 +2047,7 @@
                             debito: c.debito || false,
                             Produto: c.Produto || "Não informado",
                             arquivado: c.arquivado || false,
-                            oculto: isOcultoAposRefresh, // Sempre false ao carregar para reexibir
+                            oculto: isOcultoAposRefresh,
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false
                         };
