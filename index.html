@@ -5,29 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Clientes</title>
     <style>
-        td {
-            white-space: nowrap;
-        }
-
-        td button {
-            display: inline-block;
-            margin-right: 5px;
-        }
-
-        td {
-            display: flex;
-            flex-wrap: nowrap;
-            align-items: center;
-            gap: 5px;
-        }
-
+        /* Estilos gerais */
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
             background-color: #f0f8ff;
             color: #333;
         }
-
         .container {
             width: 100%;
             max-width: 2000px;
@@ -37,13 +21,12 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
-        h1,
-        h3 {
+        h1, h3 {
             text-align: center;
             color: #0066cc;
         }
 
+        /* Estilos para Inputs e Botões */
         input[type="text"],
         input[type="tel"],
         input[type="date"],
@@ -54,24 +37,20 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
-
         .input-group-horizontal {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 10px;
         }
-
         .input-group-horizontal input {
             flex: 1;
             min-width: 150px;
             margin-bottom: 0;
         }
-
         .configurable-input {
-            /* Largura será definida pelo JavaScript, agora com 16% como padrão */
+            /* Largura será definida pelo JavaScript */
         }
-
         button {
             background-color: #0066cc;
             color: #fff;
@@ -81,86 +60,82 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
-            position: relative;
-            /* Necessário para posicionar o badge */
+            position: relative; /* Necessário para posicionar o badge */
         }
-
         button:hover {
             background-color: #004d99;
         }
 
-        /* Estilo para o novo botão de débito */
+        /* Estilos específicos de botão */
         .btn-debito-segurar {
-            background-color: #ffcc00;
-            /* Amarelo fraco */
-            color: #333;
-            /* Texto escuro para contraste */
+            background-color: #ffcc00; /* Amarelo fraco */
+            color: #333; /* Texto escuro para contraste */
         }
-
         .btn-debito-segurar:hover {
-            background-color: #e6b800;
-            /* Amarelo um pouco mais escuro no hover */
+            background-color: #e6b800; /* Amarelo um pouco mais escuro no hover */
         }
-
-        /* Novo estilo para o botão de renovar (Data Atual) */
         .btn-renovar-data-atual {
             background-color: #ffc107; /* Amarelo Bootstrap */
             color: #212529; /* Texto escuro */
             border: 1px solid #ffc107;
         }
-
         .btn-renovar-data-atual:hover {
             background-color: #e0a800;
             border-color: #d39e00;
         }
-
-
-        /* Novo estilo para o botão de confirmação perigosa (vermelho) */
         .modal-confirm-danger {
-            background-color: #dc3545;
-            /* Vermelho */
+            background-color: #dc3545; /* Vermelho */
             color: #fff;
         }
-
         .modal-confirm-danger:hover {
-            background-color: #c82333;
-            /* Vermelho mais escuro */
+            background-color: #c82333; /* Vermelho mais escuro */
         }
 
+        /* Estilos da Tabela */
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            display: none;
+            display: none; /* Escondido por padrão, mostrado com JS */
         }
-
-        th,
-        td {
+        th, td {
             padding: 10px;
             border: 1px solid #ccc;
             text-align: left;
         }
-
-        .avisado {
-            background-color: #007bff !important;
+        /* Flexbox para td com botões */
+        td {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap; /* Impede quebras de linha inesperadas nos botões */
+            gap: 5px;
         }
-
-        .debito {
-            background-color: #ffa500 !important;
+        td button {
+            display: inline-block;
+            margin-right: 5px;
+            flex-shrink: 0; /* Previne que os botões encolham */
         }
-
-        .vencendo-hoje {
-            background-color: #ffff99 !important;
+        
+        /* Cores das linhas da tabela - Ajustado para maior especificidade */
+        tr.avisado {
+            background-color: #007bff !important; /* Azul */
+            color: white;
         }
-
-        .vencido {
-            background-color: #ff6666 !important;
+        tr.debito {
+            background-color: #ffa500 !important; /* Laranja */
+        }
+        tr.vencendo-hoje {
+            background-color: #ffff99 !important; /* Amarelo claro */
+        }
+        tr.vencido {
+            background-color: #ff6666 !important; /* Vermelho claro */
         }
 
         .center {
             text-align: center;
         }
 
+        /* Estilos de Modal */
         .modal {
             display: none;
             position: fixed;
@@ -173,7 +148,6 @@
             align-items: center;
             z-index: 1000;
         }
-
         .modal-content {
             background-color: #fff;
             padding: 20px;
@@ -183,7 +157,6 @@
             max-width: 400px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-
         .modal button {
             background-color: #0066cc;
             color: #fff;
@@ -193,11 +166,11 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         .modal button:hover {
             background-color: #004d99;
         }
 
+        /* Ícone de Configurações */
         .settings-icon {
             position: fixed;
             bottom: 20px;
@@ -216,11 +189,9 @@
             z-index: 999;
             transition: background-color 0.3s;
         }
-
         .settings-icon:hover {
             background-color: #004d99;
         }
-
         #settingsArea {
             display: none;
             background-color: #f9f9f9;
@@ -229,13 +200,11 @@
             margin-top: 30px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
         #settingsArea label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
         }
-
         #settingsArea input[type="range"],
         #settingsArea input[type="number"] {
             width: calc(100% - 22px);
@@ -261,23 +230,19 @@
         /* Novo estilo para o botão central de mensagens */
         #centralMessageButton {
             display: block;
-            margin: 20px auto;
-            /* Centraliza o botão */
+            margin: 20px auto; /* Centraliza o botão */
             padding: 15px 30px;
             font-size: 1.2em;
-            background-color: #28a745;
-            /* Verde vibrante */
+            background-color: #28a745; /* Verde vibrante */
             color: white;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
-
         #centralMessageButton:hover {
             background-color: #218838;
             transform: translateY(-2px);
         }
-
         #centralMessageButton:active {
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -289,15 +254,12 @@
             padding-top: 20px;
             border-top: 1px solid #eee;
         }
-
         #clientesAvisadosList {
             list-style: none;
             padding: 0;
         }
-
         #clientesAvisadosList li {
-            background-color: #e0f2f7;
-            /* Um azul claro para destaque */
+            background-color: #e0f2f7; /* Um azul claro para destaque */
             border: 1px solid #b3e5fc;
             margin-bottom: 8px;
             padding: 10px 15px;
@@ -308,11 +270,9 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-
         #clientesAvisadosList li .client-info {
             flex-grow: 1;
         }
-
         #clientesAvisadosList li button {
             margin-left: 5px;
             padding: 8px 12px;
@@ -514,6 +474,47 @@
         // Variável para armazenar o ID do cliente para "Renovar HOJE"
         let clienteIdParaRenovarHoje = null;
 
+        // ====================================================================================
+        // NOVO: URL do seu Aplicativo da Web do Google Apps Script
+        // *** IMPORTANTE: ESTE É O URL QUE VOCÊ FORNECEU! ***
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHKKeGamiImtqK0G-DJpJI3E_y83ZlVQq6A3kjW0LmRE9iRvNuG3VCOQmpt_s2XwLIrg/exec';
+        // ====================================================================================
+
+        // Função auxiliar para enviar requisições ao backend (Apps Script)
+        async function sendRequestToBackend(action, data = {}) {
+            try {
+                const url = `${WEB_APP_URL}?action=${action}`;
+                const options = {
+                    method: 'POST', // Padrão POST para ações que modificam dados
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // Crucial para o Apps Script interpretar o JSON
+                    },
+                    body: JSON.stringify(data),
+                    muteHttpExceptions: true // Importante para que o fetch não lance erro em 4xx/5xx e possamos ler a resposta do Apps Script
+                };
+
+                if (action === 'get_all_clients') {
+                    options.method = 'GET';
+                    delete options.body; // Requisições GET não devem ter corpo
+                }
+
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Erro de rede ou servidor (${response.status}):`, errorText);
+                    throw new Error(`Erro de rede ou servidor: ${response.status} - ${errorText}`);
+                }
+                const result = await response.json();
+                if (result && result.status === 'error') {
+                    throw new Error(result.message || 'Erro desconhecido do backend.');
+                }
+                return result; // Para getAllClients, isso será o array de clientes. Para outras, o objeto de status.
+            } catch (error) {
+                console.error('Erro na comunicação com o backend:', error);
+                exibirAlerta(`Erro ao salvar/carregar dados: ${error.message}. Verifique a conexão e o script.`);
+                throw error; // Re-lança para que as funções chamadoras possam lidar
+            }
+        }
 
         // --- Função para atualizar a data e hora da última alteração de dados ---
         function atualizarUltimaAtualizacao(acao = "dados atualizados", clienteNome = "") {
@@ -545,9 +546,7 @@
             // Opcional: Loga a mensagem no console para depuração
             console.log(fullMessage);
         }
-
         // --- Fim da função de atualização ---
-
         function salvarEstadoNoHistorico(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoAtual);
@@ -560,7 +559,6 @@
                 redoHistory = [];
             }
         }
-
         function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
             const modal = document.getElementById("modalConfirmacaoGenerica");
             const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
@@ -586,7 +584,6 @@
             modal.style.display = "flex";
             document.addEventListener("keydown", fecharComEsc);
         }
-
         function fecharModal() {
             document.getElementById("modalConfirmacao").style.display = "none";
             document.getElementById("modalExclusao").style.display = "none";
@@ -610,19 +607,16 @@
             }
             clienteIdParaRenovarHoje = null; // Resetar após fechar o modal
         }
-
         function fecharComEsc(event) {
             if (event.key === "Escape") {
                 fecharModal();
             }
         }
-
         function fecharComEscOuEnter(event) {
             if (event.key === "Enter" || event.key === "Escape") {
                 fecharModal();
             }
         }
-
         function exibirAlerta(mensagem) {
             let modalAlerta = document.getElementById("modalAlerta");
             modalAlerta.style.display = "flex";
@@ -635,14 +629,12 @@
             `;
             document.addEventListener("keydown", fecharComEscOuEnter);
         }
-
         document.addEventListener('keydown', function (event) {
             if (event.key === "Enter" && document.getElementById("modalExclusao").style.display === "flex") {
                 confirmarExclusao();
             }
         });
-
-        function adicionarCliente() {
+        async function adicionarCliente() {
             const dataInput = document.getElementById("dataInput").value.trim();
             const nomeInput = document.getElementById("nomeInput").value.trim();
             const telefoneInput = document.getElementById("telefoneInput").value.trim();
@@ -657,7 +649,6 @@
                 return exibirAlerta("O telefone deve ter pelo menos 5 dígitos para gerar o ID.");
             }
             const clienteId = telefoneLimpo.slice(-5); // Pega os últimos 5 dígitos como ID
-
             // Verifica se já existe um cliente com este ID (telefone final)
             const clienteExistenteComMesmoId = clientes.find(c => c.id === clienteId);
             if (clienteExistenteComMesmoId) {
@@ -665,9 +656,11 @@
                 return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
 
-            salvarEstadoNoHistorico();
-            const dataParts = dataInput.split("-");
-            const dataFormatada = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
+            salvarEstadoNoHistorico(); // Salva o estado atual ANTES da modificação
+
+            // A data armazenada será DD/MM/YYYY, mas a exibição será YYYY-MM-DD
+            const dataParts = dataInput.split("-"); // Ex: ["2025", "07", "10"]
+            const dataFormatadaParaArmazenar = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`; // DD/MM/YYYY
 
             let nomeComProduto = nomeInput;
             if (produtoSelecionado === "UniTv" || produtoSelecionado === "Duplecast") {
@@ -676,7 +669,7 @@
 
             clientes.push({
                 id: clienteId, // NOVO: Adiciona o ID ao cliente
-                data: dataFormatada,
+                data: dataFormatadaParaArmazenar, // Armazena como DD/MM/YYYY
                 nome: nomeComProduto,
                 telefone: telefoneLimpo,
                 avisado: false,
@@ -691,13 +684,12 @@
             document.getElementById("nomeInput").value = "";
             document.getElementById("telefoneInput").value = "";
 
+            await salvarClientes(); // AGORA SALVA NO GOOGLE SHEETS
             exibirTabela(); // Atualiza a tabela principal
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
             atualizarUltimaAtualizacao("adicionado", nomeInput);
         }
-
-        function arquivar(index) {
+        async function arquivar(index) {
             salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index]; // Note: clientesExibidos refere-se à tabela principal
 
@@ -714,13 +706,12 @@
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela(); // Atualiza a tabela principal
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
             atualizarUltimaAtualizacao("arquivado", clienteParaArquivar.nome);
         }
-
-        function desarquivar(index) {
+        async function desarquivar(index) {
             salvarEstadoNoHistorico();
             // Ao desarquivar de uma lista de "arquivados", o index se refere a clientesExibidos
             let clienteParaDesarquivar = clientesExibidos[index];
@@ -737,12 +728,11 @@
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela(); // Atualiza a tabela principal
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
             atualizarUltimaAtualizacao("desarquivado", clienteParaDesarquivar.nome);
         }
-
         function filtrarArquivados() {
             clientesFiltrados = [];
             modoExibicaoArquivados = true;
@@ -754,7 +744,6 @@
             exibirTabela(); // Apenas a tabela principal usará este filtro
             exibirClientesAvisados(); // Certifica-se de que a seção avisados não seja afetada por este filtro
         }
-
         // A função filtrarOcultos não será mais para exibir na tabela principal,
         // mas sim para um caso onde se queira VER apenas a lista de ocultos (seção já faz isso)
         // ou se o filtro for ativado por um botão antigo (melhor remover o botão "Clientes Avisados (WhatsApp)" do "Filtros e Ações").
@@ -773,7 +762,6 @@
             exibirTabela(); // Exibe na tabela principal, útil para uma "revisão" de avisados.
             exibirClientesAvisados(); // Atualiza a seção, que não muda pelo filtro principal.
         }
-
         function filtrarVerDepois() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -785,7 +773,6 @@
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção também
         }
-
         function filtrarDesativados() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -797,7 +784,6 @@
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção também
         }
-
         function filtrarPorProduto(produto) {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -810,8 +796,23 @@
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção também
         }
-
         let clientesExibidos = [];
+
+        /**
+         * Converte uma data de string "DD/MM/YYYY" para "YYYY-MM-DD".
+         * @param {string} dateString - A data no formato "DD/MM/YYYY".
+         * @returns {string} A data no formato "YYYY-MM-DD".
+         */
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return '';
+            const parts = dateString.split('/');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            // Se já estiver em YYYY-MM-DD ou outro formato, tenta retornar como está
+            return dateString;
+        }
+
         function exibirTabela() {
             const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
 
@@ -862,6 +863,7 @@
             tabela.innerHTML = "";
 
             clientesExibidos.sort((a, b) => {
+                // Converta para objetos Date para uma comparação precisa
                 const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
                 const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
                 const dataA = new Date(anoA, mesA - 1, diaA);
@@ -870,27 +872,31 @@
             });
 
             const hoje = new Date();
-            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+            const hojeFormatadaDDMMYYYY = hoje.getDate().toString().padStart(2, '0') + "/" +
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
             clientesExibidos.forEach((cliente, index) => {
                 const tr = document.createElement("tr");
 
+                // Assegure que as classes sejam removidas antes de re-aplicar
                 tr.classList.remove("avisado", "debito", "vencendo-hoje", "vencido");
 
+                // As propriedades avisado e debito são booleanas (true/false)
                 if (cliente.avisado) tr.classList.add("avisado");
                 if (cliente.debito) tr.classList.add("debito");
 
-                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
-                const dataCliente = new Date(ano, mes - 1, dia);
+                // Lógica para vencido e vencendo-hoje
+                const [diaCliente, mesCliente, anoCliente] = cliente.data.split("/").map(num => parseInt(num));
+                const dataCliente = new Date(anoCliente, mesCliente - 1, diaCliente); // Data do cliente sem hora
+                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()); // Hoje sem hora
 
-                if (cliente.data === hojeFormatada) {
+                if (cliente.data === hojeFormatadaDDMMYYYY) {
                     tr.classList.add("vencendo-hoje");
-                } else if (dataCliente < hoje && cliente.data !== hojeFormatada) {
+                } else if (dataCliente < hojeSemHora) { // Comparar datas sem a parte da hora
                     tr.classList.add("vencido");
                 }
-
+                
                 let botoesAcao = '';
                 if (modoExibicaoArquivados) {
                     botoesAcao = `
@@ -931,8 +937,7 @@
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                 tr.innerHTML = `
                     <td>
-                        ${cliente.data}
-                        <a href="#" onclick="enviarMensagemWhatsApp('${nomeExibicaoBase}', '${cliente.telefone}', ${index}); return false;">
+                        ${formatDateForDisplay(cliente.data)} <a href="#" onclick="enviarMensagemWhatsApp('${nomeExibicaoBase}', '${cliente.telefone}', ${index}); return false;">
                             ${nomeExibicaoBase} (${cliente.Produto || 'N/I'})
                         </a>
                         ${botoesAcao}
@@ -942,7 +947,6 @@
             });
             atualizarContadores();
         }
-
         // --- NOVA FUNÇÃO: Exibir Clientes Avisados na Seção Dedicada ---
         function exibirClientesAvisados() {
             const clientesAvisadosList = document.getElementById('clientesAvisadosList');
@@ -968,7 +972,7 @@
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                 li.innerHTML = `
                     <div class="client-info">
-                        <strong>${nomeExibicaoBase}</strong> (${cliente.Produto || 'N/I'}) - Vencimento: ${cliente.data}
+                        <strong>${nomeExibicaoBase}</strong> (${cliente.Produto || 'N/I'}) - Vencimento: ${formatDateForDisplay(cliente.data)}
                     </div>
                     <div class="client-actions">
                         <button title="Reexibir Cliente (Tira do Avisados)" onclick="toggleOcultoFromAvisados('${cliente.id}')">Reexibir</button>
@@ -991,21 +995,19 @@
                 clientesAvisadosList.appendChild(li);
             });
         }
-
         // Nova função para reexibir/desmarcar oculto diretamente da seção de avisados
-        function toggleOcultoFromAvisados(clientId) {
+        async function toggleOcultoFromAvisados(clientId) {
             salvarEstadoNoHistorico();
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clientId);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].oculto = false; // Desmarca como oculto
                 clientes[clienteOriginalIndex].avisado = false; // Opcional: também desmarca como avisado, se desejar
-                exibirTabela(); // Atualiza a tabela principal
-                exibirClientesAvisados(); // Remove da lista de avisados
-                salvarClientes();
-                atualizarUltimaAtualizacao("reexibido", clientes[clienteOriginalIndex].nome);
             }
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
+            exibirTabela(); // Atualiza a tabela principal
+            exibirClientesAvisados(); // Remove da lista de avisados
+            atualizarUltimaAtualizacao("reexibido", clientes[clienteOriginalIndex].nome);
         }
-
         // Funções auxiliares para uso dos botões por ID (na seção de avisados)
         function duplicarClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
@@ -1016,7 +1018,6 @@
                 clientesExibidos = originalClientesExibidos; // Restaura
             }
         }
-
         function renovarAutomaticoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1026,7 +1027,6 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-
         function pedirConfirmacaoRenovacaoDebitoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1036,7 +1036,6 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-
         function pedirConfirmacaoRenovarHojeById(clientId) {
             clienteIdParaRenovarHoje = clientId; // Armazena o ID do cliente
             exibirConfirmacaoGenerica(
@@ -1046,7 +1045,6 @@
                 false // Não é uma ação perigosa (vermelha)
             );
         }
-
         function toggleVerDepoisById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1056,7 +1054,6 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-
         function abrirModalAlterarProdutoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1066,7 +1063,6 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-
         function editarClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1076,7 +1072,6 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-
         function excluirClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1086,7 +1081,6 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-
         function arquivarById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1096,7 +1090,6 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-
         function toggleDesativadoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1107,16 +1100,13 @@
             }
         }
 
-
         // --- FIM: NOVA FUNÇÃO ---
-
         function pedirConfirmacaoRenovacaoDebito(index) {
             clienteIndexParaRenovarDebito = index;
             document.getElementById("modalRenovarComDebito").style.display = "flex";
             document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
         }
-
-        function renovarAutomatico(index) {
+        async function renovarAutomatico(index) {
             const cliente = clientesExibidos[index];
             const produtoCliente = cliente.Produto || "Não informado";
 
@@ -1147,12 +1137,11 @@
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
             atualizarUltimaAtualizacao("renovado automaticamente", cliente.nome);
         }
-
         // --- FUNÇÃO PARA PEDIR CONFIRMAÇÃO DO "RENOVAR HOJE" ---
         function pedirConfirmacaoRenovarHoje(index) {
             const cliente = clientesExibidos[index];
@@ -1164,9 +1153,8 @@
                 false // Não é uma ação perigosa (vermelha)
             );
         }
-
         // --- FUNÇÃO DE CONFIRMAÇÃO DO "RENOVAR HOJE" ---
-        function confirmarRenovarHoje() {
+        async function confirmarRenovarHoje() {
             if (clienteIdParaRenovarHoje !== null) {
                 salvarEstadoNoHistorico();
                 let clienteOriginal = clientes.find(c => c.id === clienteIdParaRenovarHoje);
@@ -1189,9 +1177,9 @@
                     modoExibicaoDesativados = false;
                     filtroProduto = null;
 
+                    await salvarClientes(); // SALVA NO GOOGLE SHEETS
                     exibirTabela();
                     exibirClientesAvisados();
-                    salvarClientes();
                     atualizarUltimaAtualizacao("renovado a partir da data atual", clienteOriginal.nome);
                     exibirAlerta(`Cliente "${clienteOriginal.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')}" renovado para hoje!`);
                 }
@@ -1200,8 +1188,7 @@
         }
         // --- FIM: NOVAS FUNÇÕES ---
 
-
-        function confirmarRenovacaoComDebito() {
+        async function confirmarRenovacaoComDebito() {
             if (clienteIndexParaRenovarDebito !== null) {
                 salvarEstadoNoHistorico();
                 const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
@@ -1235,20 +1222,18 @@
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
+                await salvarClientes(); // SALVA NO GOOGLE SHEETS
                 exibirTabela();
                 exibirClientesAvisados(); // Atualiza a nova seção
-                salvarClientes();
                 fecharModal();
                 clienteIndexParaRenovarDebito = null;
                 exibirAlerta("Cliente renovado e marcado como DÉBITO!");
                 atualizarUltimaAtualizacao("renovado com débito", cliente.nome);
             }
         }
-
         function renovar30(clienteObj) {
             clienteObj.data = incrementarData(clienteObj.data, 30);
         }
-
         function renovarProximoMes(clienteObj) {
             const [dia, mes, ano] = clienteObj.data.split("/").map(num => parseInt(num));
             const dataObj = new Date(ano, mes - 1, dia);
@@ -1272,7 +1257,7 @@
             document.getElementById("modalConfirmacao").style.display = "flex";
         }
 
-        function confirmarDuplicacao() {
+        async function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
                 salvarEstadoNoHistorico();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
@@ -1318,16 +1303,15 @@
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
+                await salvarClientes(); // SALVA NO GOOGLE SHEETS
                 exibirTabela();
                 exibirClientesAvisados(); // Atualiza a nova seção
-                salvarClientes();
                 fecharModal();
                 clienteIndexParaDuplicar = null;
                 atualizarUltimaAtualizacao("duplicado", clienteOriginal.nome);
             }
         }
-
-        function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
+        async function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
             let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, ''); // Remove todos os não-dígitos
             if (!telefoneParaWhatsApp) {
                 exibirAlerta("Número de telefone inválido!");
@@ -1341,13 +1325,19 @@
             }
 
             const cliente = clientesExibidos[index];
-            const vencimento = cliente.data;
+            const vencimento = cliente.data; // Data em DD/MM/YYYY
             const hoje = new Date();
-            const [dia, mes, ano] = vencimento.split("/").map(num => parseInt(num));
-            const dataVencimento = new Date(ano, mes - 1, dia);
 
-            const hojeFormatado = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-            const vencido = dataVencimento < hojeFormatado;
+            // Converter a data de vencimento para um objeto Date para comparação
+            const [diaVenc, mesVenc, anoVenc] = vencimento.split("/").map(num => parseInt(num));
+            const dataVencimentoObj = new Date(anoVenc, mesVenc - 1, diaVenc);
+            
+            // Zerar as horas para comparação apenas da data
+            const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+            const dataVencimentoSemHora = new Date(dataVencimentoObj.getFullYear(), dataVencimentoObj.getMonth(), dataVencimentoObj.getDate());
+
+
+            const vencido = dataVencimentoSemHora < hojeSemHora;
 
             const hora = hoje.getHours();
             let saudacao = "Olá";
@@ -1386,12 +1376,11 @@
             if (clienteOriginal) {
                 clienteOriginal.oculto = true; // Marcar como oculto quando a mensagem é enviada
             }
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela(); // Atualiza a tabela principal
             exibirClientesAvisados(); // Atualiza a nova seção de avisados
-            salvarClientes();
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
         }
-
         function exportarClientes() {
             const clientesParaExportar = clientes.map(c => ({
                 id: c.id,
@@ -1415,7 +1404,6 @@
             link.click();
             atualizarUltimaAtualizacao("clientes exportados");
         }
-
         async function importarClientes(file = null) {
             let fileToImport = file;
 
@@ -1553,9 +1541,9 @@
                     filtroProduto = null;
                     document.getElementById("searchInput").value = "";
 
+                    await salvarClientes(); // SALVA NO GOOGLE SHEETS
                     exibirTabela(); // Atualiza a tabela principal
                     exibirClientesAvisados(); // Atualiza a nova seção
-                    salvarClientes();
                     exibirAlerta(`Importação concluída: ${novosClientesAdicionados} novos clientes adicionados, ${clientesAtualizados} clientes atualizados, ${clientesIgnorados} ignorados.`);
                     atualizarUltimaAtualizacao("clientes importados/atualizados por ID");
 
@@ -1566,7 +1554,6 @@
             };
             reader.readAsText(fileToImport);
         }
-
         function perguntarConflitoIdNome(clienteExistente, clienteImportado) {
             return new Promise((resolve, reject) => {
                 document.getElementById('conflitoId').textContent = clienteExistente.id;
@@ -1594,7 +1581,6 @@
                 };
             });
         }
-
         function filtrarHoje() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -1612,7 +1598,6 @@
             exibirTabela();
             atualizarContadores();
         }
-
         function filtrarAmanha() {
             const amanha = new Date();
             amanha.setDate(amanha.getDate() + 1);
@@ -1631,17 +1616,15 @@
             exibirTabela();
             atualizarContadores();
         }
-
         function filtrarVencidos() {
             const hoje = new Date();
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
-                const dataClienteSemHora = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
                 // Filtra clientes vencidos E não estão ocultos, arquivados, verDepois ou desativados
-                return dataClienteSemHora < hojeSemHora && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
+                return dataCliente < hojeSemHora && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
             });
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -1652,7 +1635,6 @@
             exibirTabela();
             atualizarContadores();
         }
-
         function filtrarDebito() {
             // CORREÇÃO: Aplica o filtro de débito corretamente
             clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
@@ -1665,7 +1647,6 @@
             exibirTabela();
             atualizarContadores();
         }
-
         function exibirTodos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -1678,7 +1659,6 @@
             exibirClientesAvisados(); // Garante que a seção avisados seja atualizada
             atualizarContadores();
         }
-
         function confirmarLimparTodos() {
             exibirConfirmacaoGenerica(
                 "Limpar Todos os Clientes",
@@ -1687,7 +1667,6 @@
                 true
             );
         }
-
         function confirmarDesfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
@@ -1713,7 +1692,6 @@
                 );
             }
         }
-
         function confirmarRefazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
@@ -1726,24 +1704,34 @@
                 false
             );
         }
-
-        function limparTodos() {
+        async function limparTodos() {
             salvarEstadoNoHistorico();
-            clientes = [];
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
-            exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
-            exibirAlerta("Todos os clientes foram limpos!");
-            atualizarUltimaAtualizacao("lista limpa");
-        }
+            try {
+                const response = await sendRequestToBackend('clear_all_clients');
+                if (response.status === 'success') {
+                    clientes = []; // Limpa o array local APÓS o sucesso no backend
+                    clientesFiltrados = [];
+                    modoExibicaoArquivados = false;
+                    modoExibicaoOcultos = false;
+                    modoExibicaoVerDepois = false;
+                    modoExibicaoDesativados = false;
+                    filtroProduto = null;
+                    document.getElementById("searchInput").value = "";
 
-        function desfazer() {
+                    exibirTabela();
+                    exibirClientesAvisados();
+                    // Não precisa chamar salvarClientes() aqui, pois o backend já limpou
+                    exibirAlerta("Todos os clientes foram limpos!");
+                    atualizarUltimaAtualizacao("lista limpa");
+                } else {
+                    exibirAlerta(`Erro ao limpar clientes: ${response.message}`);
+                }
+            } catch (e) {
+                console.error("Erro ao limpar clientes no Google Sheets:", e);
+                exibirAlerta("Erro ao limpar clientes no Google Sheets. Verifique a conexão e o script.");
+            }
+        }
+        async function desfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
                 return;
@@ -1754,13 +1742,12 @@
             historicoClientes.pop();
             clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1]));
 
-            salvarClientes();
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTodos(); // Chama exibirTodos para reexibir e atualizar ambas as seções
             exibirAlerta("Última ação desfeita!");
             atualizarUltimaAtualizacao("ação desfeita");
         }
-
-        function refazer() {
+        async function refazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
                 return;
@@ -1768,12 +1755,11 @@
 
             salvarEstadoNoHistorico(false);
             clientes = redoHistory.pop();
-            salvarClientes();
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTodos(); // Chama exibirTodos para reexibir e atualizar ambas as seções
             exibirAlerta("Última ação refeita!");
             atualizarUltimaAtualizacao("ação refeita");
         }
-
         function editar(index) {
             let cliente = clientesExibidos[index]; // Note: clientesExibidos pode ser filtrado, então o index é relativo a ele.
             const modalEdicao = document.getElementById("modalEdicao");
@@ -1822,22 +1808,20 @@
             });
             document.addEventListener("keydown", fecharComEsc);
         }
-
         function proximoCampo(event, proximoId) {
             if (event.key === "Enter") {
                 event.preventDefault();
                 document.getElementById(proximoId)?.focus();
             }
         }
-
         // `index` agora se refere ao index do cliente na array `clientes` original, não em `clientesExibidos`
-        function salvarEdicao(originalClienteIndex) {
+        async function salvarEdicao(originalClienteIndex) {
             salvarEstadoNoHistorico();
             const clienteParaAtualizar = clientes[originalClienteIndex]; // Use o index direto na array principal
 
             let novoNome = document.getElementById("novoNome").value.trim();
             let novoTelefone = document.getElementById("novoTelefone").value.trim();
-            let novaData = document.getElementById("novaData").value.trim();
+            let novaData = document.getElementById("novaData").value.trim(); // Esta já está em YYYY-MM-DD
             let novoProduto = document.querySelector('input[name="editarProduto"]:checked').value;
 
             if (!novoNome || !novaData) {
@@ -1864,7 +1848,7 @@
             clientes[originalClienteIndex].id = novoId; // Atualiza o ID se o telefone mudou
             clientes[originalClienteIndex].nome = nomeComNovoProduto;
             clientes[originalClienteIndex].telefone = telefoneLimpoEditado; // Salva o telefone limpo
-            clientes[originalClienteIndex].data = novaData.split("-").reverse().join("/");
+            clientes[originalClienteIndex].data = novaData.split("-").reverse().join("/"); // Converte para DD/MM/YYYY para armazenamento
             clientes[originalClienteIndex].Produto = novoProduto;
 
             // Resetar modos de exibição e filtros para forçar uma re-renderização completa
@@ -1876,18 +1860,17 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
 
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela(); // Atualiza a tabela principal
             exibirClientesAvisados(); // Atualiza a nova seção de avisados
-            salvarClientes();
             fecharModal();
             atualizarUltimaAtualizacao("editado", nomeComNovoProduto);
         }
-
         function formatarParaInputDate(data) {
+            // Esta função já converte DD/MM/YYYY para YYYY-MM-DD
             let [dia, mes, ano] = data.split("/");
             return `${ano}-${mes}-${dia}`;
         }
-
         function excluir(index) {
             const cliente = clientesExibidos[index]; // Cliente da lista atualmente exibida
             clienteIndexParaExcluir = clientes.findIndex(c => c.id === cliente.id); // Encontra o index na lista principal
@@ -1895,31 +1878,46 @@
                 document.getElementById("modalExclusao").style.display = "flex";
             }
         }
-
-        function confirmarExclusao() {
+        async function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
                 salvarEstadoNoHistorico();
-                const nomeClienteExcluido = clientes[clienteIndexParaExcluir].nome; // Pega o nome antes de excluir
-                clientes.splice(clienteIndexParaExcluir, 1);
+                const clienteParaExcluir = clientes[clienteIndexParaExcluir]; // Pega o cliente do array principal
+                const nomeClienteExcluido = clienteParaExcluir.nome;
 
-                clientesFiltrados = [];
-                modoExibicaoArquivados = false;
-                modoExibicaoOcultos = false;
-                modoExibicaoVerDepois = false;
-                modoExibicaoDesativados = false;
-                filtroProduto = null;
-                document.getElementById("searchInput").value = "";
+                try {
+                    // Remove do array local primeiro
+                    clientes.splice(clienteIndexParaExcluir, 1);
+                    // Em seguida, sincroniza o array atualizado com o Sheets
+                    const response = await sendRequestToBackend('bulk_update_clients', { clients: clientes });
 
-                exibirTabela(); // Atualiza a tabela principal
-                exibirClientesAvisados(); // Atualiza a nova seção
-                salvarClientes();
-                fecharModal();
-                clienteIndexParaExcluir = null;
-                atualizarUltimaAtualizacao("excluído", nomeClienteExcluido);
+                    if (response.status === 'success') {
+                        clientesFiltrados = [];
+                        modoExibicaoArquivados = false;
+                        modoExibicaoOcultos = false;
+                        modoExibicaoVerDepois = false;
+                        modoExibicaoDesativados = false;
+                        filtroProduto = null;
+                        document.getElementById("searchInput").value = "";
+
+                        exibirTabela();
+                        exibirClientesAvisados();
+                        fecharModal();
+                        clienteIndexParaExcluir = null;
+                        atualizarUltimaAtualizacao("excluído", nomeClienteExcluido);
+                    } else {
+                        // Se a exclusão no backend falhar, você pode querer reverter a exclusão localmente
+                        // Ou, mais robusto, re-carregar os clientes do backend para garantir a consistência
+                        clientes.splice(clienteIndexParaExcluir, 0, clienteParaExcluir); // Reinsere se falhar
+                        exibirAlerta(`Falha ao excluir cliente: ${response.message}`);
+                    }
+                } catch (e) {
+                    clientes.splice(clienteIndexParaExcluir, 0, clienteParaExcluir); // Reinsere se falhar
+                    console.error("Erro ao excluir cliente no Google Sheets:", e);
+                    exibirAlerta("Erro ao excluir cliente no Google Sheets. Verifique a conexão e o script.");
+                }
             }
         }
-
-        function toggleAvisado(index) {
+        async function toggleAvisado(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index]; // Da tabela principal
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
@@ -1932,44 +1930,42 @@
                     clientes[clienteOriginalIndex].oculto = false;
                 }
             }
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela(); // Atualiza a tabela principal
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
         }
-
-        function toggleDebito(index) {
+        async function toggleDebito(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
-                clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
+                clientes[clienteOriginalIndex].debito = !clientes[originalClienteIndex].debito;
             }
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
-            atualizarUltimaAtualizacao(`status débito alterado para ${clientes[clienteOriginalIndex].debito ? 'sim' : 'não'}`, cliente.nome);
+            atualizarContadores(); // Atualiza os contadores, o badge de débito será atualizado
+            atualizarUltimaAtualizacao(`status débito alterado para ${clientes[originalClienteIndex].debito ? 'sim' : 'não'}`, cliente.nome);
         }
-
-        function toggleVerDepois(index) {
+        async function toggleVerDepois(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
-                clientes[originalClienteIndex].verDepois = !clientes[originalClienteIndex].verDepois;
-                if (clientes[originalClienteIndex].verDepois) {
-                    clientes[originalClienteIndex].oculto = false; // "Ver Depois" não é "Oculto por aviso"
-                    clientes[originalClienteIndex].arquivado = false;
-                    clientes[originalClienteIndex].desativado = false;
+                clientes[clienteOriginalIndex].verDepois = !clientes[clienteOriginalIndex].verDepois;
+                if (clientes[clienteOriginalIndex].verDepois) {
+                    clientes[clienteOriginalIndex].oculto = false; // "Ver Depois" não é "Oculto por aviso"
+                    clientes[clienteOriginalIndex].arquivado = false;
+                    clientes[clienteOriginalIndex].desativado = false;
                 }
             }
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
-            atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[originalClienteIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
-
-        function toggleDesativado(index) {
+        async function toggleDesativado(index) {
             salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
@@ -1983,18 +1979,16 @@
                     clientes[clienteOriginalIndex].arquivado = false;
                 }
             }
+            await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
-            salvarClientes();
-            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[originalClienteIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
         }
-
         function abrirModalAlterarProduto(index) {
             clienteIndexParaAlterarProduto = index;
             document.getElementById('modalEscolherProduto').style.display = 'flex';
         }
-
-        function alterarProdutoClienteConfirm(novoProduto) {
+        async function alterarProdutoClienteConfirm(novoProduto) {
             if (clienteIndexParaAlterarProduto !== null) {
                 salvarEstadoNoHistorico();
                 const clienteParaAtualizar = clientesExibidos[clienteIndexParaAlterarProduto];
@@ -2011,38 +2005,68 @@
                 modoExibicaoVerDepois = false;
                 modoExibicaoDesativados = false;
                 filtroProduto = null;
+                await salvarClientes(); // SALVA NO GOOGLE SHEETS
                 exibirTabela();
                 exibirClientesAvisados(); // Atualiza a nova seção
-                salvarClientes();
                 fecharModal();
                 clienteIndexParaAlterarProduto = null;
                 exibirAlerta(`Produto do cliente alterado para ${novoProduto}!`);
                 atualizarUltimaAtualizacao(`produto alterado para ${novoProduto}`, clienteParaAtualizar.nome);
             }
         }
-
-        function salvarClientes() {
-            localStorage.setItem('clientes', JSON.stringify(clientes));
-        }
-
-        function loadClientes() {
+        // FUNÇÃO ORIGINAL: function salvarClientes() { localStorage.setItem('clientes', JSON.stringify(clientes)); }
+        async function salvarClientes() {
             try {
-                const storedClientes = localStorage.getItem('clientes');
-                if (storedClientes) {
-                    const parsedClientes = JSON.parse(storedClientes);
-                    clientes = parsedClientes.map(c => {
-                        const telefoneLimpo = c.telefone ? String(c.telefone).replace(/[^\d]/g, '') : '';
+                // O histórico `redoHistory` e `historicoClientes` ainda usam o array local.
+                // A lógica do Apps Script já lida com adicionar/atualizar/deletar.
+                const response = await sendRequestToBackend('bulk_update_clients', { clients: clientes });
+                if (response.status === 'success') {
+                    console.log('Dados sincronizados com o Google Sheets com sucesso!');
+                } else {
+                    exibirAlerta(`Falha ao sincronizar clientes: ${response.message}`);
+                }
+            } catch (e) {
+                console.error("Erro ao salvar clientes no Google Sheets:", e);
+                exibirAlerta("Erro ao salvar clientes no Google Sheets. Verifique a conexão e o script.");
+            }
+        }
+        // FUNÇÃO ORIGINAL: function loadClientes() { ... }
+        async function loadClientes() {
+            try {
+                const response = await sendRequestToBackend('get_all_clients');
+                // O Apps Script retorna diretamente o array de clientes em caso de sucesso no getAllClients
+                if (Array.isArray(response)) {
+                    clientes = response.map(c => {
+                        const telefoneLimpo = String(c.telefone || '').replace(/[^\d]/g, '');
                         const clienteId = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
 
-                        // Ao carregar, resetar o status 'oculto' para 'false'
-                        // Isso garante que clientes "avisados" sejam reexibidos na tabela principal após um refresh
+                        // Se o backend estiver enviando a data no formato ISO (ex: "2025-07-16T03:00:00.000Z"),
+                        // você precisará extrair apenas a parte YYYY-MM-DD e então converter para DD/MM/YYYY para o objeto local.
+                        let dataClienteFormatada = c.data;
+                        if (c.data && typeof c.data === 'string' && c.data.includes('T')) {
+                            // Assume que é ISO 8601 e pega a parte da data
+                            const dateOnly = c.data.split('T')[0]; // "YYYY-MM-DD"
+                            const parts = dateOnly.split('-');
+                            if (parts.length === 3) {
+                                dataClienteFormatada = `${parts[2]}/${parts[1]}/${parts[0]}`; // Convertendo para DD/MM/YYYY
+                            }
+                        } else if (c.data && typeof c.data === 'string' && c.data.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                             // Se for YYYY-MM-DD (sem T), também converte para DD/MM/YYYY
+                            const parts = c.data.split('-');
+                            dataClienteFormatada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        }
+                        
+                        // Ao carregar, o status 'oculto' pode vir do Google Sheet agora
+                        // Se você deseja que 'oculto' seja sempre 'false' após um refresh, mantenha a linha abaixo.
+                        // Caso contrário, use c.oculto para manter o estado persistente.
+                        // Decida qual comportamento você prefere. Mantenho 'false' como no seu original.
                         const isOcultoAposRefresh = false;
 
                         return {
                             id: c.id || clienteId,
-                            data: c.data,
+                            data: dataClienteFormatada, // Armazena como DD/MM/YYYY
                             nome: c.nome,
-                            telefone: c.telefone,
+                            telefone: telefoneLimpo,
                             avisado: c.avisado || false,
                             debito: c.debito || false,
                             Produto: c.Produto || "Não informado",
@@ -2051,16 +2075,20 @@
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false
                         };
-                    }).filter(c => c.id !== null);
+                    }).filter(c => c.id !== null); // Filtra clientes sem ID válido
+                    console.log("Clientes carregados do Google Sheets:", clientes);
                 } else {
+                    console.error("Formato de resposta inválido ao carregar clientes:", response);
                     clientes = [];
+                    exibirAlerta("Erro: Formato de dados inválido recebido do Google Sheets.");
                 }
             } catch (e) {
-                console.error("Erro ao carregar clientes do localStorage:", e);
-                clientes = [];
-                localStorage.removeItem('clientes');
+                console.error("Erro ao carregar clientes do Google Sheets:", e);
+                clientes = []; // Garante que a lista esteja vazia em caso de falha grave
+                exibirAlerta("Erro ao carregar clientes do Google Sheets. Verifique a conexão e o Apps Script.");
             }
-            // Carrega a data da última atualização do localStorage ao iniciar
+
+            // A lógica de `ultimaAtualizacaoInfo` ainda pode vir do localStorage
             const ultimaAtualizacaoSalva = localStorage.getItem('ultimaAtualizacaoCliente');
             if (ultimaAtualizacaoSalva) {
                 document.getElementById('ultimaAtualizacaoInfo').textContent = ultimaAtualizacaoSalva;
@@ -2068,28 +2096,23 @@
                 document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Alteração: Nunca`;
             }
         }
-
         function compartilharWhatsApp() {
             const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
             window.open(url, '_blank');
         }
-
         function pesquisarClientes() {
             // A pesquisa agora é tratada diretamente na exibirTabela com base no input
             // Não precisamos de lógica de filtro separada aqui, apenas forçar a atualização da tabela
             exibirTabela();
             exibirClientesAvisados(); // Garante que a seção avisados também se atualize se for o caso
         }
-
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
             exibirTodos(); // Chama exibirTodos para reexibir tudo e atualizar ambas as seções
         }
-
         // --- FUNÇÕES DE AJUSTES ---
         const SETTINGS_KEY = 'inputSettings';
         const DEFAULT_INPUT_WIDTH_PERCENT = 16;
-
         function toggleSettingsArea() {
             const settingsArea = document.getElementById('settingsArea');
             if (settingsArea.style.display === 'block') {
@@ -2099,7 +2122,6 @@
                 loadSettings();
             }
         }
-
         function applyInputWidth(widthPercent) {
             const inputs = document.querySelectorAll('.configurable-input');
             inputs.forEach(input => {
@@ -2108,13 +2130,11 @@
                 input.style.width = 'auto';
             });
         }
-
         function updateInputWidth(value) {
             const widthValueSpan = document.getElementById('inputWidthValue');
             widthValueSpan.textContent = `${value}%`;
             applyInputWidth(value);
         }
-
         function saveSettings() {
             const inputWidth = document.getElementById('inputWidth').value;
             localStorage.setItem(SETTINGS_KEY, JSON.stringify({
@@ -2123,7 +2143,6 @@
             exibirAlerta("Ajustes salvos com sucesso!");
             toggleSettingsArea();
         }
-
         function loadSettings() {
             const savedSettings = localStorage.getItem(SETTINGS_KEY);
             let widthToApply = DEFAULT_INPUT_WIDTH_PERCENT;
@@ -2148,7 +2167,6 @@
             }
             applyInputWidth(widthToApply);
         }
-
         function resetSettings() {
             localStorage.removeItem(SETTINGS_KEY);
             exibirAlerta("Ajustes redefinidos para o padrão!");
@@ -2214,7 +2232,6 @@
             });
             updateBadge('badgeCentralMessage', vencidosNaoOcultosParaMensagem.length);
         }
-
         function updateBadge(badgeId, count) {
             const badge = document.getElementById(badgeId);
             if (badge) {
@@ -2238,7 +2255,6 @@
 
             document.getElementById('modalContagemProdutos').style.display = 'flex';
         }
-
         // --- Lógica para o botão central de mensagens ---
         function prepararClientesVencidosParaMensagem() {
             const hoje = new Date();
@@ -2267,7 +2283,6 @@
             indiceClienteVencidoAtual = 0;
             atualizarContadores(); // Atualiza o badge do botão central
         }
-
         function enviarProximoClienteVencido() {
             // Se a lista de clientes vencidos ainda não foi preparada ou está vazia, prepara
             if (clientesVencidosParaMensagem.length === 0 || indiceClienteVencidoAtual >= clientesVencidosParaMensagem.length) {
@@ -2302,9 +2317,8 @@
             atualizarContadores(); // Atualiza o badge após o envio
         }
         // --- FIM: Lógica para o botão central de mensagens ---
-
-        function inicializarExibicaoClientes() {
-            loadClientes();
+        async function inicializarExibicaoClientes() {
+            await loadClientes(); // Await para garantir que os clientes sejam carregados antes de qualquer outra operação
 
             const today = new Date();
             const year = today.getFullYear();
@@ -2328,7 +2342,7 @@
 
                 return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
             });
-            // Reseta os modos de exibição de filtro, pois a página está sendo carregada com uma exibição padrão.
+
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
@@ -2336,15 +2350,17 @@
             filtroProduto = null;
             document.getElementById("searchInput").value = "";
 
-            exibirTabela(); // Preenche a tabela principal (clientes não avisados, etc.)
-            exibirClientesAvisados(); // Preenche a nova seção de clientes avisados
-            prepararClientesVencidosParaMensagem(); // Prepara a lista para o botão central ao carregar a página
+            exibirTabela();
+            exibirClientesAvisados();
+            prepararClientesVencidosParaMensagem();
+            salvarEstadoNoHistorico(); // Garante o primeiro estado para o histórico de "desfazer"
+            loadSettings();
         }
         // Inicialização
-        document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
-        inicializarExibicaoClientes();
-        salvarEstadoNoHistorico(); // Garante o primeiro estado para o histórico de "desfazer"
-        loadSettings();
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
+            inicializarExibicaoClientes();
+        });
     </script>
 </body>
 </html>
