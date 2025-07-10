@@ -74,6 +74,7 @@
         .btn-debito-segurar:hover {
             background-color: #e6b800; /* Amarelo um pouco mais escuro no hover */
         }
+        /* Novo estilo para o botão de renovar (Data Atual) */
         .btn-renovar-data-atual {
             background-color: #ffc107; /* Amarelo Bootstrap */
             color: #212529; /* Texto escuro */
@@ -83,6 +84,7 @@
             background-color: #e0a800;
             border-color: #d39e00;
         }
+        /* Novo estilo para o botão de confirmação perigosa (vermelho) */
         .modal-confirm-danger {
             background-color: #dc3545; /* Vermelho */
             color: #fff;
@@ -658,7 +660,7 @@
 
             salvarEstadoNoHistorico(); // Salva o estado atual ANTES da modificação
 
-            // A data armazenada será DD/MM/YYYY, mas a exibição será YYYY-MM-DD
+            // A data armazenada será DD/MM/YYYY
             const dataParts = dataInput.split("-"); // Ex: ["2025", "07", "10"]
             const dataFormatadaParaArmazenar = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`; // DD/MM/YYYY
 
@@ -799,18 +801,19 @@
         let clientesExibidos = [];
 
         /**
-         * Converte uma data de string "DD/MM/YYYY" para "YYYY-MM-DD".
+         * Converte uma data de string "DD/MM/YYYY" para "DD/MM" para exibição.
          * @param {string} dateString - A data no formato "DD/MM/YYYY".
-         * @returns {string} A data no formato "YYYY-MM-DD".
+         * @returns {string} A data no formato "DD/MM".
          */
         function formatDateForDisplay(dateString) {
             if (!dateString) return '';
             const parts = dateString.split('/');
             if (parts.length === 3) {
-                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                return `${parts[0]}/${parts[1]}`; // Retorna DD/MM
             }
-            // Se já estiver em YYYY-MM-DD ou outro formato, tenta retornar como está
-            return dateString;
+            // Se o formato não for DD/MM/YYYY, tenta retornar os primeiros 5 caracteres
+            // que corresponderiam a DD/MM se a string for parecida com um formato de data.
+            return dateString.substring(0, 5); 
         }
 
         function exibirTabela() {
@@ -1963,7 +1966,7 @@
             await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
-            atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[originalClienteIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleDesativado(index) {
             salvarEstadoNoHistorico();
@@ -1971,7 +1974,7 @@
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
-                if (clientes[clienteOriginalIndex].desativado) {
+                if (clientes[originalClienteIndex].desativado) {
                     clientes[clienteOriginalIndex].avisado = false;
                     clientes[clienteOriginalIndex].debito = false;
                     clientes[clienteOriginalIndex].oculto = false; // Desativado não é "Oculto por aviso"
@@ -1982,7 +1985,7 @@
             await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela();
             exibirClientesAvisados(); // Atualiza a nova seção
-            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[originalClienteIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
         }
         function abrirModalAlterarProduto(index) {
             clienteIndexParaAlterarProduto = index;
@@ -2041,19 +2044,18 @@
                         const clienteId = telefoneLimpo.length >= 5 ? telefoneLimpo.slice(-5) : null;
 
                         // Se o backend estiver enviando a data no formato ISO (ex: "2025-07-16T03:00:00.000Z"),
-                        // você precisará extrair apenas a parte YYYY-MM-DD e então converter para DD/MM/YYYY para o objeto local.
+                        // ou YYYY-MM-DD, vamos parseá-la para DD/MM/YYYY para o objeto cliente local.
                         let dataClienteFormatada = c.data;
-                        if (c.data && typeof c.data === 'string' && c.data.includes('T')) {
-                            // Assume que é ISO 8601 e pega a parte da data
-                            const dateOnly = c.data.split('T')[0]; // "YYYY-MM-DD"
-                            const parts = dateOnly.split('-');
-                            if (parts.length === 3) {
-                                dataClienteFormatada = `${parts[2]}/${parts[1]}/${parts[0]}`; // Convertendo para DD/MM/YYYY
+                        if (c.data && typeof c.data === 'string') {
+                            let datePart = c.data;
+                            if (c.data.includes('T')) {
+                                datePart = c.data.split('T')[0]; // Pega apenas a parte da data "YYYY-MM-DD"
                             }
-                        } else if (c.data && typeof c.data === 'string' && c.data.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                             // Se for YYYY-MM-DD (sem T), também converte para DD/MM/YYYY
-                            const parts = c.data.split('-');
-                            dataClienteFormatada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                            // Agora, converte de YYYY-MM-DD para DD/MM/YYYY
+                            const parts = datePart.split('-');
+                            if (parts.length === 3) {
+                                dataClienteFormatada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                            }
                         }
                         
                         // Ao carregar, o status 'oculto' pode vir do Google Sheet agora
@@ -2358,6 +2360,8 @@
         }
         // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
+            // A data atual sempre será exibida no formato dd/mm/yyyy aqui, pois é um parágrafo simples.
+            // Se quiser dd/mm aqui também, altere a linha abaixo.
             document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
             inicializarExibicaoClientes();
         });
