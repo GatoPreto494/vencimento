@@ -322,6 +322,8 @@
                 style="display:none;"></span></button>
         <button onclick="filtrarDebito()">Clientes com Débito <span id="badgeDebito" class="notification-badge"
                 style="display:none;"></span></button>
+        <button onclick="mostrarApenasOcultosPorFiltro()">Clientes Avisados (WhatsApp) <span id="badgeOcultos"
+                class="notification-badge" style="display:none;"></span></button>
         <button onclick="filtrarVerDepois()">Ver Depois <span id="badgeVerDepois" class="notification-badge"
                 style="display:none;"></span></button>
         <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge"
@@ -549,7 +551,7 @@
             console.log(fullMessage);
         }
         // --- Fim da função de atualização ---
-        function salvarEstadoNoHistorico(clearRedo = true) {
+        function saveStateToHistory(clearRedo = true) { // Renomeada para consistência
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoAtual);
 
@@ -704,7 +706,7 @@
             }
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false; // Resetar para o comportamento de filtro
+            modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
@@ -746,13 +748,6 @@
             exibirTabela(); // Apenas a tabela principal usará este filtro
             exibirClientesAvisados(); // Certifica-se de que a seção avisados não seja afetada por este filtro
         }
-        // A função filtrarOcultos não será mais para exibir na tabela principal,
-        // mas sim para um caso onde se queira VER apenas a lista de ocultos (seção já faz isso)
-        // ou se o filtro for ativado por um botão antigo (melhor remover o botão "Clientes Avisados (WhatsApp)" do "Filtros e Ações").
-        // Vou manter a função, mas ela não fará sentido se a nova seção for usada.
-        // Seção já trata os "avisados/ocultos", então este botão de filtro pode ser redundante.
-        // Vamos renomear para `mostrarApenasOcultosPorFiltro` para clareza, caso a funcionalidade seja mantida.
-        // No HTML, o botão "Clientes Avisados (WhatsApp)" agora só tem o badge e não tem mais onclick para filtrar.
         function mostrarApenasOcultosPorFiltro() { // Renomeada de filtrarOcultos
             clientesFiltrados = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
             modoExibicaoArquivados = false;
@@ -1676,7 +1671,7 @@
                 true
             );
         }
-        function confirmDesfazer() {
+        function confirmarDesfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
                 return;
