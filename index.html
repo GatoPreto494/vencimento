@@ -658,7 +658,7 @@
                 return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
 
-            salvarEstadoNoHistorico(); // Salva o estado atual ANTES da modificação
+            saveStateToHistory(); // Salva o estado atual ANTES da modificação
 
             // A data armazenada será DD/MM/YYYY
             const dataParts = dataInput.split("-"); // Ex: ["2025", "07", "10"]
@@ -692,7 +692,7 @@
             atualizarUltimaAtualizacao("adicionado", nomeInput);
         }
         async function arquivar(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let clienteParaArquivar = clientesExibidos[index]; // Note: clientesExibidos refere-se à tabela principal
 
             let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id); // Usando ID
@@ -714,7 +714,7 @@
             atualizarUltimaAtualizacao("arquivado", clienteParaArquivar.nome);
         }
         async function desarquivar(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             // Ao desarquivar de uma lista de "arquivados", o index se refere a clientesExibidos
             let clienteParaDesarquivar = clientesExibidos[index];
 
@@ -1000,7 +1000,7 @@
         }
         // Nova função para reexibir/desmarcar oculto diretamente da seção de avisados
         async function toggleOcultoFromAvisados(clientId) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clientId);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].oculto = false; // Desmarca como oculto
@@ -1118,7 +1118,7 @@
                 return;
             }
 
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
             if (clienteOriginal) {
                 if (produtoCliente === "Duplecast") {
@@ -1159,7 +1159,7 @@
         // --- FUNÇÃO DE CONFIRMAÇÃO DO "RENOVAR HOJE" ---
         async function confirmarRenovarHoje() {
             if (clienteIdParaRenovarHoje !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 let clienteOriginal = clientes.find(c => c.id === clienteIdParaRenovarHoje);
 
                 if (clienteOriginal) {
@@ -1193,7 +1193,7 @@
 
         async function confirmarRenovacaoComDebito() {
             if (clienteIndexParaRenovarDebito !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
                 const produtoCliente = cliente.Produto || "Não informado";
 
@@ -1262,7 +1262,7 @@
 
         async function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
                 // Para duplicar, precisamos gerar um NOVO ID único
@@ -1329,8 +1329,14 @@
 
             const cliente = clientesExibidos[index];
             const vencimento = cliente.data; // Data em DD/MM/YYYY
-            const hoje = new Date();
 
+            // Converte para nome do mês por extenso com inicial maiúscula
+            const [dia, mes, ano] = vencimento.split("/").map(Number);
+            const nomeDoMes = new Date(ano, mes - 1, dia).toLocaleString("pt-BR", { month: "long" });
+            const nomeDoMesFormatado = nomeDoMes.charAt(0).toUpperCase() + nomeDoMes.slice(1);
+
+            const hoje = new Date();
+            
             // Converter a data de vencimento para um objeto Date para comparação
             const [diaVenc, mesVenc, anoVenc] = vencimento.split("/").map(num => parseInt(num));
             const dataVencimentoObj = new Date(anoVenc, mesVenc - 1, diaVenc);
@@ -1356,9 +1362,9 @@
 
             let mensagem;
             if (vencido) {
-                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento}*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento}* (${nomeDoMesFormatado}). Lembrando que pagando no dia do vencimento o mensal é de 30 reais, após o dia de vencimento o mensal é de 35 reais. O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
             } else {
-                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data}O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV. *Vencimento*: ${vencimento} (${nomeDoMesFormatado}). O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
             }
 
             const url = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagem)}`;
@@ -1428,7 +1434,7 @@
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
-                    salvarEstadoNoHistorico(); // Salva o estado atual antes de começar a importação
+                    saveStateToHistory(); // Salva o estado atual antes de começar a importação
 
                     const clientesImportadosRaw = JSON.parse(reader.result);
                     clientesParaProcessarImportacao = clientesImportadosRaw.map(c => {
@@ -1670,7 +1676,7 @@
                 true
             );
         }
-        function confirmarDesfazer() {
+        function confirmDesfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
                 return;
@@ -1708,7 +1714,7 @@
             );
         }
         async function limparTodos() {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             try {
                 const response = await sendRequestToBackend('clear_all_clients');
                 if (response.status === 'success') {
@@ -1756,7 +1762,7 @@
                 return;
             }
 
-            salvarEstadoNoHistorico(false);
+            saveStateToHistory(false);
             clientes = redoHistory.pop();
             await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTodos(); // Chama exibirTodos para reexibir e atualizar ambas as seções
@@ -1819,7 +1825,7 @@
         }
         // `index` agora se refere ao index do cliente na array `clientes` original, não em `clientesExibidos`
         async function salvarEdicao(originalClienteIndex) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             const clienteParaAtualizar = clientes[originalClienteIndex]; // Use o index direto na array principal
 
             let novoNome = document.getElementById("novoNome").value.trim();
@@ -1883,7 +1889,7 @@
         }
         async function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const clienteParaExcluir = clientes[clienteIndexParaExcluir]; // Pega o cliente do array principal
                 const nomeClienteExcluido = clienteParaExcluir.nome;
 
@@ -1921,7 +1927,7 @@
             }
         }
         async function toggleAvisado(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index]; // Da tabela principal
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1939,7 +1945,7 @@
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleDebito(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1952,7 +1958,7 @@
             atualizarUltimaAtualizacao(`status débito alterado para ${clientes[originalClienteIndex].debito ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleVerDepois(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1969,7 +1975,7 @@
             atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[originalClienteIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleDesativado(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1993,7 +1999,7 @@
         }
         async function alterarProdutoClienteConfirm(novoProduto) {
             if (clienteIndexParaAlterarProduto !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const clienteParaAtualizar = clientesExibidos[clienteIndexParaAlterarProduto];
                 let clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaAtualizar.id);
 
@@ -2355,7 +2361,7 @@
             exibirTabela();
             exibirClientesAvisados();
             prepararClientesVencidosParaMensagem();
-            salvarEstadoNoHistorico(); // Garante o primeiro estado para o histórico de "desfazer"
+            saveStateToHistory(); // Garante o primeiro estado para o histórico de "desfazer"
             loadSettings();
         }
         // Inicialização
