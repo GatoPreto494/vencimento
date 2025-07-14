@@ -549,7 +549,7 @@
             console.log(fullMessage);
         }
         // --- Fim da função de atualização ---
-        function salvarEstadoNoHistorico(clearRedo = true) {
+        function saveStateToHistory(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoAtual);
 
