@@ -479,7 +479,7 @@
         // ====================================================================================
         // NOVO: URL do seu Aplicativo da Web do Google Apps Script
         // *** IMPORTANTE: ESTE É O URL QUE VOCÊ FORNECEU! ***
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx1dMoMr7AnK9f8aYEXBlJEgEsrCz8-6qZHk2LtaPxvbsvTn65B9gIxbioMidCHA3L6GA/exec';
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHKKeGamiImtqK0G-DJpJI3E_y83ZlVQq6A3kjW0LmRE9iRvNuG3VCOQmpt_s2XwLIrg/exec';
         // ====================================================================================
 
         // Função auxiliar para enviar requisições ao backend (Apps Script)
@@ -549,7 +549,9 @@
             console.log(fullMessage);
         }
         // --- Fim da função de atualização ---
-        function salvarEstadoNoHistorico(clearRedo = true) {
+
+        // RENOMEADA: saveStateToHistory
+        function saveStateToHistory(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoAtual);
 
@@ -561,6 +563,7 @@
                 redoHistory = [];
             }
         }
+
         function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
             const modal = document.getElementById("modalConfirmacaoGenerica");
             const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
@@ -658,7 +661,7 @@
                 return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
 
-            salvarEstadoNoHistorico(); // Salva o estado atual ANTES da modificação
+            saveStateToHistory(); // Salva o estado atual ANTES da modificação
 
             // A data armazenada será DD/MM/YYYY
             const dataParts = dataInput.split("-"); // Ex: ["2025", "07", "10"]
@@ -692,7 +695,7 @@
             atualizarUltimaAtualizacao("adicionado", nomeInput);
         }
         async function arquivar(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let clienteParaArquivar = clientesExibidos[index]; // Note: clientesExibidos refere-se à tabela principal
 
             let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id); // Usando ID
@@ -714,7 +717,7 @@
             atualizarUltimaAtualizacao("arquivado", clienteParaArquivar.nome);
         }
         async function desarquivar(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             // Ao desarquivar de uma lista de "arquivados", o index se refere a clientesExibidos
             let clienteParaDesarquivar = clientesExibidos[index];
 
@@ -955,6 +958,10 @@
             const clientesAvisadosList = document.getElementById('clientesAvisadosList');
             clientesAvisadosList.innerHTML = ''; // Limpa a lista existente
 
+            // A seção de avisados continua exibindo os clientes onde 'oculto' é true.
+            // A diferença agora é que 'enviarMensagemWhatsApp' não vai mais definir 'oculto = true'.
+            // Então, se um cliente deve aparecer AQUI, ele precisará ter sido marcado como 'oculto'
+            // por outras razões ou manualmente.
             const avisados = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
 
             if (avisados.length === 0) {
@@ -980,7 +987,7 @@
                     <div class="client-actions">
                         <button title="Reexibir Cliente (Tira do Avisados)" onclick="toggleOcultoFromAvisados('${cliente.id}')">Reexibir</button>
                         <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">+</button>
-                        <button title="Renovar Automático" onclick="renovarAutomaticoById('${cliente.id}')">🔁</button>
+                        <button title="Renovar Automático" onclick="renovarAutomatiscoById('${cliente.id}')">🔁</button>
                         <button title="Renovar com Débito (Confirmação)"
                                 class="btn-debito-segurar"
                                 onclick="pedirConfirmacaoRenovacaoDebitoById('${cliente.id}')">DÉBITO</button>
@@ -1000,7 +1007,7 @@
         }
         // Nova função para reexibir/desmarcar oculto diretamente da seção de avisados
         async function toggleOcultoFromAvisados(clientId) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clientId);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].oculto = false; // Desmarca como oculto
@@ -1021,7 +1028,8 @@
                 clientesExibidos = originalClientesExibidos; // Restaura
             }
         }
-        function renovarAutomaticoById(clientId) {
+        // CORREÇÃO: Função auxiliar para chamar renovarAutomatico pelo ID
+        function renovarAutomatiscoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
                 const originalClientesExibidos = clientesExibidos;
@@ -1030,6 +1038,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function pedirConfirmacaoRenovacaoDebitoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1118,7 +1127,7 @@
                 return;
             }
 
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
             if (clienteOriginal) {
                 if (produtoCliente === "Duplecast") {
@@ -1159,7 +1168,7 @@
         // --- FUNÇÃO DE CONFIRMAÇÃO DO "RENOVAR HOJE" ---
         async function confirmarRenovarHoje() {
             if (clienteIdParaRenovarHoje !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 let clienteOriginal = clientes.find(c => c.id === clienteIdParaRenovarHoje);
 
                 if (clienteOriginal) {
@@ -1193,7 +1202,7 @@
 
         async function confirmarRenovacaoComDebito() {
             if (clienteIndexParaRenovarDebito !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
                 const produtoCliente = cliente.Produto || "Não informado";
 
@@ -1262,7 +1271,7 @@
 
         async function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
                 // Para duplicar, precisamos gerar um NOVO ID único
@@ -1314,6 +1323,15 @@
                 atualizarUltimaAtualizacao("duplicado", clienteOriginal.nome);
             }
         }
+        // Nova função para obter o nome do mês
+        function getNomeMes(mesNumero) {
+            const meses = [
+                "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+            ];
+            return meses[mesNumero - 1]; // Subtrai 1 porque os meses são baseados em zero no array
+        }
+
         async function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
             let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, ''); // Remove todos os não-dígitos
             if (!telefoneParaWhatsApp) {
@@ -1339,7 +1357,6 @@
             const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
             const dataVencimentoSemHora = new Date(dataVencimentoObj.getFullYear(), dataVencimentoObj.getMonth(), dataVencimentoObj.getDate());
 
-
             const vencido = dataVencimentoSemHora < hojeSemHora;
 
             const hora = hoje.getHours();
@@ -1353,12 +1370,15 @@
             }
 
             const nomeParaMensagem = clienteNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+            
+            // Obter o nome do mês
+            const nomeMes = getNomeMes(parseInt(mesVenc));
 
             let mensagem;
             if (vencido) {
-                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento}*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento} (${nomeMes})*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
             } else {
-                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data}O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data} (${nomeMes})O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
             }
 
             const url = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagem)}`;
@@ -1377,7 +1397,10 @@
 
             let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
-                clienteOriginal.oculto = true; // Marcar como oculto quando a mensagem é enviada
+                // ANTES: clienteOriginal.oculto = true; // Removido
+                // ANTES: clienteOriginal.avisado = true; // Removido
+                // AGORA: Apenas marcamos como avisado (para a cor da linha) e ele permanece na tabela principal
+                clienteOriginal.avisado = true; 
             }
             await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTabela(); // Atualiza a tabela principal
@@ -1428,7 +1451,7 @@
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
-                    salvarEstadoNoHistorico(); // Salva o estado atual antes de começar a importação
+                    saveStateToHistory(); // Salva o estado atual antes de começar a importação
 
                     const clientesImportadosRaw = JSON.parse(reader.result);
                     clientesParaProcessarImportacao = clientesImportadosRaw.map(c => {
@@ -1708,9 +1731,9 @@
             );
         }
         async function limparTodos() {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             try {
-                const response = await sendRequestToBackend('clear_all_clients');
+                const response = await sendRequestToBackend('clear_all_clients', {}); // Passe um objeto vazio para data
                 if (response.status === 'success') {
                     clientes = []; // Limpa o array local APÓS o sucesso no backend
                     clientesFiltrados = [];
@@ -1756,7 +1779,7 @@
                 return;
             }
 
-            salvarEstadoNoHistorico(false);
+            saveStateToHistory(false);
             clientes = redoHistory.pop();
             await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTodos(); // Chama exibirTodos para reexibir e atualizar ambas as seções
@@ -1819,7 +1842,7 @@
         }
         // `index` agora se refere ao index do cliente na array `clientes` original, não em `clientesExibidos`
         async function salvarEdicao(originalClienteIndex) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             const clienteParaAtualizar = clientes[originalClienteIndex]; // Use o index direto na array principal
 
             let novoNome = document.getElementById("novoNome").value.trim();
@@ -1883,7 +1906,7 @@
         }
         async function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const clienteParaExcluir = clientes[clienteIndexParaExcluir]; // Pega o cliente do array principal
                 const nomeClienteExcluido = clienteParaExcluir.nome;
 
@@ -1921,7 +1944,7 @@
             }
         }
         async function toggleAvisado(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index]; // Da tabela principal
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1939,7 +1962,7 @@
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleDebito(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1952,7 +1975,7 @@
             atualizarUltimaAtualizacao(`status débito alterado para ${clientes[originalClienteIndex].debito ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleVerDepois(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1969,7 +1992,7 @@
             atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[originalClienteIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleDesativado(index) {
-            salvarEstadoNoHistorico();
+            saveStateToHistory();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1993,12 +2016,12 @@
         }
         async function alterarProdutoClienteConfirm(novoProduto) {
             if (clienteIndexParaAlterarProduto !== null) {
-                salvarEstadoNoHistorico();
+                saveStateToHistory();
                 const clienteParaAtualizar = clientesExibidos[clienteIndexParaAlterarProduto];
                 let clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaAtualizar.id);
 
                 if (clienteOriginalIndex !== -1) {
-                    let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                    let nomeSemProduto = clientes[originalClienteIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                     clientes[originalClienteIndex].Produto = novoProduto;
                     clientes[originalClienteIndex].nome = `${nomeSemProduto} (${novoProduto})`;
                 }
@@ -2058,11 +2081,10 @@
                             }
                         }
                         
-                        // Ao carregar, o status 'oculto' pode vir do Google Sheet agora
-                        // Se você deseja que 'oculto' seja sempre 'false' após um refresh, mantenha a linha abaixo.
-                        // Caso contrário, use c.oculto para manter o estado persistente.
-                        // Decida qual comportamento você prefere. Mantenho 'false' como no seu original.
-                        const isOcultoAposRefresh = false;
+                        // Ao carregar, o status 'oculto' do sheet será usado,
+                        // mas para a exibição inicial na tabela principal, eles são marcados como visíveis.
+                        // A seção 'avisados' ainda filtra por 'oculto: true'.
+                        const isOcultoAposRefresh = c.oculto || false; // Mantém o status original de oculto do sheet
 
                         return {
                             id: c.id || clienteId,
@@ -2073,7 +2095,7 @@
                             debito: c.debito || false,
                             Produto: c.Produto || "Não informado",
                             arquivado: c.arquivado || false,
-                            oculto: isOcultoAposRefresh,
+                            oculto: isOcultoAposRefresh, // Mantém o status de oculto do sheet
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false
                         };
@@ -2087,7 +2109,7 @@
             } catch (e) {
                 console.error("Erro ao carregar clientes do Google Sheets:", e);
                 clientes = []; // Garante que a lista esteja vazia em caso de falha grave
-                exibirAlerta("Erro ao carregar clientes do Google Sheets. Verifique a conexão e o Apps Script.");
+                exibirAlerta("Erro ao carregar clientes do Google Sheets. Verifique a conexão e o script.");
             }
 
             // A lógica de `ultimaAtualizacaoInfo` ainda pode vir do localStorage
@@ -2153,7 +2175,8 @@
                 try {
                     const settings = JSON.parse(savedSettings);
                     widthToApply = settings.width || DEFAULT_INPUT_WIDTH_PERCENT;
-                } catch (e) {
+                }
+                catch (e) {
                     console.error("Erro ao carregar ajustes do localStorage:", e);
                     localStorage.removeItem(SETTINGS_KEY);
                 }
@@ -2184,6 +2207,8 @@
                 hoje.getFullYear();
 
             // Clientes que são exibidos na tabela principal (NÃO OCULTOS, ARQUIVADOS, VERDEPOIS, DESATIVADOS)
+            // IMPORTANTE: Agora cliente.oculto para o filtro principal depende de 'isOcultoAposRefresh'
+            // ou do estado real do sheet, NÃO do que foi feito pelo botão de mensagem.
             const clientesNaTabelaPrincipal = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
 
             const countHoje = clientesNaTabelaPrincipal.filter(cliente => cliente.data === hojeFormatada).length;
@@ -2226,11 +2251,12 @@
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
                 const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" + (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" + hoje.getFullYear();
 
-                // Considera apenas vencidos OU vencendo hoje, e que NÃO estão ocultos, arquivados, verDepois ou desativados
+                // Considera apenas vencidos OU vencendo hoje, e que NÃO estão arquivados, verDepois ou desativados
+                // E o cliente NÃO está avisado/oculto, para que a mensagem seja enviada apenas uma vez.
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
-                return (isVencendoHoje || isVencido) && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             });
             updateBadge('badgeCentralMessage', vencidosNaoOcultosParaMensagem.length);
         }
@@ -2269,11 +2295,12 @@
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-                // Considera apenas vencidos OU vencendo hoje, e que NÃO estão ocultos, arquivados, verDepois ou desativados
+                // Considera apenas vencidos OU vencendo hoje, e que NÃO estão arquivados, verDepois ou desativados
+                // E o cliente NÃO está avisado/oculto, para que a mensagem seja enviada apenas uma vez.
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
-                return (isVencendoHoje || isVencido) && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             }).sort((a, b) => {
                 // Opcional: Ordena por data de vencimento (os mais antigos primeiro)
                 const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
@@ -2333,7 +2360,8 @@
                                   today.getFullYear();
 
             // Filtra clientes para a exibição inicial: vencendo hoje OU vencidos,
-            // E que NÃO estão arquivados, ocultos, verDepois ou desativados.
+            // E que NÃO estão arquivados, verDepois ou desativados.
+            // Ocultos (avisados) NÃO aparecem aqui.
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
@@ -2342,6 +2370,7 @@
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
+                // Apenas clientes não avisados/ocultos aparecerão na carga inicial da tabela principal
                 return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
             });
 
@@ -2355,14 +2384,14 @@
             exibirTabela();
             exibirClientesAvisados();
             prepararClientesVencidosParaMensagem();
-            salvarEstadoNoHistorico(); // Garante o primeiro estado para o histórico de "desfazer"
+            saveStateToHistory(); // Garante o primeiro estado para o histórico de "desfazer"
             loadSettings();
         }
         // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
             // A data atual sempre será exibida no formato dd/mm/yyyy aqui, pois é um parágrafo simples.
-            // Se quiser dd/mm aqui também, altere a linha abaixo.
-            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
+            // Conforme solicitado, a data na tela é mostrada no formato dd/mm
+            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             inicializarExibicaoClientes();
         });
     </script>
