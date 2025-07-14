@@ -549,6 +549,8 @@
             console.log(fullMessage);
         }
         // --- Fim da função de atualização ---
+
+        // RENOMEADA: saveStateToHistory
         function saveStateToHistory(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoAtual);
@@ -561,6 +563,7 @@
                 redoHistory = [];
             }
         }
+
         function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
             const modal = document.getElementById("modalConfirmacaoGenerica");
             const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
@@ -1721,7 +1724,7 @@
         async function limparTodos() {
             saveStateToHistory();
             try {
-                const response = await sendRequestToBackend('clear_all_clients');
+                const response = await sendRequestToBackend('clear_all_clients', {}); // Passe um objeto vazio para data
                 if (response.status === 'success') {
                     clientes = []; // Limpa o array local APÓS o sucesso no backend
                     clientesFiltrados = [];
