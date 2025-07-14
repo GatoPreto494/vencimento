@@ -549,9 +549,7 @@
             console.log(fullMessage);
         }
         // --- Fim da função de atualização ---
-
-        // RENOMEADA: saveStateToHistory
-        function saveStateToHistory(clearRedo = true) {
+        function salvarEstadoNoHistorico(clearRedo = true) {
             const estadoAtual = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoAtual);
 
@@ -563,7 +561,6 @@
                 redoHistory = [];
             }
         }
-
         function exibirConfirmacaoGenerica(titulo, mensagem, callback, isDanger = false) {
             const modal = document.getElementById("modalConfirmacaoGenerica");
             const btnConfirmar = document.getElementById("btnConfirmacaoGenericaConfirmar");
@@ -661,7 +658,7 @@
                 return exibirAlerta(`Já existe um cliente com o ID final de telefone ${clienteId} (Nome: ${clienteExistenteComMesmoId.nome}). Por favor, use um telefone final diferente ou edite o cliente existente.`);
             }
 
-            saveStateToHistory(); // Salva o estado atual ANTES da modificação
+            salvarEstadoNoHistorico(); // Salva o estado atual ANTES da modificação
 
             // A data armazenada será DD/MM/YYYY
             const dataParts = dataInput.split("-"); // Ex: ["2025", "07", "10"]
@@ -695,7 +692,7 @@
             atualizarUltimaAtualizacao("adicionado", nomeInput);
         }
         async function arquivar(index) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             let clienteParaArquivar = clientesExibidos[index]; // Note: clientesExibidos refere-se à tabela principal
 
             let clienteOriginal = clientes.find(c => c.id === clienteParaArquivar.id); // Usando ID
@@ -717,7 +714,7 @@
             atualizarUltimaAtualizacao("arquivado", clienteParaArquivar.nome);
         }
         async function desarquivar(index) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             // Ao desarquivar de uma lista de "arquivados", o index se refere a clientesExibidos
             let clienteParaDesarquivar = clientesExibidos[index];
 
@@ -1003,7 +1000,7 @@
         }
         // Nova função para reexibir/desmarcar oculto diretamente da seção de avisados
         async function toggleOcultoFromAvisados(clientId) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clientId);
             if (clienteOriginalIndex !== -1) {
                 clientes[clienteOriginalIndex].oculto = false; // Desmarca como oculto
@@ -1121,7 +1118,7 @@
                 return;
             }
 
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             let clienteOriginal = clientes.find(c => c.id === cliente.id); // Usando ID
             if (clienteOriginal) {
                 if (produtoCliente === "Duplecast") {
@@ -1162,7 +1159,7 @@
         // --- FUNÇÃO DE CONFIRMAÇÃO DO "RENOVAR HOJE" ---
         async function confirmarRenovarHoje() {
             if (clienteIdParaRenovarHoje !== null) {
-                saveStateToHistory();
+                salvarEstadoNoHistorico();
                 let clienteOriginal = clientes.find(c => c.id === clienteIdParaRenovarHoje);
 
                 if (clienteOriginal) {
@@ -1196,7 +1193,7 @@
 
         async function confirmarRenovacaoComDebito() {
             if (clienteIndexParaRenovarDebito !== null) {
-                saveStateToHistory();
+                salvarEstadoNoHistorico();
                 const cliente = clientesExibidos[clienteIndexParaRenovarDebito];
                 const produtoCliente = cliente.Produto || "Não informado";
 
@@ -1265,7 +1262,7 @@
 
         async function confirmarDuplicacao() {
             if (clienteIndexParaDuplicar !== null) {
-                saveStateToHistory();
+                salvarEstadoNoHistorico();
                 const clienteOriginal = clientesExibidos[clienteIndexParaDuplicar];
 
                 // Para duplicar, precisamos gerar um NOVO ID único
@@ -1317,15 +1314,6 @@
                 atualizarUltimaAtualizacao("duplicado", clienteOriginal.nome);
             }
         }
-        // Nova função para obter o nome do mês
-        function getNomeMes(mesNumero) {
-            const meses = [
-                "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-            ];
-            return meses[mesNumero - 1]; // Subtrai 1 porque os meses são baseados em zero no array
-        }
-
         async function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
             let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, ''); // Remove todos os não-dígitos
             if (!telefoneParaWhatsApp) {
@@ -1351,6 +1339,7 @@
             const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
             const dataVencimentoSemHora = new Date(dataVencimentoObj.getFullYear(), dataVencimentoObj.getMonth(), dataVencimentoObj.getDate());
 
+
             const vencido = dataVencimentoSemHora < hojeSemHora;
 
             const hora = hoje.getHours();
@@ -1364,15 +1353,12 @@
             }
 
             const nomeParaMensagem = clienteNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
-            
-            // Obter o nome do mês
-            const nomeMes = getNomeMes(parseInt(mesVenc));
 
             let mensagem;
             if (vencido) {
-                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento} (${nomeMes})*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento}*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
             } else {
-                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data} (${nomeMes})O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
+                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data}O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
             }
 
             const url = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagem)}`;
@@ -1442,7 +1428,7 @@
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
-                    saveStateToHistory(); // Salva o estado atual antes de começar a importação
+                    salvarEstadoNoHistorico(); // Salva o estado atual antes de começar a importação
 
                     const clientesImportadosRaw = JSON.parse(reader.result);
                     clientesParaProcessarImportacao = clientesImportadosRaw.map(c => {
@@ -1722,9 +1708,9 @@
             );
         }
         async function limparTodos() {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             try {
-                const response = await sendRequestToBackend('clear_all_clients', {}); // Passe um objeto vazio para data
+                const response = await sendRequestToBackend('clear_all_clients');
                 if (response.status === 'success') {
                     clientes = []; // Limpa o array local APÓS o sucesso no backend
                     clientesFiltrados = [];
@@ -1770,7 +1756,7 @@
                 return;
             }
 
-            saveStateToHistory(false);
+            salvarEstadoNoHistorico(false);
             clientes = redoHistory.pop();
             await salvarClientes(); // SALVA NO GOOGLE SHEETS
             exibirTodos(); // Chama exibirTodos para reexibir e atualizar ambas as seções
@@ -1833,7 +1819,7 @@
         }
         // `index` agora se refere ao index do cliente na array `clientes` original, não em `clientesExibidos`
         async function salvarEdicao(originalClienteIndex) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             const clienteParaAtualizar = clientes[originalClienteIndex]; // Use o index direto na array principal
 
             let novoNome = document.getElementById("novoNome").value.trim();
@@ -1897,7 +1883,7 @@
         }
         async function confirmarExclusao() {
             if (clienteIndexParaExcluir !== null) {
-                saveStateToHistory();
+                salvarEstadoNoHistorico();
                 const clienteParaExcluir = clientes[clienteIndexParaExcluir]; // Pega o cliente do array principal
                 const nomeClienteExcluido = clienteParaExcluir.nome;
 
@@ -1935,7 +1921,7 @@
             }
         }
         async function toggleAvisado(index) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index]; // Da tabela principal
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1953,7 +1939,7 @@
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleDebito(index) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1966,7 +1952,7 @@
             atualizarUltimaAtualizacao(`status débito alterado para ${clientes[originalClienteIndex].debito ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleVerDepois(index) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -1983,7 +1969,7 @@
             atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[originalClienteIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
         }
         async function toggleDesativado(index) {
-            saveStateToHistory();
+            salvarEstadoNoHistorico();
             let cliente = clientesExibidos[index];
             let clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
             if (clienteOriginalIndex !== -1) {
@@ -2007,7 +1993,7 @@
         }
         async function alterarProdutoClienteConfirm(novoProduto) {
             if (clienteIndexParaAlterarProduto !== null) {
-                saveStateToHistory();
+                salvarEstadoNoHistorico();
                 const clienteParaAtualizar = clientesExibidos[clienteIndexParaAlterarProduto];
                 let clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaAtualizar.id);
 
@@ -2369,14 +2355,14 @@
             exibirTabela();
             exibirClientesAvisados();
             prepararClientesVencidosParaMensagem();
-            saveStateToHistory(); // Garante o primeiro estado para o histórico de "desfazer"
+            salvarEstadoNoHistorico(); // Garante o primeiro estado para o histórico de "desfazer"
             loadSettings();
         }
         // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
             // A data atual sempre será exibida no formato dd/mm/yyyy aqui, pois é um parágrafo simples.
-            // Conforme solicitado, a data na tela é mostrada no formato dd/mm
-            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            // Se quiser dd/mm aqui também, altere a linha abaixo.
+            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
             inicializarExibicaoClientes();
         });
     </script>
