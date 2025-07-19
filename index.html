@@ -280,6 +280,35 @@
             padding: 8px 12px;
             font-size: 0.9em;
         }
+
+        /* Estilos para o overlay de carregamento */
+        .loading-overlay {
+            display: none; /* Escondido por padrão */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; /* Usar flexbox para centralizar */
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* Acima de outros elementos, incluindo modais */
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #0066cc; /* Blue */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -335,7 +364,7 @@
         <button onclick="confirmarRefazer()">Refazer Última Ação</button>
 
         <h3>Pesquisa de Clientes</h3>
-        <input type="text" id="searchInput" placeholder="Pesquisar por nome ou telefone" oninput="pesquisarClientes()">
+        <input type="text" id="searchInput" placeholder="Pesquisar por nome ou telefone" oninput="debouncePesquisa()">
         <button onclick="limparPesquisa()">Limpar Pesquisa</button>
 
         <table>
@@ -448,6 +477,11 @@
             </div>
         </div>
     </div>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
     <script>
         let clientes = []; // Inicializado como array vazio, será preenchido por loadClientes()
         let clientesFiltrados = [];
@@ -456,7 +490,7 @@
         let clienteIndexParaRenovarDebito = null;
         let clienteIndexParaAlterarProduto = null;
         let modoExibicaoArquivados = false;
-        let modoExibicaoOcultos = false; // Este agora será usado para a seção dedicada, não para o filtro principal.
+        let modoExibicaoOcultos = false;
         let modoExibicaoVerDepois = false;
         let modoExibicaoDesativados = false;
         let filtroProduto = null;
@@ -476,14 +510,26 @@
         // Variável para armazenar o ID do cliente para "Renovar HOJE"
         let clienteIdParaRenovarHoje = null;
 
+        // Variável para o debounce da pesquisa
+        let debounceTimer;
+
         // ====================================================================================
         // NOVO: URL do seu Aplicativo da Web do Google Apps Script
-        // *** IMPORTANTE: ESTE É O URL QUE VOCÊ FORNECEU! ***
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHKKeGamiImtqK0G-DJpJI3E_y83ZlVQq6A3kjW0LmRE9iRvNuG3VCOQmpt_s2XwLIrg/exec';
         // ====================================================================================
 
+        // --- Funções de Loading/Spinner ---
+        function mostrarCarregando() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function esconderCarregando() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
         // Função auxiliar para enviar requisições ao backend (Apps Script)
         async function sendRequestToBackend(action, data = {}) {
+            mostrarCarregando(); // Inicia o spinner
             try {
                 const url = `${WEB_APP_URL}?action=${action}`;
                 const options = {
@@ -513,8 +559,9 @@
                 return result; // Para getAllClients, isso será o array de clientes. Para outras, o objeto de status.
             } catch (error) {
                 console.error('Erro na comunicação com o backend:', error);
-                exibirAlerta(`Erro ao salvar/carregar dados: ${error.message}. Verifique a conexão e o script.`);
                 throw error; // Re-lança para que as funções chamadoras possam lidar
+            } finally {
+                esconderCarregando(); // Esconde o spinner sempre, independente de sucesso ou erro
             }
         }
 
@@ -588,6 +635,7 @@
             modal.style.display = "flex";
             document.addEventListener("keydown", fecharComEsc);
         }
+
         function fecharModal() {
             document.getElementById("modalConfirmacao").style.display = "none";
             document.getElementById("modalExclusao").style.display = "none";
@@ -611,16 +659,19 @@
             }
             clienteIdParaRenovarHoje = null; // Resetar após fechar o modal
         }
+
         function fecharComEsc(event) {
             if (event.key === "Escape") {
                 fecharModal();
             }
         }
+
         function fecharComEscOuEnter(event) {
             if (event.key === "Enter" || event.key === "Escape") {
                 fecharModal();
             }
         }
+
         function exibirAlerta(mensagem) {
             let modalAlerta = document.getElementById("modalAlerta");
             modalAlerta.style.display = "flex";
@@ -633,11 +684,13 @@
             `;
             document.addEventListener("keydown", fecharComEscOuEnter);
         }
+
         document.addEventListener('keydown', function (event) {
             if (event.key === "Enter" && document.getElementById("modalExclusao").style.display === "flex") {
                 confirmarExclusao();
             }
         });
+
         async function adicionarCliente() {
             const dataInput = document.getElementById("dataInput").value.trim();
             const nomeInput = document.getElementById("nomeInput").value.trim();
@@ -704,6 +757,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function arquivar(index) {
             const clienteParaArquivar = clientesExibidos[index];
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaArquivar.id);
@@ -741,6 +795,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function desarquivar(index) {
             const clienteParaDesarquivar = clientesExibidos[index];
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clienteParaDesarquivar.id);
@@ -773,6 +828,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function filtrarArquivados() {
             clientesFiltrados = [];
             modoExibicaoArquivados = true;
@@ -784,6 +840,7 @@
             exibirTabela();
             exibirClientesAvisados();
         }
+
         function mostrarApenasOcultosPorFiltro() {
             clientesFiltrados = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
             modoExibicaoArquivados = false;
@@ -795,6 +852,7 @@
             exibirTabela();
             exibirClientesAvisados();
         }
+
         function filtrarVerDepois() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -806,6 +864,7 @@
             exibirTabela();
             exibirClientesAvisados();
         }
+
         function filtrarDesativados() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -817,6 +876,7 @@
             exibirTabela();
             exibirClientesAvisados();
         }
+
         function filtrarPorProduto(produto) {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -829,6 +889,7 @@
             exibirTabela();
             exibirClientesAvisados();
         }
+
         let clientesExibidos = [];
 
         function formatDateForDisplay(dateString) {
@@ -837,7 +898,7 @@
             if (parts.length === 3) {
                 return `${parts[0]}/${parts[1]}`;
             }
-            return dateString.substring(0, 5); 
+            return dateString.substring(0, 5); // Fallback, should not happen with proper dates
         }
 
         function exibirTabela() {
@@ -1013,6 +1074,7 @@
                 clientesAvisadosList.appendChild(li);
             });
         }
+
         async function toggleOcultoFromAvisados(clientId) {
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clientId);
             if (clienteOriginalIndex === -1) return;
@@ -1039,6 +1101,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function duplicarClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1048,6 +1111,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function renovarAutomatiscoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1067,6 +1131,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function pedirConfirmacaoRenovarHojeById(clientId) {
             clienteIdParaRenovarHoje = clientId;
             exibirConfirmacaoGenerica(
@@ -1076,6 +1141,7 @@
                 false
             );
         }
+
         function toggleVerDepoisById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1085,6 +1151,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function abrirModalAlterarProdutoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1094,6 +1161,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function editarClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1103,6 +1171,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function excluirClienteById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1112,6 +1181,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function arquivarById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1121,6 +1191,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
+
         function toggleDesativadoById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1136,6 +1207,7 @@
             document.getElementById("modalRenovarComDebito").style.display = "flex";
             document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
         }
+
         async function renovarAutomatico(index) {
             const cliente = clientesExibidos[index];
             const produtoCliente = cliente.Produto || "Não informado";
@@ -1185,6 +1257,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function pedirConfirmacaoRenovarHoje(index) {
             const cliente = clientesExibidos[index];
             clienteIdParaRenovarHoje = cliente.id;
@@ -1195,6 +1268,7 @@
                 false
             );
         }
+
         async function confirmarRenovarHoje() {
             if (clienteIdParaRenovarHoje === null) return;
 
@@ -1207,8 +1281,8 @@
             if (clienteOriginalIndex !== -1) {
                 const hoje = new Date();
                 const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                                      (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                                      hoje.getFullYear();
+                                            (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                                            hoje.getFullYear();
                 clientes[clienteOriginalIndex].data = hojeFormatada;
                 clientes[clienteOriginalIndex].debito = false;
                 clientes[clienteOriginalIndex].oculto = false;
@@ -1297,27 +1371,33 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function renovar30(clienteObj) {
             clienteObj.data = incrementarData(clienteObj.data, 30);
         }
+
         function renovarProximoMes(clienteObj) {
             const [dia, mes, ano] = clienteObj.data.split("/").map(num => parseInt(num));
             const dataObj = new Date(ano, mes - 1, dia);
 
             dataObj.setMonth(dataObj.getMonth() + 1);
 
+            // Se o dia do mês resultante for diferente do original (ex: 31 de janeiro para fevereiro),
+            // ajusta para o último dia do mês (ex: 28 ou 29 de fevereiro)
             if (dataObj.getDate() !== dia) {
-                dataObj.setDate(0);
+                dataObj.setDate(0); // Define para o último dia do mês anterior, que será corrigido pelo setMonth
             }
 
             clienteObj.data = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
+
         function incrementarData(data, dias) {
             const [dia, mes, ano] = data.split("/").map(num => parseInt(num));
             const dataObj = new Date(ano, mes - 1, dia);
             dataObj.setDate(dataObj.getDate() + dias);
             return `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}`;
         }
+
         function duplicarCliente(index) {
             clienteIndexParaDuplicar = index;
             document.getElementById("modalConfirmacao").style.display = "flex";
@@ -1337,7 +1417,7 @@
             while (clientes.some(c => c.id === novoId)) {
                 novoTelefoneBase = clienteOriginal.telefone + '_' + contadorDuplicacao;
                 novoId = novoTelefoneBase.slice(-5);
-                if (novoTelefoneBase.length < 5) {
+                if (novoTelefoneBase.length < 5) { // fallback para IDs muito curtos
                     novoId = "DUP" + String(contadorDuplicacao).padStart(3, '0');
                 } else {
                     novoId = novoTelefoneBase.slice(-5);
@@ -1388,6 +1468,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function getNomeMes(mesNumero) {
             const meses = [
                 "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -1460,12 +1541,13 @@
             let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
                 clienteOriginal.avisado = true; // Marca como avisado (para a cor da linha)
-                // clienteOriginal.oculto = true; // Removido: Não ocultar da tabela principal
+                clienteOriginal.oculto = true; // Oculta da tabela principal e move para a seção de avisados
             }
             
             exibirTabela(); // Atualiza a interface imediatamente (linha fica azul).
-            exibirClientesAvisados(); // Atualiza a seção de avisados (pode aparecer/sumir aqui se 'oculto' for true).
+            exibirClientesAvisados(); // Atualiza a seção de avisados.
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
+            prepararClientesVencidosParaMensagem(); // Atualiza a contagem do botão central
 
             try {
                 await salvarClientes(); // Envia para o Sheets em segundo plano.
@@ -1479,6 +1561,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function exportarClientes() {
             // Esta função não modifica a array 'clientes' localmente antes de interagir com o backend,
             // então não precisa de atualização otimista (apenas lê e exporta).
@@ -1504,6 +1587,7 @@
             link.click();
             atualizarUltimaAtualizacao("clientes exportados");
         }
+
         async function importarClientes(file = null) {
             let fileToImport = file;
 
@@ -1597,6 +1681,8 @@
                                     novosClientesAdicionados++;
                                 }
                             } else {
+                                // Se o nome for o mesmo, atualiza se a data importada for mais recente,
+                                // ou apenas outros campos se a data não for mais recente.
                                 const [diaExistente, mesExistente, anoExistente] = clienteExistente.data.split("/").map(Number);
                                 const dataObjExistente = new Date(anoExistente, mesExistente - 1, diaExistente);
 
@@ -1607,6 +1693,8 @@
                                     clientes[indexClienteExistente] = clienteImportado;
                                     clientesAtualizados++;
                                 } else {
+                                    // Se a data importada não for mais recente, mantém a data existente,
+                                    // mas atualiza outros campos que podem ter sido modificados.
                                     clientes[indexClienteExistente].nome = clienteImportado.nome;
                                     clientes[indexClienteExistente].telefone = clienteImportado.telefone;
                                     clientes[indexClienteExistente].Produto = clienteImportado.Produto;
@@ -1655,6 +1743,7 @@
             };
             reader.readAsText(fileToImport);
         }
+
         function perguntarConflitoIdNome(clienteExistente, clienteImportado) {
             return new Promise((resolve, reject) => {
                 document.getElementById('conflitoId').textContent = clienteExistente.id;
@@ -1681,6 +1770,7 @@
                 };
             });
         }
+
         function filtrarHoje() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -1697,6 +1787,7 @@
             exibirTabela();
             atualizarContadores();
         }
+
         function filtrarAmanha() {
             const amanha = new Date();
             amanha.setDate(amanha.getDate() + 1);
@@ -1714,6 +1805,7 @@
             exibirTabela();
             atualizarContadores();
         }
+
         function filtrarVencidos() {
             const hoje = new Date();
             clientesFiltrados = clientes.filter(cliente => {
@@ -1732,6 +1824,7 @@
             exibirTabela();
             atualizarContadores();
         }
+
         function filtrarDebito() {
             clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             modoExibicaoArquivados = false;
@@ -1743,6 +1836,7 @@
             exibirTabela();
             atualizarContadores();
         }
+
         function exibirTodos() {
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -1755,6 +1849,7 @@
             exibirClientesAvisados();
             atualizarContadores();
         }
+
         function confirmarLimparTodos() {
             exibirConfirmacaoGenerica(
                 "Limpar Todos os Clientes",
@@ -1763,6 +1858,7 @@
                 true
             );
         }
+
         function confirmarDesfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
@@ -1788,6 +1884,7 @@
                 );
             }
         }
+
         function confirmarRefazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
@@ -1800,6 +1897,7 @@
                 false
             );
         }
+
         async function limparTodos() {
             // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA ---
             saveStateToHistory();
@@ -1837,6 +1935,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function desfazer() {
             if (historicoClientes.length <= 1) {
                 exibirAlerta("Não há ações para desfazer.");
@@ -1860,6 +1959,7 @@
                 exibirAlerta(`Erro ao sincronizar 'desfazer' com o Sheets: ${error.message}. O estado no Sheets pode estar diferente do local.`);
             }
         }
+
         async function refazer() {
             if (redoHistory.length === 0) {
                 exibirAlerta("Não há ações para refazer.");
@@ -1882,6 +1982,7 @@
                 exibirAlerta(`Erro ao sincronizar 'refazer' com o Sheets: ${error.message}. O estado no Sheets pode estar diferente do local.`);
             }
         }
+
         function editar(index) {
             let cliente = clientesExibidos[index];
             const modalEdicao = document.getElementById("modalEdicao");
@@ -1929,12 +2030,14 @@
             });
             document.addEventListener("keydown", fecharComEsc);
         }
+
         function proximoCampo(event, proximoId) {
             if (event.key === "Enter") {
                 event.preventDefault();
                 document.getElementById(proximoId)?.focus();
             }
         }
+
         async function salvarEdicao(clientId) {
             const originalClienteIndex = clientes.findIndex(c => c.id === clientId);
             if (originalClienteIndex === -1) return;
@@ -1998,10 +2101,12 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function formatarParaInputDate(data) {
             let [dia, mes, ano] = data.split("/");
             return `${ano}-${mes}-${dia}`;
         }
+
         function excluir(index) {
             const cliente = clientesExibidos[index];
             clienteIndexParaExcluir = clientes.findIndex(c => c.id === cliente.id);
@@ -2009,6 +2114,7 @@
                 document.getElementById("modalExclusao").style.display = "flex";
             }
         }
+
         async function confirmarExclusao() {
             if (clienteIndexParaExcluir === null) return;
 
@@ -2044,6 +2150,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function toggleAvisado(index) {
             const cliente = clientesExibidos[index];
             const clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
@@ -2074,6 +2181,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function toggleDebito(index) {
             const cliente = clientesExibidos[index];
             const clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
@@ -2101,6 +2209,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function toggleVerDepois(index) {
             const cliente = clientesExibidos[index];
             const clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
@@ -2132,6 +2241,7 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function toggleDesativado(index) {
             const cliente = clientesExibidos[index];
             const clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
@@ -2145,14 +2255,14 @@
             if (clientes[clienteOriginalIndex].desativado) {
                 clientes[clienteOriginalIndex].avisado = false;
                 clientes[clienteOriginalIndex].debito = false;
-                clientes[clienteOriginalIndex].oculto = false;
-                clientes[clienteOriginalIndex].verDepois = false;
-                clientes[clienteOriginalIndex].arquivado = false;
+                clientes[originalClienteIndex].oculto = false;
+                clientes[originalClienteIndex].verDepois = false;
+                clientes[originalClienteIndex].arquivado = false;
             }
 
             exibirTabela();
             exibirClientesAvisados();
-            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[originalClienteIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
 
             try {
                 await salvarClientes();
@@ -2165,10 +2275,12 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         function abrirModalAlterarProduto(index) {
             clienteIndexParaAlterarProduto = index;
             document.getElementById('modalEscolherProduto').style.display = 'flex';
         }
+
         async function alterarProdutoClienteConfirm(novoProduto) {
             if (clienteIndexParaAlterarProduto === null) return;
 
@@ -2209,11 +2321,13 @@
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+
         async function salvarClientes() {
             try {
                 const response = await sendRequestToBackend('bulk_update_clients', { clients: clientes });
                 if (response.status === 'success') {
                     console.log('Dados sincronizados com o Google Sheets com sucesso!');
+                    localStorage.setItem('clientesCache', JSON.stringify(clientes)); // Salva no cache local APÓS sucesso no Sheets
                 } else {
                     // Isso será capturado pelo catch das funções que chamam salvarClientes
                     throw new Error(response.message || 'Erro desconhecido ao sincronizar com o backend.');
@@ -2221,9 +2335,10 @@
             } catch (e) {
                 console.error("Erro ao salvar clientes no Google Sheets:", e);
                 // Re-lança o erro para que a função chamadora possa lidar e reverter a UI
-                throw e; 
+                throw e;
             }
         }
+
         async function loadClientes() {
             try {
                 const response = await sendRequestToBackend('get_all_clients');
@@ -2244,7 +2359,7 @@
                             }
                         }
                         
-                        const isOcultoAposRefresh = c.oculto || false;
+                        const isOcultoAposRefresh = c.oculto || false; // Garante que o estado 'oculto' seja carregado
 
                         return {
                             id: c.id || clienteId,
@@ -2260,16 +2375,36 @@
                             desativado: c.desativado || false
                         };
                     }).filter(c => c.id !== null);
+                    localStorage.setItem('clientesCache', JSON.stringify(clientes)); // Atualiza cache com dados do Sheets
                     console.log("Clientes carregados do Google Sheets:", clientes);
                 } else {
                     console.error("Formato de resposta inválido ao carregar clientes:", response);
-                    clientes = [];
-                    exibirAlerta("Erro: Formato de dados inválido recebido do Google Sheets.");
+                    throw new Error("Formato de dados inválido recebido do Google Sheets.");
                 }
             } catch (e) {
                 console.error("Erro ao carregar clientes do Google Sheets:", e);
-                clientes = [];
-                exibirAlerta("Erro ao carregar clientes do Google Sheets. Verifique a conexão e o Apps Script.");
+                const cache = localStorage.getItem('clientesCache');
+                if (cache) {
+                    try {
+                        clientes = JSON.parse(cache);
+                        exibirAlerta("Erro ao carregar dados do Sheets. Carregando dados do cache local.");
+                        console.warn("Clientes carregados do cache local devido a erro na API.");
+                    } catch (parseError) {
+                        console.error("Erro ao parsear cache local:", parseError);
+                        clientes = [];
+                        exibirAlerta("Erro no Sheets e cache local corrompido. Lista vazia.");
+                    }
+                } else {
+                    clientes = [];
+                    exibirAlerta("Erro ao carregar clientes do Google Sheets e nenhum cache local encontrado.");
+                }
+            } finally {
+                // Estas chamadas são cruciais e devem acontecer SEMPRE, após tentar carregar (do Sheets ou cache)
+                exibirTabela();
+                exibirClientesAvisados();
+                prepararClientesVencidosParaMensagem();
+                saveStateToHistory(); // Salva o estado inicial (do Sheets ou do cache) no histórico
+                loadSettings();
             }
 
             const ultimaAtualizacaoSalva = localStorage.getItem('ultimaAtualizacaoCliente');
@@ -2279,20 +2414,35 @@
                 document.getElementById('ultimaAtualizacaoInfo').textContent = `Última Alteração: Nunca`;
             }
         }
+
         function compartilharWhatsApp() {
             const url = `https://wa.me/?text=${encodeURIComponent('Olá, estou compartilhando esta lista de clientes com você.')}`;
             window.open(url, '_blank');
         }
-        function pesquisarClientes() {
-            exibirTabela();
-            exibirClientesAvisados();
+
+        // --- Função de Debounce para Pesquisa ---
+        function debouncePesquisa() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                // A função original que realmente faz a pesquisa e exibe a tabela
+                exibirTabela();
+                exibirClientesAvisados();
+            }, 300); // 300ms de atraso
         }
+        // A função original pesquisarClientes() não é mais necessária como uma função separada que pesquisa,
+        // pois exibirTabela() já faz a lógica de filtragem com base no input.
+        // O nome foi mantido no oninput antigo, mas agora chama debouncePesquisa().
+        // Você pode remover a função pesquisarClientes() se ela não tiver outra utilidade.
+        // Já ajustei o oninput do HTML para chamar debouncePesquisa().
+
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
             exibirTodos();
         }
+
         const SETTINGS_KEY = 'inputSettings';
         const DEFAULT_INPUT_WIDTH_PERCENT = 16;
+
         function toggleSettingsArea() {
             const settingsArea = document.getElementById('settingsArea');
             if (settingsArea.style.display === 'block') {
@@ -2302,6 +2452,7 @@
                 loadSettings();
             }
         }
+
         function applyInputWidth(widthPercent) {
             const inputs = document.querySelectorAll('.configurable-input');
             inputs.forEach(input => {
@@ -2310,11 +2461,13 @@
                 input.style.width = 'auto';
             });
         }
+
         function updateInputWidth(value) {
             const widthValueSpan = document.getElementById('inputWidthValue');
             widthValueSpan.textContent = `${value}%`;
             applyInputWidth(value);
         }
+
         function saveSettings() {
             const inputWidth = document.getElementById('inputWidth').value;
             localStorage.setItem(SETTINGS_KEY, JSON.stringify({
@@ -2323,6 +2476,7 @@
             exibirAlerta("Ajustes salvos com sucesso!");
             toggleSettingsArea();
         }
+
         function loadSettings() {
             const savedSettings = localStorage.getItem(SETTINGS_KEY);
             let widthToApply = DEFAULT_INPUT_WIDTH_PERCENT;
@@ -2348,18 +2502,21 @@
             }
             applyInputWidth(widthToApply);
         }
+
         function resetSettings() {
             localStorage.removeItem(SETTINGS_KEY);
             exibirAlerta("Ajustes redefinidos para o padrão!");
             loadSettings();
             toggleSettingsArea();
         }
+
         function atualizarContadores() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
+            // Clientes na tabela principal (não arquivados, não ocultos, não verDepois, não desativados)
             const clientesNaTabelaPrincipal = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
 
             const countHoje = clientesNaTabelaPrincipal.filter(cliente => cliente.data === hojeFormatada).length;
@@ -2385,6 +2542,7 @@
             const countVerDepois = clientes.filter(cliente => cliente.verDepois).length;
             const countDesativados = clientes.filter(cliente => cliente.desativado).length;
 
+
             updateBadge('badgeHoje', countHoje);
             updateBadge('badgeAmanha', countAmanha);
             updateBadge('badgeVencidos', countVencidos);
@@ -2394,6 +2552,7 @@
             updateBadge('badgeVerDepois', countVerDepois);
             updateBadge('badgeDesativados', countDesativados);
 
+            // Contagem para o botão central de mensagem
             const vencidosNaoOcultosParaMensagem = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
@@ -2407,6 +2566,7 @@
             });
             updateBadge('badgeCentralMessage', vencidosNaoOcultosParaMensagem.length);
         }
+
         function updateBadge(badgeId, count) {
             const badge = document.getElementById(badgeId);
             if (badge) {
@@ -2429,6 +2589,7 @@
 
             document.getElementById('modalContagemProdutos').style.display = 'flex';
         }
+
         function prepararClientesVencidosParaMensagem() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
@@ -2454,9 +2615,10 @@
             indiceClienteVencidoAtual = 0;
             atualizarContadores();
         }
+
         function enviarProximoClienteVencido() {
             if (clientesVencidosParaMensagem.length === 0 || indiceClienteVencidoAtual >= clientesVencidosParaMensagem.length) {
-                prepararClientesVencidosParaMensagem();
+                prepararClientesVencidosParaMensagem(); // Recarrega a lista se vazia ou se todos já foram enviados
             }
 
             if (clientesVencidosParaMensagem.length === 0) {
@@ -2467,19 +2629,21 @@
             const cliente = clientesVencidosParaMensagem[indiceClienteVencidoAtual];
             const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
 
-            const originalClientesExibidos = clientesExibidos;
-            clientesExibidos = [cliente];
+            const originalClientesExibidos = clientesExibidos; // Salva o estado atual do filtro
+            clientesExibidos = [cliente]; // Temporariamente exibe apenas este cliente para a função de envio
             enviarMensagemWhatsApp(nomeExibicaoBase, cliente.telefone, 0);
 
-            clientesExibidos = originalClientesExibidos;
+            clientesExibidos = originalClientesExibidos; // Restaura o filtro original
 
             indiceClienteVencidoAtual++;
             if (indiceClienteVencidoAtual >= clientesVencidosParaMensagem.length) {
                 exibirAlerta("Todas as mensagens para clientes vencidos foram enviadas (ou a lista foi percorrida). Clique novamente para recarregar a lista.");
-                prepararClientesVencidosParaMensagem();
+                // Opcional: Você pode querer resetar indiceClienteVencidoAtual para 0 aqui,
+                // mas prepararClientesVencidosParaMensagem() já faz isso.
             }
             atualizarContadores();
         }
+
         async function inicializarExibicaoClientes() {
             await loadClientes();
 
@@ -2489,9 +2653,11 @@
             const day = String(today.getDate()).padStart(2, '0');
             document.getElementById('dataInput').value = `${year}-${month}-${day}`;
 
+            // A exibição inicial agora será a mesma que o filtro de vencidos ou vencendo hoje,
+            // garantindo que os clientes mais urgentes estejam visíveis por padrão.
             const hojeFormatada = today.getDate().toString().padStart(2, '0') + "/" +
-                                  (today.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                                  today.getFullYear();
+                                    (today.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                                    today.getFullYear();
 
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
@@ -2514,11 +2680,13 @@
             exibirTabela();
             exibirClientesAvisados();
             prepararClientesVencidosParaMensagem();
-            saveStateToHistory();
-            loadSettings();
+            saveStateToHistory(); // Salva o estado inicial (do Sheets ou do cache) no histórico
+            loadSettings(); // Aplica as configurações de layout
         }
+
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            // Data de vencimento no formato dd/mm para o display principal
+            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             inicializarExibicaoClientes();
         });
     </script>
