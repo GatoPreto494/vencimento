@@ -1,5 +1,7 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +14,7 @@
             background-color: #f0f8ff;
             color: #333;
         }
+
         .container {
             width: 100%;
             max-width: 2000px;
@@ -21,7 +24,9 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        h1, h3 {
+
+        h1,
+        h3 {
             text-align: center;
             color: #0066cc;
         }
@@ -37,20 +42,24 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+
         .input-group-horizontal {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 10px;
         }
+
         .input-group-horizontal input {
             flex: 1;
             min-width: 150px;
             margin-bottom: 0;
         }
+
         .configurable-input {
             /* Largura será definida pelo JavaScript */
         }
+
         button {
             background-color: #0066cc;
             color: #fff;
@@ -60,37 +69,51 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
-            position: relative; /* Necessário para posicionar o badge */
+            position: relative;
+            /* Necessário para posicionar o badge */
         }
+
         button:hover {
             background-color: #004d99;
         }
 
         /* Estilos específicos de botão */
         .btn-debito-segurar {
-            background-color: #ffcc00; /* Amarelo fraco */
-            color: #333; /* Texto escuro para contraste */
+            background-color: #ffcc00;
+            /* Amarelo fraco */
+            color: #333;
+            /* Texto escuro para contraste */
         }
+
         .btn-debito-segurar:hover {
-            background-color: #e6b800; /* Amarelo um pouco mais escuro no hover */
+            background-color: #e6b800;
+            /* Amarelo um pouco mais escuro no hover */
         }
+
         /* Novo estilo para o botão de renovar (Data Atual) */
         .btn-renovar-data-atual {
-            background-color: #ffc107; /* Amarelo Bootstrap */
-            color: #212529; /* Texto escuro */
+            background-color: #ffc107;
+            /* Amarelo Bootstrap */
+            color: #212529;
+            /* Texto escuro */
             border: 1px solid #ffc107;
         }
+
         .btn-renovar-data-atual:hover {
             background-color: #e0a800;
             border-color: #d39e00;
         }
+
         /* Novo estilo para o botão de confirmação perigosa (vermelho) */
         .modal-confirm-danger {
-            background-color: #dc3545; /* Vermelho */
+            background-color: #dc3545;
+            /* Vermelho */
             color: #fff;
         }
+
         .modal-confirm-danger:hover {
-            background-color: #c82333; /* Vermelho mais escuro */
+            background-color: #c82333;
+            /* Vermelho mais escuro */
         }
 
         /* Estilos da Tabela */
@@ -98,39 +121,53 @@
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            display: none; /* Escondido por padrão, mostrado com JS */
+            display: none;
+            /* Escondido por padrão, mostrado com JS */
         }
-        th, td {
+
+        th,
+        td {
             padding: 10px;
             border: 1px solid #ccc;
             text-align: left;
         }
+
         /* Flexbox para td com botões */
         td {
             display: flex;
             align-items: center;
-            flex-wrap: nowrap; /* Impede quebras de linha inesperadas nos botões */
+            flex-wrap: nowrap;
+            /* Impede quebras de linha inesperadas nos botões */
             gap: 5px;
         }
+
         td button {
             display: inline-block;
             margin-right: 5px;
-            flex-shrink: 0; /* Previne que os botões encolham */
+            flex-shrink: 0;
+            /* Previne que os botões encolham */
         }
-        
+
         /* Cores das linhas da tabela - Ajustado para maior especificidade */
         tr.avisado {
-            background-color: #007bff !important; /* Azul */
+            background-color: #007bff !important;
+            /* Azul */
             color: white;
         }
+
         tr.debito {
-            background-color: #ffa500 !important; /* Laranja */
+            background-color: #ffa500 !important;
+            /* Laranja */
         }
+
         tr.vencendo-hoje {
-            background-color: #ffff99 !important; /* Amarelo claro */
+            background-color: #ffff99 !important;
+            /* Amarelo claro */
         }
+
         tr.vencido {
-            background-color: #ff6666 !important; /* Vermelho claro */
+            background-color: #ff6666 !important;
+            /* Vermelho claro */
         }
 
         .center {
@@ -150,6 +187,7 @@
             align-items: center;
             z-index: 1000;
         }
+
         .modal-content {
             background-color: #fff;
             padding: 20px;
@@ -159,6 +197,7 @@
             max-width: 400px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
+
         .modal button {
             background-color: #0066cc;
             color: #fff;
@@ -168,6 +207,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         .modal button:hover {
             background-color: #004d99;
         }
@@ -191,9 +231,11 @@
             z-index: 999;
             transition: background-color 0.3s;
         }
+
         .settings-icon:hover {
             background-color: #004d99;
         }
+
         #settingsArea {
             display: none;
             background-color: #f9f9f9;
@@ -202,11 +244,13 @@
             margin-top: 30px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         #settingsArea label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
         }
+
         #settingsArea input[type="range"],
         #settingsArea input[type="number"] {
             width: calc(100% - 22px);
@@ -232,19 +276,23 @@
         /* Novo estilo para o botão central de mensagens */
         #centralMessageButton {
             display: block;
-            margin: 20px auto; /* Centraliza o botão */
+            margin: 20px auto;
+            /* Centraliza o botão */
             padding: 15px 30px;
             font-size: 1.2em;
-            background-color: #28a745; /* Verde vibrante */
+            background-color: #28a745;
+            /* Verde vibrante */
             color: white;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
+
         #centralMessageButton:hover {
             background-color: #218838;
             transform: translateY(-2px);
         }
+
         #centralMessageButton:active {
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -256,12 +304,15 @@
             padding-top: 20px;
             border-top: 1px solid #eee;
         }
+
         #clientesAvisadosList {
             list-style: none;
             padding: 0;
         }
+
         #clientesAvisadosList li {
-            background-color: #e0f2f7; /* Um azul claro para destaque */
+            background-color: #e0f2f7;
+            /* Um azul claro para destaque */
             border: 1px solid #b3e5fc;
             margin-bottom: 8px;
             padding: 10px 15px;
@@ -272,9 +323,11 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+
         #clientesAvisadosList li .client-info {
             flex-grow: 1;
         }
+
         #clientesAvisadosList li button {
             margin-left: 5px;
             padding: 8px 12px;
@@ -283,22 +336,27 @@
 
         /* Estilos para o overlay de carregamento */
         .loading-overlay {
-            display: none; /* Escondido por padrão */
+            display: none;
+            /* Escondido por padrão */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex; /* Usar flexbox para centralizar */
+            display: flex;
+            /* Usar flexbox para centralizar */
             justify-content: center;
             align-items: center;
-            z-index: 2000; /* Acima de outros elementos, incluindo modais */
+            z-index: 2000;
+            /* Acima de outros elementos, incluindo modais */
         }
 
         .spinner {
-            border: 8px solid #f3f3f3; /* Light grey */
-            border-top: 8px solid #0066cc; /* Blue */
+            border: 8px solid #f3f3f3;
+            /* Light grey */
+            border-top: 8px solid #0066cc;
+            /* Blue */
             border-radius: 50%;
             width: 60px;
             height: 60px;
@@ -306,11 +364,17 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body>
     <div id="ultimaAtualizacaoInfo"
         style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
@@ -927,6 +991,7 @@
                 if (modoExibicaoOcultos) {
                     clientesParaProcessar = clientesFiltrados;
                 } else {
+                    // Mantenha clientes ocultos, verDepois e desativados fora dos filtros padrão
                     clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
                 }
             } else {
@@ -975,7 +1040,7 @@
                 } else if (dataCliente < hojeSemHora) {
                     tr.classList.add("vencido");
                 }
-                
+
                 let botoesAcao = '';
                 if (modoExibicaoArquivados) {
                     botoesAcao = `
@@ -1031,7 +1096,12 @@
             const clientesAvisadosList = document.getElementById('clientesAvisadosList');
             clientesAvisadosList.innerHTML = '';
 
-            const avisados = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
+            // Agora, a lista de "avisados" são apenas os que têm 'avisado: true' E 'oculto: true'.
+            // Para sua requisição, eles devem ser mantidos na lista principal, então o 'oculto: true'
+            // não deve ser setado por 'enviarMensagemWhatsApp'. No entanto, eles ainda podem
+            // aparecer aqui se forem manualmente marcados como ocultos ou por alguma outra razão.
+            const avisados = clientes.filter(cliente => cliente.avisado && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
+
 
             if (avisados.length === 0) {
                 clientesAvisadosList.innerHTML = '<li>Nenhum cliente avisado para exibir.</li>';
@@ -1054,7 +1124,7 @@
                         <strong>${nomeExibicaoBase}</strong> (${cliente.Produto || 'N/I'}) - Vencimento: ${formatDateForDisplay(cliente.data)}
                     </div>
                     <div class="client-actions">
-                        <button title="Reexibir Cliente (Tira do Avisados)" onclick="toggleOcultoFromAvisados('${cliente.id}')">Reexibir</button>
+                        <button title="Desmarcar Avisado" onclick="toggleAvisadoFromAvisados('${cliente.id}')">Desmarcar Avisado</button>
                         <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">+</button>
                         <button title="Renovar Automático" onclick="renovarAutomatiscoById('${cliente.id}')">🔁</button>
                         <button title="Renovar com Débito (Confirmação)"
@@ -1075,7 +1145,8 @@
             });
         }
 
-        async function toggleOcultoFromAvisados(clientId) {
+        // Renomeada e ajustada para refletir que só desmarca o status de "avisado"
+        async function toggleAvisadoFromAvisados(clientId) {
             const clienteOriginalIndex = clientes.findIndex(c => c.id === clientId);
             if (clienteOriginalIndex === -1) return;
 
@@ -1083,12 +1154,11 @@
             saveStateToHistory();
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
-            clientes[clienteOriginalIndex].oculto = false;
-            clientes[clienteOriginalIndex].avisado = false;
+            clientes[clienteOriginalIndex].avisado = false; // Apenas desmarca como avisado
 
             exibirTabela();
             exibirClientesAvisados();
-            atualizarUltimaAtualizacao("reexibido", clientes[clienteOriginalIndex].nome);
+            atualizarUltimaAtualizacao("desmarcado avisado", clientes[clienteOriginalIndex].nome);
 
             try {
                 await salvarClientes();
@@ -1096,8 +1166,8 @@
                 clientes = estadoAnteriorClientes;
                 exibirTabela();
                 exibirClientesAvisados();
-                exibirAlerta(`Erro ao reexibir cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
-                atualizarUltimaAtualizacao("falha na reexibição", clientes[clienteOriginalIndex].nome);
+                exibirAlerta(`Erro ao desmarcar cliente como avisado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
+                atualizarUltimaAtualizacao("falha ao desmarcar avisado", clientes[clienteOriginalIndex].nome);
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
@@ -1232,7 +1302,8 @@
                 return;
             }
             clientes[clienteOriginalIndex].debito = false;
-            clientes[clienteOriginalIndex].oculto = false;
+            clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
+            clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
             clientes[clienteOriginalIndex].verDepois = false;
             clientes[clienteOriginalIndex].desativado = false;
 
@@ -1281,11 +1352,12 @@
             if (clienteOriginalIndex !== -1) {
                 const hoje = new Date();
                 const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                                            (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                                            hoje.getFullYear();
+                    (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                    hoje.getFullYear();
                 clientes[clienteOriginalIndex].data = hojeFormatada;
                 clientes[clienteOriginalIndex].debito = false;
-                clientes[clienteOriginalIndex].oculto = false;
+                clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
+                clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].desativado = false;
             }
@@ -1342,7 +1414,8 @@
                     return;
                 }
                 clientes[clienteOriginalIndex].debito = true;
-                clientes[clienteOriginalIndex].oculto = false;
+                clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
+                clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].desativado = false;
             }
@@ -1494,7 +1567,7 @@
 
             const [diaVenc, mesVenc, anoVenc] = vencimento.split("/").map(num => parseInt(num));
             const dataVencimentoObj = new Date(anoVenc, mesVenc - 1, diaVenc);
-            
+
             const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
             const dataVencimentoSemHora = new Date(dataVencimentoObj.getFullYear(), dataVencimentoObj.getMonth(), dataVencimentoObj.getDate());
 
@@ -1534,16 +1607,16 @@
                 }
             }, 100);
 
-            // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado/oculto) ---
+            // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
             saveStateToHistory(); // Salva o estado atual.
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes)); // Guarda o estado antes da mudança otimista.
 
             let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
                 clienteOriginal.avisado = true; // Marca como avisado (para a cor da linha)
-                clienteOriginal.oculto = true; // Oculta da tabela principal e move para a seção de avisados
+                // A linha abaixo foi removida, conforme sua solicitação, para não ocultar o cliente.
+                // clienteOriginal.oculto = true; // Oculta da tabela principal e move para a seção de avisados
             }
-            
             exibirTabela(); // Atualiza a interface imediatamente (linha fica azul).
             exibirClientesAvisados(); // Atualiza a seção de avisados.
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
@@ -1923,6 +1996,7 @@
                 if (response.status === 'success') {
                     atualizarUltimaAtualizacao("lista limpa (Sheets)");
                 } else {
+                    // Isso será capturado pelo catch das funções que chamam salvarClientes
                     throw new Error(response.message || "Erro desconhecido ao limpar no Sheets.");
                 }
             } catch (e) {
@@ -2162,9 +2236,7 @@
 
             clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
             // A lógica de ocultar/reexibir agora está ligada ao "oculto", não ao "avisado".
-            // Se você quiser que o botão "Avisado" da tabela principal também oculte,
-            // descomente a linha abaixo. Caso contrário, ele só mudará a cor da linha.
-            // clientes[clienteOriginalIndex].oculto = clientes[clienteOriginalIndex].avisado;
+            // Conforme sua solicitação, não vamos mais alterar o status "oculto" aqui.
 
             exibirTabela();
             exibirClientesAvisados();
@@ -2221,7 +2293,7 @@
 
             clientes[clienteOriginalIndex].verDepois = !clientes[clienteOriginalIndex].verDepois;
             if (clientes[clienteOriginalIndex].verDepois) {
-                clientes[clienteOriginalIndex].oculto = false;
+                clientes[clienteOriginalIndex].oculto = false; // Garante que não está oculto se for "ver depois"
                 clientes[clienteOriginalIndex].arquivado = false;
                 clientes[clienteOriginalIndex].desativado = false;
             }
@@ -2255,9 +2327,9 @@
             if (clientes[clienteOriginalIndex].desativado) {
                 clientes[clienteOriginalIndex].avisado = false;
                 clientes[clienteOriginalIndex].debito = false;
-                clientes[originalClienteIndex].oculto = false;
-                clientes[originalClienteIndex].verDepois = false;
-                clientes[originalClienteIndex].arquivado = false;
+                clientes[clienteOriginalIndex].oculto = false; // Garante que não está oculto se desativado
+                clientes[clienteOriginalIndex].verDepois = false;
+                clientes[clienteOriginalIndex].arquivado = false;
             }
 
             exibirTabela();
@@ -2358,8 +2430,9 @@
                                 dataClienteFormatada = `${parts[2]}/${parts[1]}/${parts[0]}`;
                             }
                         }
-                        
-                        const isOcultoAposRefresh = c.oculto || false; // Garante que o estado 'oculto' seja carregado
+
+                        // Garante que o status 'oculto' seja carregado, mas agora ele não será alterado por enviarMensagemWhatsApp
+                        const isOcultoAposRefresh = c.oculto || false;
 
                         return {
                             id: c.id || clienteId,
@@ -2542,7 +2615,6 @@
             const countVerDepois = clientes.filter(cliente => cliente.verDepois).length;
             const countDesativados = clientes.filter(cliente => cliente.desativado).length;
 
-
             updateBadge('badgeHoje', countHoje);
             updateBadge('badgeAmanha', countAmanha);
             updateBadge('badgeVencidos', countVencidos);
@@ -2553,7 +2625,8 @@
             updateBadge('badgeDesativados', countDesativados);
 
             // Contagem para o botão central de mensagem
-            const vencidosNaoOcultosParaMensagem = clientes.filter(cliente => {
+            // Clientes que vencem hoje ou estão vencidos E que NÃO FORAM AVISADOS e NÃO ESTÃO ARQUIVADOS/OCULTOS/VERDEPOIS/DESATIVADOS
+            const vencidosNaoAvisadosParaMensagem = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
@@ -2562,9 +2635,9 @@
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
-                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             });
-            updateBadge('badgeCentralMessage', vencidosNaoOcultosParaMensagem.length);
+            updateBadge('badgeCentralMessage', vencidosNaoAvisadosParaMensagem.length);
         }
 
         function updateBadge(badgeId, count) {
@@ -2596,6 +2669,7 @@
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
+            // Ajustado para incluir apenas clientes que vencem hoje ou estão vencidos E que NÃO foram avisados
             clientesVencidosParaMensagem = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
@@ -2604,7 +2678,7 @@
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
-                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             }).sort((a, b) => {
                 const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
                 const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
@@ -2656,8 +2730,8 @@
             // A exibição inicial agora será a mesma que o filtro de vencidos ou vencendo hoje,
             // garantindo que os clientes mais urgentes estejam visíveis por padrão.
             const hojeFormatada = today.getDate().toString().padStart(2, '0') + "/" +
-                                    (today.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                                    today.getFullYear();
+                (today.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                today.getFullYear();
 
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
@@ -2667,11 +2741,12 @@
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
-                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
+                // Não vai mais filtrar por oculto aqui
+                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
             });
 
             modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
+            modoExibicaoOcultos = false; // Garante que o modo "ocultos" não está ativo por padrão
             modoExibicaoVerDepois = false;
             modoExibicaoDesativados = false;
             filtroProduto = null;
@@ -2691,4 +2766,5 @@
         });
     </script>
 </body>
+
 </html>
