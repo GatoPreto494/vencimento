@@ -1,7 +1,5 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -374,7 +372,6 @@
         }
     </style>
 </head>
-
 <body>
     <div id="ultimaAtualizacaoInfo"
         style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
@@ -591,9 +588,22 @@
             document.getElementById('loadingOverlay').style.display = 'none';
         }
 
+        // NOVO: Função para salvar o estado atual dos clientes no localStorage
+        function saveClientsToLocalStorage() {
+            try {
+                localStorage.setItem('clientesCache', JSON.stringify(clientes));
+                // console.log('Clientes salvos no cache local.'); // Debug
+            } catch (e) {
+                console.error('Erro ao salvar clientes no localStorage:', e);
+                // Pode exibir um alerta para o usuário se preferir
+            }
+        }
+
         // Função auxiliar para enviar requisições ao backend (Apps Script)
         async function sendRequestToBackend(action, data = {}) {
-            mostrarCarregando(); // Inicia o spinner
+            // As chamadas para mostrar/esconder o spinner global foram removidas daqui
+            // para permitir atualizações otimistas da UI.
+            // O spinner global agora é gerenciado diretamente por loadClientes() e importarClientes().
             try {
                 const url = `${WEB_APP_URL}?action=${action}`;
                 const options = {
@@ -624,9 +634,8 @@
             } catch (error) {
                 console.error('Erro na comunicação com o backend:', error);
                 throw error; // Re-lança para que as funções chamadoras possam lidar
-            } finally {
-                esconderCarregando(); // Esconde o spinner sempre, independente de sucesso ou erro
             }
+            // FINALLY REMOVIDO PARA PERMITIR CONTROLE EXTERNO DO SPINNER
         }
 
         // --- Função para atualizar a data e hora da última alteração de dados ---
@@ -801,6 +810,7 @@
             };
 
             clientes.push(novoClienteObj); // Atualiza a array local **imediatamente**.
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             document.getElementById("nomeInput").value = "";
             document.getElementById("telefoneInput").value = "";
@@ -814,6 +824,7 @@
             } catch (error) {
                 // Se o Sheets falhar, reverte a array local e a interface.
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao adicionar cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -836,6 +847,8 @@
             clientes[clienteOriginalIndex].oculto = false;
             clientes[clienteOriginalIndex].verDepois = false;
             clientes[clienteOriginalIndex].desativado = false;
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
+
 
             // Reseta filtros e atualiza a interface imediatamente
             clientesFiltrados = [];
@@ -852,6 +865,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao arquivar cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -870,6 +884,8 @@
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
             clientes[clienteOriginalIndex].arquivado = false;
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
+
 
             clientesFiltrados = [];
             modoExibicaoArquivados = true; // Manter no modo arquivados para que a tabela seja atualizada corretamente
@@ -885,6 +901,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao desarquivar cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -960,6 +977,7 @@
             if (!dateString) return '';
             const parts = dateString.split('/');
             if (parts.length === 3) {
+                // Formato dd/mm
                 return `${parts[0]}/${parts[1]}`;
             }
             return dateString.substring(0, 5); // Fallback, should not happen with proper dates
@@ -1102,7 +1120,6 @@
             // aparecer aqui se forem manualmente marcados como ocultos ou por alguma outra razão.
             const avisados = clientes.filter(cliente => cliente.avisado && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
 
-
             if (avisados.length === 0) {
                 clientesAvisadosList.innerHTML = '<li>Nenhum cliente avisado para exibir.</li>';
                 return;
@@ -1155,6 +1172,7 @@
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
             clientes[clienteOriginalIndex].avisado = false; // Apenas desmarca como avisado
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             exibirTabela();
             exibirClientesAvisados();
@@ -1164,6 +1182,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao desmarcar cliente como avisado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -1212,72 +1231,6 @@
             );
         }
 
-        function toggleVerDepoisById(clientId) {
-            const index = clientes.findIndex(c => c.id === clientId);
-            if (index !== -1) {
-                const originalClientesExibidos = clientesExibidos;
-                clientesExibidos = [clientes[index]];
-                toggleVerDepois(0);
-                clientesExibidos = originalClientesExibidos;
-            }
-        }
-
-        function abrirModalAlterarProdutoById(clientId) {
-            const index = clientes.findIndex(c => c.id === clientId);
-            if (index !== -1) {
-                const originalClientesExibidos = clientesExibidos;
-                clientesExibidos = [clientes[index]];
-                abrirModalAlterarProduto(0);
-                clientesExibidos = originalClientesExibidos;
-            }
-        }
-
-        function editarClienteById(clientId) {
-            const index = clientes.findIndex(c => c.id === clientId);
-            if (index !== -1) {
-                const originalClientesExibidos = clientesExibidos;
-                clientesExibidos = [clientes[index]];
-                editar(0);
-                clientesExibidos = originalClientesExibidos;
-            }
-        }
-
-        function excluirClienteById(clientId) {
-            const index = clientes.findIndex(c => c.id === clientId);
-            if (index !== -1) {
-                const originalClientesExibidos = clientesExibidos;
-                clientesExibidos = [clientes[index]];
-                excluir(0);
-                clientesExibidos = originalClientesExibidos;
-            }
-        }
-
-        function arquivarById(clientId) {
-            const index = clientes.findIndex(c => c.id === clientId);
-            if (index !== -1) {
-                const originalClientesExibidos = clientesExibidos;
-                clientesExibidos = [clientes[index]];
-                arquivar(0);
-                clientesExibidos = originalClientesExibidos;
-            }
-        }
-
-        function toggleDesativadoById(clientId) {
-            const index = clientes.findIndex(c => c.id === clientId);
-            if (index !== -1) {
-                const originalClientesExibidos = clientesExibidos;
-                clientesExibidos = [clientes[index]];
-                toggleDesativado(0);
-                clientesExibidos = originalClientesExibidos;
-            }
-        }
-
-        function pedirConfirmacaoRenovacaoDebito(index) {
-            clienteIndexParaRenovarDebito = index;
-            document.getElementById("modalRenovarComDebito").style.display = "flex";
-            document.getElementById("btnConfirmarRenovacaoDebito").onclick = () => confirmarRenovacaoComDebito();
-        }
-
         async function renovarAutomatico(index) {
             const cliente = clientesExibidos[index];
             const produtoCliente = cliente.Produto || "Não informado";
@@ -1306,6 +1259,7 @@
             clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
             clientes[clienteOriginalIndex].verDepois = false;
             clientes[clienteOriginalIndex].desativado = false;
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -1321,6 +1275,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao renovar automaticamente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -1361,6 +1316,7 @@
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].desativado = false;
             }
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -1377,6 +1333,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao renovar para hoje: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -1419,6 +1376,7 @@
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].desativado = false;
             }
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -1437,6 +1395,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao renovar com débito: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -1517,6 +1476,7 @@
                 desativado: false
             };
             clientes.push(novoCliente);
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -1534,6 +1494,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao duplicar cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -1617,6 +1578,8 @@
                 // A linha abaixo foi removida, conforme sua solicitação, para não ocultar o cliente.
                 // clienteOriginal.oculto = true; // Oculta da tabela principal e move para a seção de avisados
             }
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
+
             exibirTabela(); // Atualiza a interface imediatamente (linha fica azul).
             exibirClientesAvisados(); // Atualiza a seção de avisados.
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
@@ -1627,6 +1590,7 @@
             } catch (error) {
                 // Se o Sheets falhar, reverte a array local e a interface.
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -1678,6 +1642,8 @@
                     return;
                 }
             }
+
+            mostrarCarregando(); // Mostrar spinner para importação, pois pode ser demorada
 
             const reader = new FileReader();
             reader.onload = async () => {
@@ -1785,6 +1751,8 @@
                             novosClientesAdicionados++;
                         }
                     }
+                    saveClientsToLocalStorage(); // **NOVO: Salva no localStorage após todas as importações locais**
+
 
                     clientesFiltrados = [];
                     modoExibicaoArquivados = false;
@@ -1803,6 +1771,7 @@
                         await salvarClientes();
                     } catch (error) {
                         clientes = estadoAnteriorClientes;
+                        saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                         exibirTabela();
                         exibirClientesAvisados();
                         exibirAlerta(`Erro ao sincronizar importação: ${error.message}. As mudanças locais podem não ter sido salvas no Sheets.`);
@@ -1812,6 +1781,8 @@
                 } catch (error) {
                     exibirAlerta("Erro ao importar JSON. Verifique o arquivo ou formato.");
                     console.error("Erro ao importar:", error);
+                } finally {
+                    esconderCarregando(); // Esconder spinner após a importação, mesmo que falhe
                 }
             };
             reader.readAsText(fileToImport);
@@ -1977,6 +1948,7 @@
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
             clientes = []; // Limpa a array local imediatamente.
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -2002,6 +1974,7 @@
             } catch (e) {
                 // Se o Sheets falhar, reverte a array local e a interface.
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao limpar clientes no Google Sheets: ${e.message}. Ação desfeita localmente.`);
@@ -2021,6 +1994,8 @@
 
             historicoClientes.pop(); // Remove o estado atual do histórico
             clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1])); // Reverte para o estado anterior
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
+
 
             exibirTodos(); // Reexibe tudo imediatamente
             exibirAlerta("Última ação desfeita!");
@@ -2044,6 +2019,7 @@
             historicoClientes.push(estadoParaDesfazer); // Adiciona o estado atual ao histórico para permitir 'desfazer' novamente
 
             clientes = redoHistory.pop(); // Aplica o estado de refazer
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             exibirTodos(); // Reexibe tudo imediatamente
             exibirAlerta("Última ação refeita!");
@@ -2152,6 +2128,7 @@
             clientes[originalClienteIndex].telefone = telefoneLimpoEditado;
             clientes[originalClienteIndex].data = novaData.split("-").reverse().join("/");
             clientes[originalClienteIndex].Produto = novoProduto;
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -2168,6 +2145,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao salvar edição: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -2199,6 +2177,7 @@
             const nomeClienteExcluido = clienteParaExcluir.nome;
 
             clientes.splice(clienteIndexParaExcluir, 1); // Remove localmente imediatamente.
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -2217,6 +2196,7 @@
                 await salvarClientes();
             } catch (e) {
                 clientes = estadoAnteriorClientes; // Reverte se o Sheets falhar.
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao excluir cliente no Google Sheets: ${e.message}. Ação desfeita localmente.`);
@@ -2237,6 +2217,7 @@
             clientes[clienteOriginalIndex].avisado = !clientes[clienteOriginalIndex].avisado;
             // A lógica de ocultar/reexibir agora está ligada ao "oculto", não ao "avisado".
             // Conforme sua solicitação, não vamos mais alterar o status "oculto" aqui.
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             exibirTabela();
             exibirClientesAvisados();
@@ -2246,6 +2227,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status avisado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -2264,6 +2246,7 @@
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
             clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             exibirTabela();
             exibirClientesAvisados();
@@ -2274,6 +2257,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status débito: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -2297,6 +2281,7 @@
                 clientes[clienteOriginalIndex].arquivado = false;
                 clientes[clienteOriginalIndex].desativado = false;
             }
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             exibirTabela();
             exibirClientesAvisados();
@@ -2306,6 +2291,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status "Ver Depois": ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -2323,7 +2309,7 @@
             saveStateToHistory();
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
-            clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
+            clientes[clienteOriginalIndex].desativado = !clientes[originalClienteIndex].desativado;
             if (clientes[clienteOriginalIndex].desativado) {
                 clientes[clienteOriginalIndex].avisado = false;
                 clientes[clienteOriginalIndex].debito = false;
@@ -2331,6 +2317,7 @@
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].arquivado = false;
             }
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             exibirTabela();
             exibirClientesAvisados();
@@ -2340,6 +2327,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status desativado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -2369,6 +2357,8 @@
                 clientes[originalClienteIndex].Produto = novoProduto;
                 clientes[originalClienteIndex].nome = `${nomeSemProduto} (${novoProduto})`;
             }
+            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
+
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -2386,6 +2376,7 @@
                 await salvarClientes();
             } catch (error) {
                 clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
                 exibirTabela();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar produto: ${error.message}. Ação desfeita localmente. Tente novamente.`);
@@ -2399,19 +2390,19 @@
                 const response = await sendRequestToBackend('bulk_update_clients', { clients: clientes });
                 if (response.status === 'success') {
                     console.log('Dados sincronizados com o Google Sheets com sucesso!');
-                    localStorage.setItem('clientesCache', JSON.stringify(clientes)); // Salva no cache local APÓS sucesso no Sheets
+                    // saveClientsToLocalStorage() já foi chamado antes, então esta linha é removida.
+                    // localStorage.setItem('clientesCache', JSON.stringify(clientes)); 
                 } else {
-                    // Isso será capturado pelo catch das funções que chamam salvarClientes
                     throw new Error(response.message || 'Erro desconhecido ao sincronizar com o backend.');
                 }
             } catch (e) {
                 console.error("Erro ao salvar clientes no Google Sheets:", e);
-                // Re-lança o erro para que a função chamadora possa lidar e reverter a UI
                 throw e;
             }
         }
 
         async function loadClientes() {
+            mostrarCarregando(); // Mostrar spinner ao carregar a página
             try {
                 const response = await sendRequestToBackend('get_all_clients');
                 if (Array.isArray(response)) {
@@ -2431,7 +2422,6 @@
                             }
                         }
 
-                        // Garante que o status 'oculto' seja carregado, mas agora ele não será alterado por enviarMensagemWhatsApp
                         const isOcultoAposRefresh = c.oculto || false;
 
                         return {
@@ -2448,7 +2438,7 @@
                             desativado: c.desativado || false
                         };
                     }).filter(c => c.id !== null);
-                    localStorage.setItem('clientesCache', JSON.stringify(clientes)); // Atualiza cache com dados do Sheets
+                    saveClientsToLocalStorage(); // **NOVO: Atualiza cache com dados do Sheets APÓS carga bem-sucedida**
                     console.log("Clientes carregados do Google Sheets:", clientes);
                 } else {
                     console.error("Formato de resposta inválido ao carregar clientes:", response);
@@ -2472,7 +2462,7 @@
                     exibirAlerta("Erro ao carregar clientes do Google Sheets e nenhum cache local encontrado.");
                 }
             } finally {
-                // Estas chamadas são cruciais e devem acontecer SEMPRE, após tentar carregar (do Sheets ou cache)
+                esconderCarregando(); // Esconde o spinner sempre, independente de sucesso ou erro na carga inicial
                 exibirTabela();
                 exibirClientesAvisados();
                 prepararClientesVencidosParaMensagem();
@@ -2502,11 +2492,6 @@
                 exibirClientesAvisados();
             }, 300); // 300ms de atraso
         }
-        // A função original pesquisarClientes() não é mais necessária como uma função separada que pesquisa,
-        // pois exibirTabela() já faz a lógica de filtragem com base no input.
-        // O nome foi mantido no oninput antigo, mas agora chama debouncePesquisa().
-        // Você pode remover a função pesquisarClientes() se ela não tiver outra utilidade.
-        // Já ajustei o oninput do HTML para chamar debouncePesquisa().
 
         function limparPesquisa() {
             document.getElementById("searchInput").value = "";
@@ -2719,7 +2704,7 @@
         }
 
         async function inicializarExibicaoClientes() {
-            await loadClientes();
+            await loadClientes(); // loadClientes agora já mostra/esconde o spinner
 
             const today = new Date();
             const year = today.getFullYear();
@@ -2761,10 +2746,10 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             // Data de vencimento no formato dd/mm para o display principal
+            // De acordo com sua instrução [2025-07-10], a data é exibida no formato dd/mm.
             document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             inicializarExibicaoClientes();
         });
     </script>
 </body>
-
 </html>
