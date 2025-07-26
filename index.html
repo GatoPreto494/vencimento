@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -372,6 +373,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="ultimaAtualizacaoInfo"
         style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
@@ -576,7 +578,7 @@
 
         // ====================================================================================
         // NOVO: URL do seu Aplicativo da Web do Google Apps Script
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHKKeGamiImtqK0G-DJpJI3E_y83ZlVQq6A3kjW0LmRE9iRvNuG3VCOQmpt_s2XwLIrg/exec';
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHKKeGamiImtqK0G-DJpJI3E_y83ZlVQ6A3kjW0LmRE9iRvNuG3VCOQmpt_s2XwLIrg/exec'; // URL fictícia, substitua pela sua
         // ====================================================================================
 
         // --- Funções de Loading/Spinner ---
@@ -849,7 +851,6 @@
             clientes[clienteOriginalIndex].desativado = false;
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-
             // Reseta filtros e atualiza a interface imediatamente
             clientesFiltrados = [];
             modoExibicaoArquivados = false; // Note: Isso vai fazer o cliente sair da tabela principal se não estiver em "arquivados"
@@ -885,7 +886,6 @@
 
             clientes[clienteOriginalIndex].arquivado = false;
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
 
             clientesFiltrados = [];
             modoExibicaoArquivados = true; // Manter no modo arquivados para que a tabela seja atualizada corretamente
@@ -1118,7 +1118,7 @@
             // Para sua requisição, eles devem ser mantidos na lista principal, então o 'oculto: true'
             // não deve ser setado por 'enviarMensagemWhatsApp'. No entanto, eles ainda podem
             // aparecer aqui se forem manualmente marcados como ocultos ou por alguma outra razão.
-            const avisados = clientes.filter(cliente => cliente.avisado && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
+            const avisados = clientes.filter(cliente => cliente.avisado && cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
 
             if (avisados.length === 0) {
                 clientesAvisadosList.innerHTML = '<li>Nenhum cliente avisado para exibir.</li>';
@@ -1141,7 +1141,7 @@
                         <strong>${nomeExibicaoBase}</strong> (${cliente.Produto || 'N/I'}) - Vencimento: ${formatDateForDisplay(cliente.data)}
                     </div>
                     <div class="client-actions">
-                        <button title="Desmarcar Avisado" onclick="toggleAvisadoFromAvisados('${cliente.id}')">Desmarcar Avisado</button>
+                        <button title="Desmarcar Avisado e Reexibir" onclick="toggleAvisadoFromAvisados('${cliente.id}')">Reexibir</button>
                         <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">+</button>
                         <button title="Renovar Automático" onclick="renovarAutomatiscoById('${cliente.id}')">🔁</button>
                         <button title="Renovar com Débito (Confirmação)"
@@ -1172,8 +1172,8 @@
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
             clientes[clienteOriginalIndex].avisado = false; // Apenas desmarca como avisado
+            clientes[clienteOriginalIndex].oculto = false; // E desmarca como oculto para reaparecer na lista principal
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao("desmarcado avisado", clientes[clienteOriginalIndex].nome);
@@ -1644,7 +1644,6 @@
             }
 
             mostrarCarregando(); // Mostrar spinner para importação, pois pode ser demorada
-
             const reader = new FileReader();
             reader.onload = async () => {
                 try {
@@ -1752,7 +1751,6 @@
                         }
                     }
                     saveClientsToLocalStorage(); // **NOVO: Salva no localStorage após todas as importações locais**
-
 
                     clientesFiltrados = [];
                     modoExibicaoArquivados = false;
@@ -1996,7 +1994,6 @@
             clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1])); // Reverte para o estado anterior
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-
             exibirTodos(); // Reexibe tudo imediatamente
             exibirAlerta("Última ação desfeita!");
             atualizarUltimaAtualizacao("ação desfeita");
@@ -2017,10 +2014,8 @@
 
             const estadoParaDesfazer = JSON.parse(JSON.stringify(clientes));
             historicoClientes.push(estadoParaDesfazer); // Adiciona o estado atual ao histórico para permitir 'desfazer' novamente
-
             clientes = redoHistory.pop(); // Aplica o estado de refazer
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             exibirTodos(); // Reexibe tudo imediatamente
             exibirAlerta("Última ação refeita!");
             atualizarUltimaAtualizacao("ação refeita");
@@ -2129,7 +2124,6 @@
             clientes[originalClienteIndex].data = novaData.split("-").reverse().join("/");
             clientes[originalClienteIndex].Produto = novoProduto;
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -2178,7 +2172,6 @@
 
             clientes.splice(clienteIndexParaExcluir, 1); // Remove localmente imediatamente.
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -2218,7 +2211,6 @@
             // A lógica de ocultar/reexibir agora está ligada ao "oculto", não ao "avisado".
             // Conforme sua solicitação, não vamos mais alterar o status "oculto" aqui.
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
@@ -2247,7 +2239,6 @@
 
             clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             exibirTabela();
             exibirClientesAvisados();
             atualizarContadores();
@@ -2282,7 +2273,6 @@
                 clientes[clienteOriginalIndex].desativado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
@@ -2318,7 +2308,6 @@
                 clientes[clienteOriginalIndex].arquivado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[originalClienteIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
@@ -2358,7 +2347,6 @@
                 clientes[originalClienteIndex].nome = `${nomeSemProduto} (${novoProduto})`;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -2391,7 +2379,7 @@
                 if (response.status === 'success') {
                     console.log('Dados sincronizados com o Google Sheets com sucesso!');
                     // saveClientsToLocalStorage() já foi chamado antes, então esta linha é removida.
-                    // localStorage.setItem('clientesCache', JSON.stringify(clientes)); 
+                    // localStorage.setItem('clientesCache', JSON.stringify(clientes));
                 } else {
                     throw new Error(response.message || 'Erro desconhecido ao sincronizar com o backend.');
                 }
@@ -2422,6 +2410,7 @@
                             }
                         }
 
+                        // Manter o status 'oculto' vindo do Sheets
                         const isOcultoAposRefresh = c.oculto || false;
 
                         return {
@@ -2433,7 +2422,7 @@
                             debito: c.debito || false,
                             Produto: c.Produto || "Não informado",
                             arquivado: c.arquivado || false,
-                            oculto: isOcultoAposRefresh,
+                            oculto: isOcultoAposRefresh, // Manter o status oculto
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false
                         };
@@ -2705,7 +2694,6 @@
 
         async function inicializarExibicaoClientes() {
             await loadClientes(); // loadClientes agora já mostra/esconde o spinner
-
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -2752,4 +2740,5 @@
         });
     </script>
 </body>
+
 </html>
