@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -502,7 +500,6 @@
                 <button onclick="fecharModal()">Cancelar</button>
             </div>
         </div>
-
         <div id="modalEdicao" class="modal" style="display: none;"></div>
         <div id="modalAlerta" class="modal" style="display: none;"></div>
 
@@ -570,7 +567,8 @@
 
         // Variáveis para o botão de mensagem central
         let clientesVencidosParaMensagem = [];
-        let indiceClienteVencidoAtual = 0;
+        // O índice não é mais necessário, pois a lista será reprocessada
+        // let indiceClienteVencidoAtual = 0; 
 
         // Variável para armazenar o ID do cliente para "Renovar HOJE"
         let clienteIdParaRenovarHoje = null;
@@ -1022,6 +1020,8 @@
             if (clientesExibidos.length === 0) {
                 document.querySelector("table").style.display = "none";
                 document.getElementById("tabelaClientes").innerHTML = `<tr><td colspan="1" style="text-align: center; color: gray;">Nenhum cliente para exibir neste filtro.</td></tr>`;
+                // Ajustado para chamar o preparador de mensagens aqui também, garantindo que o contador central seja 0
+                prepararClientesVencidosParaMensagem();
                 atualizarContadores();
                 return;
             }
@@ -1312,11 +1312,11 @@
                     (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                     hoje.getFullYear();
                 clientes[clienteOriginalIndex].data = hojeFormatada;
-                clientes[clienteOriginalIndex].debito = false;
-                clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
-                clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
-                clientes[clienteOriginalIndex].verDepois = false;
-                clientes[clienteOriginalIndex].desativado = false;
+                clientes[originalClienteIndex].debito = false;
+                clientes[originalClienteIndex].oculto = false; // Mantém visível após renovação
+                clientes[originalClienteIndex].avisado = false; // Limpa o status de avisado
+                clientes[originalClienteIndex].verDepois = false;
+                clientes[originalClienteIndex].desativado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1376,7 +1376,7 @@
                 clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
                 clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
                 clientes[clienteOriginalIndex].verDepois = false;
-                clientes[clienteOriginalIndex].desativado = false;
+                clientes[originalClienteIndex].desativado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1518,7 +1518,7 @@
             if (!telefoneParaWhatsApp) {
                 exibirAlerta("Número de telefone inválido!");
                 return;
-        }
+            }
 
             if (!telefoneParaWhatsApp.startsWith('55')) {
                 telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
@@ -1585,7 +1585,7 @@
             exibirTabela(); // Atualiza a interface imediatamente (linha fica azul).
             exibirClientesAvisados(); // Atualiza a seção de avisados.
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
-            prepararClientesVencidosParaMensagem(); // Atualiza a contagem do botão central
+            prepararClientesVencidosParaMensagem(); // ATUALIZA A LISTA DO BOTÃO CENTRAL
 
             try {
                 await salvarClientes(); // Envia para o Sheets em segundo plano.
@@ -1619,7 +1619,9 @@
             }));
 
             const clientesJson = JSON.stringify(clientesParaExportar, null, 4);
-            const blob = new Blob([clientesJson], { type: "application/json" });
+            const blob = new Blob([clientesJson], {
+                type: "application/json"
+            });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = "clientes.json";
@@ -1716,7 +1718,10 @@
                                             break;
                                         }
                                     }
-                                    const newClientForBoth = { ...clienteImportado, id: newId, telefone: originalTelefone + '-' + (counter - 1) };
+                                    const newClientForBoth = { ...clienteImportado,
+                                        id: newId,
+                                        telefone: originalTelefone + '-' + (counter - 1)
+                                    };
                                     clientes.push(newClientForBoth);
                                     novosClientesAdicionados++;
                                 }
@@ -1764,6 +1769,7 @@
 
                     exibirTabela();
                     exibirClientesAvisados();
+                    prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
                     exibirAlerta(`Importação concluída: ${novosClientesAdicionados} novos clientes adicionados, ${clientesAtualizados} clientes atualizados, ${clientesIgnorados} ignorados.`);
                     atualizarUltimaAtualizacao("clientes importados/atualizados por ID");
 
@@ -1815,13 +1821,14 @@
             });
         }
 
+        // CORRIGIDO: Agora o filtro de hoje também exclui clientes já avisados
         function filtrarHoje() {
             const hoje = new Date();
             const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
                 (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 hoje.getFullYear();
 
-            clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+            clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado && !cliente.avisado);
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
             modoExibicaoVerDepois = false;
@@ -1850,6 +1857,7 @@
             atualizarContadores();
         }
 
+        // CORRIGIDO: Agora o filtro de vencidos também exclui clientes já avisados
         function filtrarVencidos() {
             const hoje = new Date();
             clientesFiltrados = clientes.filter(cliente => {
@@ -1857,7 +1865,7 @@
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-                return dataCliente < hojeSemHora && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
+                return dataCliente < hojeSemHora && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado && !cliente.avisado;
             });
             modoExibicaoArquivados = false;
             modoExibicaoOcultos = false;
@@ -1962,6 +1970,7 @@
             exibirClientesAvisados();
             exibirAlerta("Todos os clientes foram limpos localmente!"); // Feedback imediato
             atualizarUltimaAtualizacao("lista limpa (localmente)", "");
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 const response = await sendRequestToBackend('clear_all_clients', {});
@@ -1997,6 +2006,7 @@
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             exibirTodos(); // Reexibe tudo imediatamente
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
             exibirAlerta("Última ação desfeita!");
             atualizarUltimaAtualizacao("ação desfeita");
 
@@ -2019,6 +2029,7 @@
             clientes = redoHistory.pop(); // Aplica o estado de refazer
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             exibirTodos(); // Reexibe tudo imediatamente
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
             exibirAlerta("Última ação refeita!");
             atualizarUltimaAtualizacao("ação refeita");
 
@@ -2136,6 +2147,7 @@
             exibirClientesAvisados();
             fecharModal();
             atualizarUltimaAtualizacao("editado", nomeComNovoProduto);
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 await salvarClientes();
@@ -2186,6 +2198,7 @@
             fecharModal();
             clienteIndexParaExcluir = null;
             atualizarUltimaAtualizacao("excluído", nomeClienteExcluido);
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 await salvarClientes();
@@ -2216,6 +2229,7 @@
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 await salvarClientes();
@@ -2245,6 +2259,7 @@
             exibirClientesAvisados();
             atualizarContadores();
             atualizarUltimaAtualizacao(`status débito alterado para ${clientes[clienteOriginalIndex].debito ? 'sim' : 'não'}`, cliente.nome);
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 await salvarClientes();
@@ -2278,6 +2293,7 @@
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 await salvarClientes();
@@ -2313,6 +2329,7 @@
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[originalClienteIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 await salvarClientes();
@@ -2361,6 +2378,7 @@
             clienteIndexParaAlterarProduto = null;
             exibirAlerta(`Produto do cliente alterado para ${novoProduto}!`);
             atualizarUltimaAtualizacao(`produto alterado para ${novoProduto}`, clienteNome);
+            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
                 await salvarClientes();
@@ -2377,7 +2395,9 @@
 
         async function salvarClientes() {
             try {
-                const response = await sendRequestToBackend('bulk_update_clients', { clients: clientes });
+                const response = await sendRequestToBackend('bulk_update_clients', {
+                    clients: clientes
+                });
                 if (response.status === 'success') {
                     console.log('Dados sincronizados com o Google Sheets com sucesso!');
                     // saveClientsToLocalStorage() já foi chamado antes, então esta linha é removida.
@@ -2534,8 +2554,7 @@
                 try {
                     const settings = JSON.parse(savedSettings);
                     widthToApply = settings.width || DEFAULT_INPUT_WIDTH_PERCENT;
-                }
-                catch (e) {
+                } catch (e) {
                     console.error("Erro ao carregar ajustes do localStorage:", e);
                     localStorage.removeItem(SETTINGS_KEY);
                 }
@@ -2568,7 +2587,9 @@
             // Clientes na tabela principal (não arquivados, não ocultos, não verDepois, não desativados)
             const clientesNaTabelaPrincipal = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
 
-            const countHoje = clientesNaTabelaPrincipal.filter(cliente => cliente.data === hojeFormatada).length;
+            // CORRIGIDO: Agora a contagem de hoje e vencidos também exclui clientes avisados,
+            // para ser consistente com o botão central.
+            const countHoje = clientesNaTabelaPrincipal.filter(cliente => cliente.data === hojeFormatada && !cliente.avisado).length;
             const countAmanha = clientesNaTabelaPrincipal.filter(cliente => {
                 const amanha = new Date();
                 amanha.setDate(amanha.getDate() + 1);
@@ -2582,7 +2603,7 @@
                 const dataCliente = new Date(ano, mes - 1, dia);
                 const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-                return dataCliente < hojeSemHora;
+                return dataCliente < hojeSemHora && !cliente.avisado;
             }).length;
             const countDebito = clientesNaTabelaPrincipal.filter(cliente => cliente.debito).length;
 
@@ -2600,20 +2621,9 @@
             updateBadge('badgeVerDepois', countVerDepois);
             updateBadge('badgeDesativados', countDesativados);
 
-            // Contagem para o botão central de mensagem
-            // Clientes que vencem hoje ou estão vencidos E que NÃO FORAM AVISADOS e NÃO ESTÃO ARQUIVADOS/OCULTOS/VERDEPOIS/DESATIVADOS
-            const vencidosNaoAvisadosParaMensagem = clientes.filter(cliente => {
-                const [dia, mes, ano] = cliente.data.split("/").map(Number);
-                const dataCliente = new Date(ano, mes - 1, dia);
-                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-                const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" + (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" + hoje.getFullYear();
-
-                const isVencendoHoje = cliente.data === hojeFormatada;
-                const isVencido = dataCliente < hojeSemHora;
-
-                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
-            });
-            updateBadge('badgeCentralMessage', vencidosNaoAvisadosParaMensagem.length);
+            // CORRIGIDO: O contador do botão central agora reflete o tamanho real da lista de clientes
+            // que precisam de mensagem, que é recalculada toda vez.
+            updateBadge('badgeCentralMessage', clientesVencidosParaMensagem.length);
         }
 
         function updateBadge(badgeId, count) {
@@ -2639,44 +2649,43 @@
             document.getElementById('modalContagemProdutos').style.display = 'flex';
         }
 
+        // CORRIGIDO: O código do usuário foi implementado aqui para garantir a lógica correta.
         function prepararClientesVencidosParaMensagem() {
             const hoje = new Date();
-            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
-                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                hoje.getFullYear();
-
-            // Ajustado para incluir apenas clientes que vencem hoje ou estão vencidos E que NÃO foram avisados
+            const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+            
             clientesVencidosParaMensagem = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
-                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-                const isVencendoHoje = cliente.data === hojeFormatada;
-                const isVencido = dataCliente < hojeSemHora;
+                const vencendoHoje = dataCliente.getTime() === hojeSemHora.getTime();
+                const vencido = dataCliente < hojeSemHora;
 
-                return (isVencendoHoje || isVencido) && !cliente.avisado && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
-            }).sort((a, b) => {
-                const [diaA, mesA, anoA] = a.data.split("/").map(num => parseInt(num));
-                const [diaB, mesB, anoB] = b.data.split("/").map(num => parseInt(num));
-                const dataA = new Date(anoA, mesA - 1, diaA);
-                const dataB = new Date(anoB, mesB - 1, diaB);
-                return dataA - dataB;
+                return (
+                    (vencendoHoje || vencido) &&
+                    !cliente.avisado &&
+                    !cliente.arquivado &&
+                    !cliente.oculto &&
+                    !cliente.verDepois &&
+                    !cliente.desativado
+                );
             });
-            indiceClienteVencidoAtual = 0;
             atualizarContadores();
         }
 
+        // CORRIGIDO: Esta função agora pega o primeiro cliente da lista e,
+        // após enviar a mensagem, o status 'avisado' do cliente é atualizado e a
+        // lista 'clientesVencidosParaMensagem' é recarregada, removendo-o da contagem.
         function enviarProximoClienteVencido() {
-            if (clientesVencidosParaMensagem.length === 0 || indiceClienteVencidoAtual >= clientesVencidosParaMensagem.length) {
-                prepararClientesVencidosParaMensagem(); // Recarrega a lista se vazia ou se todos já foram enviados
-            }
+            prepararClientesVencidosParaMensagem(); // Garante que a lista está atualizada
 
             if (clientesVencidosParaMensagem.length === 0) {
                 exibirAlerta("Não há clientes vencidos para enviar mensagem no momento.");
                 return;
             }
 
-            const cliente = clientesVencidosParaMensagem[indiceClienteVencidoAtual];
+            // Pega o primeiro cliente da lista atualizada
+            const cliente = clientesVencidosParaMensagem[0];
             const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
 
             const originalClientesExibidos = clientesExibidos; // Salva o estado atual do filtro
@@ -2684,13 +2693,12 @@
             enviarMensagemWhatsApp(nomeExibicaoBase, cliente.telefone, 0);
 
             clientesExibidos = originalClientesExibidos; // Restaura o filtro original
+            
+            // Não precisa mais de um índice para percorrer a lista
+            // Se o usuário quiser enviar para o próximo, ele clica novamente e a lista já foi
+            // recarregada sem o cliente anterior, então o novo primeiro da lista será o próximo.
 
-            indiceClienteVencidoAtual++;
-            if (indiceClienteVencidoAtual >= clientesVencidosParaMensagem.length) {
-                exibirAlerta("Todas as mensagens para clientes vencidos foram enviadas (ou a lista foi percorrida). Clique novamente para recarregar a lista.");
-                // Opcional: Você pode querer resetar indiceClienteVencidoAtual para 0 aqui,
-                // mas prepararClientesVencidosParaMensagem() já faz isso.
-            }
+            exibirAlerta(`Mensagem enviada para "${nomeExibicaoBase}". O próximo cliente vencido agora é o primeiro da lista.`);
             atualizarContadores();
         }
 
@@ -2708,6 +2716,8 @@
                 (today.getMonth() + 1).toString().padStart(2, '0') + "/" +
                 today.getFullYear();
 
+            // CORRIGIDO: A inicialização também filtra por clientes que ainda não foram avisados,
+            // para ser consistente com o resto da lógica.
             clientesFiltrados = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
                 const dataCliente = new Date(ano, mes - 1, dia);
@@ -2716,8 +2726,7 @@
                 const isVencendoHoje = cliente.data === hojeFormatada;
                 const isVencido = dataCliente < hojeSemHora;
 
-                // Não vai mais filtrar por oculto aqui
-                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.verDepois && !cliente.desativado;
+                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.verDepois && !cliente.desativado && !cliente.avisado;
             });
 
             modoExibicaoArquivados = false;
@@ -2737,7 +2746,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Data de vencimento no formato dd/mm para o display principal
             // De acordo com sua instrução [2025-07-10], a data é exibida no formato dd/mm.
-            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit'
+            });
             inicializarExibicaoClientes();
         });
     </script>
