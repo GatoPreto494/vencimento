@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -296,7 +295,17 @@
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Novo estilo para o botão Dola (laranja com ícone) */
+        .btn-dola {
+            background-color: #ff9800; /* Laranja */
+            color: white;
+        }
 
+        .btn-dola:hover {
+            background-color: #e68900; /* Laranja mais escuro */
+        }
+        
         /* Estilos para a nova seção de clientes avisados */
         #clientesAvisadosSection {
             margin-top: 30px;
@@ -373,7 +382,6 @@
         }
     </style>
 </head>
-
 <body>
     <div id="ultimaAtualizacaoInfo"
         style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
@@ -1081,7 +1089,9 @@
                 } else {
                     const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                     botoesAcao = `
-                        <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">+</button>
+                        <button title="Enviar Lembrete Dola" class="btn-dola" onclick="enviarMensagemWhatsAppDola(${index})">🤖 Dola</button>
+                        <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsApp(${index})">📋 Copiar</button>
+                        <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">➕ Duplicar</button>
                         <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
                         <button title="Renovar com Débito (Confirmação)"
                                 class="btn-debito-segurar"
@@ -1144,7 +1154,9 @@
                     </div>
                     <div class="client-actions">
                         <button title="Desmarcar Avisado e Reexibir" onclick="toggleAvisadoFromAvisados('${cliente.id}')">Reexibir</button>
-                        <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">+</button>
+                        <button title="Enviar Lembrete Dola" class="btn-dola" onclick="enviarMensagemWhatsAppDolaById('${cliente.id}')">🤖 Dola</button>
+                        <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsAppById('${cliente.id}')">📋 Copiar</button>
+                        <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">➕ Duplicar</button>
                         <button title="Renovar Automático" onclick="renovarAutomatiscoById('${cliente.id}')">🔁</button>
                         <button title="Renovar com Débito (Confirmação)"
                                 class="btn-debito-segurar"
@@ -1199,6 +1211,16 @@
                 const originalClientesExibidos = clientesExibidos;
                 clientesExibidos = [clientes[index]];
                 duplicarCliente(0);
+                clientesExibidos = originalClientesExibidos;
+            }
+        }
+        
+        function enviarMensagemWhatsAppDolaById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
+                clientesExibidos = [clientes[index]];
+                enviarMensagemWhatsAppDola(0);
                 clientesExibidos = originalClientesExibidos;
             }
         }
@@ -1312,11 +1334,11 @@
                     (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
                     hoje.getFullYear();
                 clientes[clienteOriginalIndex].data = hojeFormatada;
-                clientes[originalClienteIndex].debito = false;
-                clientes[originalClienteIndex].oculto = false; // Mantém visível após renovação
-                clientes[originalClienteIndex].avisado = false; // Limpa o status de avisado
-                clientes[originalClienteIndex].verDepois = false;
-                clientes[originalClienteIndex].desativado = false;
+                clientes[clienteOriginalIndex].debito = false;
+                clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
+                clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
+                clientes[clienteOriginalIndex].verDepois = false;
+                clientes[clienteOriginalIndex].desativado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1376,7 +1398,7 @@
                 clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
                 clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
                 clientes[clienteOriginalIndex].verDepois = false;
-                clientes[originalClienteIndex].desativado = false;
+                clientes[clienteOriginalIndex].desativado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1511,6 +1533,128 @@
                 "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
             ];
             return meses[mesNumero - 1];
+        }
+
+        async function copiarMensagemWhatsApp(index) {
+            const cliente = clientesExibidos[index];
+            const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+            const vencimento = cliente.data;
+            const hoje = new Date();
+
+            const [diaVenc, mesVenc, anoVenc] = vencimento.split("/").map(num => parseInt(num));
+            const dataVencimentoObj = new Date(anoVenc, mesVenc - 1, diaVenc);
+
+            const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+            const dataVencimentoSemHora = new Date(dataVencimentoObj.getFullYear(), dataVencimentoObj.getMonth(), dataVencimentoObj.getDate());
+
+            const vencido = dataVencimentoSemHora < hojeSemHora;
+            const hora = hoje.getHours();
+            let saudacao = "Olá";
+            if (hora >= 6 && hora < 12) {
+                saudacao = "Bom dia";
+            } else if (hora >= 12 && hora < 18) {
+                saudacao = "Boa tarde";
+            } else {
+                saudacao = "Boa noite";
+            }
+
+            const nomeMes = getNomeMes(parseInt(mesVenc));
+
+            let mensagem;
+            if (vencido) {
+                mensagem = `${saudacao}! Seu plano de TV *está vencido* *${vencimento} (${nomeMes})*. Lembrando que pagando no dia do vencimento o mensal é de 30 reais,após o dia de vencimento o mensal é de 35 reais.O pagamento via PIX pode ser feito no número: *11950912509* (Waldemar Jose Luiz)`;
+            } else {
+                mensagem = `${saudacao}! Hoje é o vencimento do seu plano de TV.*Vencimento*: ${cliente.data} (${nomeMes})O pagamento via PIX pode ser realizado no número: *11950912509* (Waldemar Jose Luiz)`;
+            }
+
+            try {
+                // Cria uma área de texto temporária para copiar
+                const textarea = document.createElement('textarea');
+                textarea.value = mensagem;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                exibirAlerta("Mensagem copiada para a área de transferência!");
+            } catch (err) {
+                exibirAlerta("Erro ao copiar a mensagem. Por favor, tente novamente.");
+                console.error("Erro ao copiar mensagem: ", err);
+            }
+        }
+
+        async function copiarMensagemWhatsAppById(clientId) {
+            const index = clientes.findIndex(c => c.id === clientId);
+            if (index !== -1) {
+                const originalClientesExibidos = clientesExibidos;
+                clientesExibidos = [clientes[index]];
+                await copiarMensagemWhatsApp(0);
+                clientesExibidos = originalClientesExibidos;
+            }
+        }
+
+        async function enviarMensagemWhatsAppDola(index) {
+            const cliente = clientesExibidos[index];
+            const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+            const vencimento = cliente.data;
+            
+            // --- INÍCIO DA LÓGICA DO DOLA, baseada no código do usuário ---
+            let telefoneParaWhatsApp = cliente.telefone.replace(/\D/g, '');
+            if (!telefoneParaWhatsApp) {
+                exibirAlerta("Número de telefone inválido!");
+                return;
+            }
+        
+            if (!telefoneParaWhatsApp.startsWith('55')) {
+                telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
+            }
+            
+            const [diaVenc] = vencimento.split('/');
+            const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 1147406124 no nome de Waldemar jose luiz.`;
+            const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
+            const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
+
+            const mensagemCliente = 
+`*Olá!*\n` +
+`Lembrete de vencimento do seu plano de TV.\n` +
+`*Vencimento:* ${vencimento} (${nomeMes}).\n\n` +
+`Lembrando que, caso o pagamento seja feito *após* a data de vencimento, o valor mensal será de *R$ 35,00*.\n\n` +
+`Qualquer dúvida, entre em contato.\n\n` +
+`Por favor, clique em *"Conversar"* para ativar o lembrete automático e, depois, envie a mensagem. Assim, você será notificado todo dia no vencimento.\n` +
+`Preciso que confirme aqui depois que iniciou a conversa para o lembrete automático. Obrigado!\n` +
+`${urlDola}`;
+
+const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
+
+window.open(urlFinal, '_blank');
+            // --- FIM DA LÓGICA DO DOLA ---
+
+            // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
+            saveStateToHistory();
+            const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
+            
+            let clienteOriginal = clientes.find(c => c.id === cliente.id);
+            if (clienteOriginal) {
+                clienteOriginal.avisado = true; // Marca como avisado
+                clienteOriginal.oculto = true; // Oculta da lista principal, como no arquivo do usuário
+            }
+            saveClientsToLocalStorage();
+            
+            exibirTabela();
+            exibirClientesAvisados();
+            atualizarUltimaAtualizacao("mensagem Dola enviada", cliente.nome);
+            prepararClientesVencidosParaMensagem();
+            
+            try {
+                await salvarClientes();
+            } catch (error) {
+                clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage();
+                exibirTabela();
+                exibirClientesAvisados();
+                exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
+                atualizarUltimaAtualizacao("falha no envio de mensagem Dola", cliente.nome);
+            }
+            // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
 
         async function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
@@ -2317,7 +2461,7 @@
             saveStateToHistory();
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
-            clientes[clienteOriginalIndex].desativado = !clientes[originalClienteIndex].desativado;
+            clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
             if (clientes[clienteOriginalIndex].desativado) {
                 clientes[clienteOriginalIndex].avisado = false;
                 clientes[clienteOriginalIndex].debito = false;
@@ -2328,7 +2472,7 @@
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             exibirTabela();
             exibirClientesAvisados();
-            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[originalClienteIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
+            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
             prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
@@ -2361,9 +2505,9 @@
             const clienteNome = clienteParaAtualizar.nome;
 
             if (clienteOriginalIndex !== -1) {
-                let nomeSemProduto = clientes[originalClienteIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
-                clientes[originalClienteIndex].Produto = novoProduto;
-                clientes[originalClienteIndex].nome = `${nomeSemProduto} (${novoProduto})`;
+                let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                clientes[clienteOriginalIndex].Produto = novoProduto;
+                clientes[clienteOriginalIndex].nome = `${nomeSemProduto} (${novoProduto})`;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             clientesFiltrados = [];
@@ -2653,7 +2797,6 @@
         function prepararClientesVencidosParaMensagem() {
             const hoje = new Date();
             const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-            
             clientesVencidosParaMensagem = clientes.filter(cliente => {
                 const [dia, mes, ano] = cliente.data.split("/").map(Number);
                 const dataCliente = new Date(ano, mes - 1, dia);
@@ -2693,7 +2836,7 @@
             enviarMensagemWhatsApp(nomeExibicaoBase, cliente.telefone, 0);
 
             clientesExibidos = originalClientesExibidos; // Restaura o filtro original
-            
+
             // Não precisa mais de um índice para percorrer a lista
             // Se o usuário quiser enviar para o próximo, ele clica novamente e a lista já foi
             // recarregada sem o cliente anterior, então o novo primeiro da lista será o próximo.
@@ -2754,5 +2897,4 @@
         });
     </script>
 </body>
-
 </html>
