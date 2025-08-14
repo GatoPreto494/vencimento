@@ -295,7 +295,7 @@
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        
+
         /* Novo estilo para o botão Dola (laranja com ícone) */
         .btn-dola {
             background-color: #ff9800; /* Laranja */
@@ -304,6 +304,16 @@
 
         .btn-dola:hover {
             background-color: #e68900; /* Laranja mais escuro */
+        }
+        
+        /* NOVO: Estilo para o botão Dola quando a mensagem já foi enviada */
+        .btn-dola-sent {
+            background-color: #28a745; /* Verde */
+            color: white;
+        }
+
+        .btn-dola-sent:hover {
+            background-color: #218838; /* Verde mais escuro no hover */
         }
         
         /* Estilos para a nova seção de clientes avisados */
@@ -816,7 +826,8 @@
                 arquivado: false,
                 oculto: false,
                 verDepois: false,
-                desativado: false
+                desativado: false,
+                dola_sent: false // NOVO: Campo para controlar o botão Dola
             };
 
             clientes.push(novoClienteObj); // Atualiza a array local **imediatamente**.
@@ -1088,8 +1099,9 @@
                     `;
                 } else {
                     const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                    const dolaButtonClass = cliente.dola_sent ? 'btn-dola-sent' : 'btn-dola'; // NOVO: Classe condicional
                     botoesAcao = `
-                        <button title="Enviar Lembrete Dola" class="btn-dola" onclick="enviarMensagemWhatsAppDola(${index})">🤖 Dola</button>
+                        <button title="Enviar Lembrete Dola" class="${dolaButtonClass}" onclick="enviarMensagemWhatsAppDola(${index})">🤖 Dola</button>
                         <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsApp(${index})">📋 Copiar</button>
                         <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">➕ Duplicar</button>
                         <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
@@ -1148,13 +1160,14 @@
             avisados.forEach(cliente => {
                 const li = document.createElement('li');
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                const dolaButtonClass = cliente.dola_sent ? 'btn-dola-sent' : 'btn-dola'; // NOVO: Classe condicional
                 li.innerHTML = `
                     <div class="client-info">
                         <strong>${nomeExibicaoBase}</strong> (${cliente.Produto || 'N/I'}) - Vencimento: ${formatDateForDisplay(cliente.data)}
                     </div>
                     <div class="client-actions">
                         <button title="Desmarcar Avisado e Reexibir" onclick="toggleAvisadoFromAvisados('${cliente.id}')">Reexibir</button>
-                        <button title="Enviar Lembrete Dola" class="btn-dola" onclick="enviarMensagemWhatsAppDolaById('${cliente.id}')">🤖 Dola</button>
+                        <button title="Enviar Lembrete Dola" class="${dolaButtonClass}" onclick="enviarMensagemWhatsAppDolaById('${cliente.id}')">🤖 Dola</button>
                         <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsAppById('${cliente.id}')">📋 Copiar</button>
                         <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">➕ Duplicar</button>
                         <button title="Renovar Automático" onclick="renovarAutomatiscoById('${cliente.id}')">🔁</button>
@@ -1269,20 +1282,16 @@
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
             const clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
 
-            // Aplica a mudança localmente
-            if (produtoCliente === "Duplecast") {
+            // A lógica de renovação agora usa renovarProximoMes para ambos os produtos
+            if (clienteOriginalIndex !== -1) {
                 renovarProximoMes(clientes[clienteOriginalIndex]);
-            } else if (produtoCliente === "UniTv") {
-                renovar30(clientes[clienteOriginalIndex]);
-            } else {
-                exibirAlerta("Tipo de produto desconhecido para renovação automática.");
-                return;
+                clientes[clienteOriginalIndex].debito = false;
+                clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
+                clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
+                clientes[clienteOriginalIndex].verDepois = false;
+                clientes[clienteOriginalIndex].desativado = false;
+                clientes[clienteOriginalIndex].dola_sent = false; // Reinicia o status do Dola ao renovar
             }
-            clientes[clienteOriginalIndex].debito = false;
-            clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
-            clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
-            clientes[clienteOriginalIndex].verDepois = false;
-            clientes[clienteOriginalIndex].desativado = false;
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
@@ -1339,6 +1348,7 @@
                 clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].desativado = false;
+                clientes[clienteOriginalIndex].dola_sent = false; // Reinicia o status do Dola ao renovar
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1385,20 +1395,16 @@
             }
 
             if (clienteOriginalIndex !== -1) {
-                if (produtoCliente === "Duplecast") {
+                // A lógica de renovação agora usa renovarProximoMes para ambos os produtos
+                if (clienteOriginalIndex !== -1) {
                     renovarProximoMes(clientes[clienteOriginalIndex]);
-                } else if (produtoCliente === "UniTv") {
-                    renovar30(clientes[clienteOriginalIndex]);
-                } else {
-                    exibirAlerta("Tipo de produto desconhecido para renovação automática.");
-                    fecharModal();
-                    return;
+                    clientes[clienteOriginalIndex].debito = true;
+                    clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
+                    clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
+                    clientes[clienteOriginalIndex].verDepois = false;
+                    clientes[clienteOriginalIndex].desativado = false;
+                    clientes[clienteOriginalIndex].dola_sent = false; // Reinicia o status do Dola ao renovar
                 }
-                clientes[clienteOriginalIndex].debito = true;
-                clientes[clienteOriginalIndex].oculto = false; // Mantém visível após renovação
-                clientes[clienteOriginalIndex].avisado = false; // Limpa o status de avisado
-                clientes[clienteOriginalIndex].verDepois = false;
-                clientes[clienteOriginalIndex].desativado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1497,7 +1503,8 @@
                 arquivado: false,
                 oculto: false,
                 verDepois: false,
-                desativado: false
+                desativado: false,
+                dola_sent: false // NOVO: Campo para controlar o botão Dola
             };
             clientes.push(novoCliente);
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
@@ -1609,23 +1616,18 @@
             }
             
             const [diaVenc] = vencimento.split('/');
-            const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 11947406124 no nome de Waldemar jose luiz.`;
+            const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 1147406124 no nome de Waldemar jose luiz.`;
             const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
             const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
 
-            const mensagemCliente = 
-`*Olá!*\n` +
-`Lembrete de vencimento do seu plano de TV.\n` +
-`*Vencimento:* ${vencimento} (${nomeMes}).\n\n` +
-`Lembrando que, caso o pagamento seja feito *após* a data de vencimento, o valor mensal será de *R$ 35,00*.\n\n` +
-`Qualquer dúvida, entre em contato.\n\n` +
-`Por favor, clique em *"Conversar"* para ativar o lembrete automático e, depois, envie a mensagem. Assim, você será notificado todo dia no vencimento.\n` +
-`Preciso que confirme aqui depois que iniciou a conversa para o lembrete automático. Obrigado!\n` +
-`${urlDola}`;
-
-const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
-
-window.open(urlFinal, '_blank');
+            const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. Vencimento: ${vencimento} (${nomeMes}).
+Qualquer dúvida, entre em contato.
+Se você clicar no link abaixo, será lembrado automaticamente pelo Dola
+${urlDola}`;
+        
+            const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
+        
+            window.open(urlFinal, '_blank');
             // --- FIM DA LÓGICA DO DOLA ---
 
             // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
@@ -1636,6 +1638,7 @@ window.open(urlFinal, '_blank');
             if (clienteOriginal) {
                 clienteOriginal.avisado = true; // Marca como avisado
                 clienteOriginal.oculto = true; // Oculta da lista principal, como no arquivo do usuário
+                clienteOriginal.dola_sent = true; // NOVO: Marca que a mensagem do Dola foi enviada
             }
             saveClientsToLocalStorage();
             
@@ -1759,7 +1762,8 @@ window.open(urlFinal, '_blank');
                 arquivado: c.arquivado || false,
                 oculto: c.oculto || false,
                 verDepois: c.verDepois || false,
-                desativado: c.desativado || false
+                desativado: c.desativado || false,
+                dola_sent: c.dola_sent || false // NOVO: Adiciona o campo
             }));
 
             const clientesJson = JSON.stringify(clientesParaExportar, null, 4);
@@ -1817,7 +1821,8 @@ window.open(urlFinal, '_blank');
                             arquivado: c.arquivado || false,
                             oculto: c.oculto || false,
                             verDepois: c.verDepois || false,
-                            desativado: c.desativado || false
+                            desativado: c.desativado || false,
+                            dola_sent: c.dola_sent || false // NOVO: Adiciona o campo
                         };
                     });
 
@@ -1893,6 +1898,7 @@ window.open(urlFinal, '_blank');
                                     clientes[indexClienteExistente].oculto = clienteImportado.oculto;
                                     clientes[indexClienteExistente].verDepois = clienteImportado.verDepois;
                                     clientes[indexClienteExistente].desativado = clienteImportado.desativado;
+                                    clientes[indexClienteExistente].dola_sent = clienteImportado.dola_sent; // NOVO: Adiciona o campo
                                     clientesAtualizados++;
                                 }
                             }
@@ -2117,13 +2123,7 @@ window.open(urlFinal, '_blank');
             prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
 
             try {
-                const response = await sendRequestToBackend('clear_all_clients', {});
-                if (response.status === 'success') {
-                    atualizarUltimaAtualizacao("lista limpa (Sheets)");
-                } else {
-                    // Isso será capturado pelo catch das funções que chamam salvarClientes
-                    throw new Error(response.message || "Erro desconhecido ao limpar no Sheets.");
-                }
+                await salvarClientes();
             } catch (e) {
                 // Se o Sheets falhar, reverte a array local e a interface.
                 clientes = estadoAnteriorClientes;
@@ -2280,6 +2280,7 @@ window.open(urlFinal, '_blank');
             clientes[originalClienteIndex].telefone = telefoneLimpoEditado;
             clientes[originalClienteIndex].data = novaData.split("-").reverse().join("/");
             clientes[originalClienteIndex].Produto = novoProduto;
+            clientes[originalClienteIndex].dola_sent = false; // NOVO: Reinicia o status do Dola na edição
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             clientesFiltrados = [];
             modoExibicaoArquivados = false;
@@ -2590,7 +2591,8 @@ window.open(urlFinal, '_blank');
                             arquivado: c.arquivado || false,
                             oculto: isOcultoAposRefresh, // Manter o status oculto
                             verDepois: c.verDepois || false,
-                            desativado: c.desativado || false
+                            desativado: c.desativado || false,
+                            dola_sent: c.dola_sent || false // NOVO: Mapeia o novo campo
                         };
                     }).filter(c => c.id !== null);
                     saveClientsToLocalStorage(); // **NOVO: Atualiza cache com dados do Sheets APÓS carga bem-sucedida**
@@ -2898,4 +2900,3 @@ window.open(urlFinal, '_blank');
     </script>
 </body>
 </html>
-
