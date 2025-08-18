@@ -1534,57 +1534,68 @@
         }
 
         async function enviarMensagemWhatsAppDola(index) {
-            const cliente = clientesExibidos[index];
-            const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
-            const vencimento = cliente.data;
-            // --- INÍCIO DA LÓGICA DO DOLA, baseada no código do usuário ---
-            let telefoneParaWhatsApp = cliente.telefone.replace(/\D/g, '');
-            if (!telefoneParaWhatsApp) {
-                exibirAlerta("Número de telefone inválido!");
-                return;
-            }
-            if (!telefoneParaWhatsApp.startsWith('55')) {
-                telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
-            }
-            const [diaVenc] = vencimento.split('/');
-            const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 11947406124 no nome de Waldemar jose luiz.`;
-            const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
-            const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
+    const cliente = clientesExibidos[index];
+    const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+    const vencimento = cliente.data;
 
-            const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. Vencimento: ${vencimento} (${nomeMes}).Qualquer dúvida, entre em contato.
-Se você clicar no link abaixo, será lembrado automaticamente pelo Dola${urlDola}`;
-            const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
-            window.open(urlFinal, '_blank');
-            // --- FIM DA LÓGICA DO DOLA ---
+    // --- INÍCIO DA LÓGICA DO DOLA ---
+    let telefoneParaWhatsApp = cliente.telefone.replace(/\D/g, '');
+    if (!telefoneParaWhatsApp) {
+        exibirAlerta("Número de telefone inválido!");
+        return;
+    }
+    if (!telefoneParaWhatsApp.startsWith('55')) {
+        telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
+    }
 
-            // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
-            saveStateToHistory();
-            const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
+    const [diaVenc] = vencimento.split('/');
+    const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 11947406124 no nome de Waldemar jose luiz.`;
+    const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
+    const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
 
-            let clienteOriginal = clientes.find(c => c.id === cliente.id);
-            if (clienteOriginal) {
-                clienteOriginal.oculto = true; // Oculta da lista principal, como no arquivo do usuário
-                clienteOriginal.dola_sent = true; // NOVO: Marca que a mensagem do Dola foi enviada
-            }
-            saveClientsToLocalStorage();
+    const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. 
+📅 Vencimento: ${vencimento} (${nomeMes}).
+💳 Pix: 11947406124 (Waldemar José Luiz).
 
-            exibirTabela();
-            exibirClientesAvisados();
-            atualizarUltimaAtualizacao("mensagem Dola enviada", cliente.nome);
-            prepararClientesVencidosParaMensagem();
+🔔 Para ser lembrado automaticamente todo mês, clique em "Conversar" no link abaixo, ative o lembrete com o Dola e depois confirme aqui comigo se deu certo:
 
-            try {
-                await salvarClientes();
-            } catch (error) {
-                clientes = estadoAnteriorClientes;
-                saveClientsToLocalStorage();
-                exibirTabela();
-                exibirClientesAvisados();
-                exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
-                atualizarUltimaAtualizacao("falha no envio de mensagem Dola", cliente.nome);
-            }
-            // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
-        }
+${urlDola}
+
+❓ Qualquer dúvida, entre em contato.`;
+
+    const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
+    window.open(urlFinal, '_blank');
+    // --- FIM DA LÓGICA DO DOLA ---
+
+    // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
+    saveStateToHistory();
+    const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
+
+    let clienteOriginal = clientes.find(c => c.id === cliente.id);
+    if (clienteOriginal) {
+        clienteOriginal.oculto = true; // Oculta da lista principal
+        clienteOriginal.dola_sent = true; // Marca que a mensagem do Dola foi enviada
+    }
+    saveClientsToLocalStorage();
+
+    exibirTabela();
+    exibirClientesAvisados();
+    atualizarUltimaAtualizacao("mensagem Dola enviada", cliente.nome);
+    prepararClientesVencidosParaMensagem();
+
+    try {
+        await salvarClientes();
+    } catch (error) {
+        clientes = estadoAnteriorClientes;
+        saveClientsToLocalStorage();
+        exibirTabela();
+        exibirClientesAvisados();
+        exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
+        atualizarUltimaAtualizacao("falha no envio de mensagem Dola", cliente.nome);
+    }
+    // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
+}
+
 
         async function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
             let telefoneParaWhatsApp = clienteTelefone.replace(/\D/g, '');
@@ -2826,3 +2837,4 @@ Se você clicar no link abaixo, será lembrado automaticamente pelo Dola${urlDol
     </script>
 </body>
 </html>
+
