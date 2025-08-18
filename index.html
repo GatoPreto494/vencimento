@@ -12,7 +12,6 @@
             background-color: #f0f8ff;
             color: #333;
         }
-
         .container {
             width: 100%;
             max-width: 2000px;
@@ -22,13 +21,10 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
-        h1,
-        h3 {
+        h1, h3 {
             text-align: center;
             color: #0066cc;
         }
-
         /* Estilos para Inputs e Botões */
         input[type="text"],
         input[type="tel"],
@@ -40,24 +36,20 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
-
         .input-group-horizontal {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 10px;
         }
-
         .input-group-horizontal input {
             flex: 1;
             min-width: 150px;
             margin-bottom: 0;
         }
-
         .configurable-input {
             /* Largura será definida pelo JavaScript */
         }
-
         button {
             background-color: #0066cc;
             color: #fff;
@@ -70,11 +62,9 @@
             position: relative;
             /* Necessário para posicionar o badge */
         }
-
         button:hover {
             background-color: #004d99;
         }
-
         /* Estilos específicos de botão */
         .btn-debito-segurar {
             background-color: #ffcc00;
@@ -82,12 +72,10 @@
             color: #333;
             /* Texto escuro para contraste */
         }
-
         .btn-debito-segurar:hover {
             background-color: #e6b800;
             /* Amarelo um pouco mais escuro no hover */
         }
-
         /* Novo estilo para o botão de renovar (Data Atual) */
         .btn-renovar-data-atual {
             background-color: #ffc107;
@@ -96,24 +84,20 @@
             /* Texto escuro */
             border: 1px solid #ffc107;
         }
-
         .btn-renovar-data-atual:hover {
             background-color: #e0a800;
             border-color: #d39e00;
         }
-
         /* Novo estilo para o botão de confirmação perigosa (vermelho) */
         .modal-confirm-danger {
             background-color: #dc3545;
             /* Vermelho */
             color: #fff;
         }
-
         .modal-confirm-danger:hover {
             background-color: #c82333;
             /* Vermelho mais escuro */
         }
-
         /* Estilos da Tabela */
         table {
             width: 100%;
@@ -122,14 +106,11 @@
             display: none;
             /* Escondido por padrão, mostrado com JS */
         }
-
-        th,
-        td {
+        th, td {
             padding: 10px;
             border: 1px solid #ccc;
             text-align: left;
         }
-
         /* Flexbox para td com botões */
         td {
             display: flex;
@@ -138,40 +119,33 @@
             /* Impede quebras de linha inesperadas nos botões */
             gap: 5px;
         }
-
         td button {
             display: inline-block;
             margin-right: 5px;
             flex-shrink: 0;
             /* Previne que os botões encolham */
         }
-
         /* Cores das linhas da tabela - Ajustado para maior especificidade */
         tr.avisado {
             background-color: #007bff !important;
             /* Azul */
             color: white;
         }
-
         tr.debito {
             background-color: #ffa500 !important;
             /* Laranja */
         }
-
         tr.vencendo-hoje {
             background-color: #ffff99 !important;
             /* Amarelo claro */
         }
-
         tr.vencido {
             background-color: #ff6666 !important;
             /* Vermelho claro */
         }
-
         .center {
             text-align: center;
         }
-
         /* Estilos de Modal */
         .modal {
             display: none;
@@ -185,7 +159,6 @@
             align-items: center;
             z-index: 1000;
         }
-
         .modal-content {
             background-color: #fff;
             padding: 20px;
@@ -195,7 +168,6 @@
             max-width: 400px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-
         .modal button {
             background-color: #0066cc;
             color: #fff;
@@ -205,11 +177,9 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         .modal button:hover {
             background-color: #004d99;
         }
-
         /* Ícone de Configurações */
         .settings-icon {
             position: fixed;
@@ -229,11 +199,9 @@
             z-index: 999;
             transition: background-color 0.3s;
         }
-
         .settings-icon:hover {
             background-color: #004d99;
         }
-
         #settingsArea {
             display: none;
             background-color: #f9f9f9;
@@ -242,19 +210,16 @@
             margin-top: 30px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
         #settingsArea label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
         }
-
         #settingsArea input[type="range"],
         #settingsArea input[type="number"] {
             width: calc(100% - 22px);
             margin-bottom: 15px;
         }
-
         /* Estilo para o badge numérico */
         .notification-badge {
             position: absolute;
@@ -270,7 +235,6 @@
             line-height: 1;
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
         }
-
         /* Novo estilo para o botão central de mensagens */
         #centralMessageButton {
             display: block;
@@ -285,49 +249,40 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
-
         #centralMessageButton:hover {
             background-color: #218838;
             transform: translateY(-2px);
         }
-
         #centralMessageButton:active {
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-
         /* Novo estilo para o botão Dola (laranja com ícone) */
         .btn-dola {
             background-color: #ff9800; /* Laranja */
             color: white;
         }
-
         .btn-dola:hover {
             background-color: #e68900; /* Laranja mais escuro */
         }
-        
         /* NOVO: Estilo para o botão Dola quando a mensagem já foi enviada */
         .btn-dola-sent {
             background-color: #28a745; /* Verde */
             color: white;
         }
-
         .btn-dola-sent:hover {
             background-color: #218838; /* Verde mais escuro no hover */
         }
-        
         /* Estilos para a nova seção de clientes avisados */
         #clientesAvisadosSection {
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid #eee;
         }
-
         #clientesAvisadosList {
             list-style: none;
             padding: 0;
         }
-
         #clientesAvisadosList li {
             background-color: #e0f2f7;
             /* Um azul claro para destaque */
@@ -341,17 +296,14 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-
         #clientesAvisadosList li .client-info {
             flex-grow: 1;
         }
-
         #clientesAvisadosList li button {
             margin-left: 5px;
             padding: 8px 12px;
             font-size: 0.9em;
         }
-
         /* Estilos para o overlay de carregamento */
         .loading-overlay {
             display: none;
@@ -369,7 +321,6 @@
             z-index: 2000;
             /* Acima de outros elementos, incluindo modais */
         }
-
         .spinner {
             border: 8px solid #f3f3f3;
             /* Light grey */
@@ -380,12 +331,10 @@
             height: 60px;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
             }
-
             100% {
                 transform: rotate(360deg);
             }
@@ -393,8 +342,7 @@
     </style>
 </head>
 <body>
-    <div id="ultimaAtualizacaoInfo"
-        style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
+    <div id="ultimaAtualizacaoInfo" style="position: fixed; top: 10px; right: 10px; font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 5px 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1001;">
         Última Alteração: Nunca
     </div>
     <div class="container">
@@ -410,8 +358,7 @@
         <div class="input-group-horizontal">
             <input type="date" id="dataInput" class="configurable-input" required>
             <input type="text" id="nomeInput" class="configurable-input" placeholder="Nome do Cliente" required>
-            <input type="tel" id="telefoneInput" class="configurable-input" placeholder="Telefone (ex: 11999999999)"
-                required>
+            <input type="tel" id="telefoneInput" class="configurable-input" placeholder="Telefone (ex: 11999999999)" required>
         </div>
         <div>
             <label>
@@ -424,20 +371,13 @@
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
 
         <h3>Filtros e Ações</h3>
-        <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge"
-                style="display:none;"></span></button>
-        <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã <span id="badgeAmanha" class="notification-badge"
-                style="display:none;"></span></button>
-        <button onclick="filtrarVencidos()">Clientes Vencidos <span id="badgeVencidos" class="notification-badge"
-                style="display:none;"></span></button>
-        <button onclick="filtrarDebito()">Clientes com Débito <span id="badgeDebito" class="notification-badge"
-                style="display:none;"></span></button>
-        <button onclick="filtrarVerDepois()">Ver Depois <span id="badgeVerDepois" class="notification-badge"
-                style="display:none;"></span></button>
-        <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge"
-                style="display:none;"></span></button>
-        <button onclick="filtrarDesativados()">Clientes Desativados <span id="badgeDesativados"
-                class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã <span id="badgeAmanha" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarVencidos()">Clientes Vencidos <span id="badgeVencidos" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarDebito()">Clientes com Débito <span id="badgeDebito" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarVerDepois()">Ver Depois <span id="badgeVerDepois" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarArquivados()">Arquivados <span id="badgeArquivados" class="notification-badge" style="display:none;"></span></button>
+        <button onclick="filtrarDesativados()">Clientes Desativados <span id="badgeDesativados" class="notification-badge" style="display:none;"></span></button>
         <button onclick="mostrarContagemProdutos()">Produtos</button>
         <button onclick="exibirTodos()">Reexibir Todos</button>
         <button onclick="confirmarLimparTodos()">Limpar Todos</button>
@@ -460,8 +400,7 @@
 
         <hr>
         <div id="clientesAvisadosSection">
-            <h3>Clientes Avisados (WhatsApp) <span id="badgeOcultos" class="notification-badge"
-                    style="display:none;"></span></h3>
+            <h3>Clientes Avisados (WhatsApp) <span id="badgeOcultos" class="notification-badge" style="display:none;"></span></h3>
             <ul id="clientesAvisadosList">
             </ul>
         </div>
@@ -473,11 +412,9 @@
         <div id="settingsArea">
             <h3>Ajustes de Interface</h3>
             <p>Defina o tamanho das caixas de entrada de Data, Nome e Telefone.</p>
-
             <div>
                 <label for="inputWidth">Largura dos Inputs (em %): <span id="inputWidthValue"></span></label>
-                <input type="range" id="inputWidth" min="10" max="100" value="16"
-                    oninput="updateInputWidth(this.value)">
+                <input type="range" id="inputWidth" min="10" max="100" value="16" oninput="updateInputWidth(this.value)">
             </div>
             <button onclick="saveSettings()">Salvar Ajustes</button>
             <button onclick="resetSettings()">Redefinir Padrão</button>
@@ -524,10 +461,8 @@
         <div id="modalContagemProdutos" class="modal">
             <div class="modal-content">
                 <h3>Contagem de Produtos</h3>
-                <p>UniTv: <span id="countUniTv">0</span> clientes <button
-                        onclick="filtrarPorProduto('UniTv')">Detalhes</button></p>
-                <p>Duplecast: <span id="countDuplecast">0</span> clientes <button
-                        onclick="filtrarPorProduto('Duplecast')">Detalhes</button></p>
+                <p>UniTv: <span id="countUniTv">0</span> clientes <button onclick="filtrarPorProduto('UniTv')">Detalhes</button></p>
+                <p>Duplecast: <span id="countDuplecast">0</span> clientes <button onclick="filtrarPorProduto('Duplecast')">Detalhes</button></p>
                 <button onclick="fecharModal()">Fechar</button>
             </div>
         </div>
@@ -545,8 +480,7 @@
         <div id="modalConflitoIdNome" class="modal" style="display: none;">
             <div class="modal-content">
                 <h3>Conflito de Cliente por ID</h3>
-                <p>O cliente importado possui o mesmo ID final de telefone (<span id="conflitoId"></span>) que um
-                    cliente existente, mas os nomes são diferentes.</p>
+                <p>O cliente importado possui o mesmo ID final de telefone (<span id="conflitoId"></span>) que um cliente existente, mas os nomes são diferentes.</p>
                 <p><b>Cliente Existente:</b> <span id="conflitoNomeExistente"></span></p>
                 <p><b>Cliente Importado:</b> <span id="conflitoNomeImportado"></span></p>
                 <p>O que deseja fazer?</p>
@@ -778,7 +712,7 @@
             document.addEventListener("keydown", fecharComEscOuEnter);
         }
 
-        document.addEventListener('keydown', function (event) {
+        document.addEventListener('keydown', function(event) {
             if (event.key === "Enter" && document.getElementById("modalExclusao").style.display === "flex") {
                 confirmarExclusao();
             }
@@ -1227,7 +1161,7 @@
                 clientesExibidos = originalClientesExibidos;
             }
         }
-        
+
         function enviarMensagemWhatsAppDolaById(clientId) {
             const index = clientes.findIndex(c => c.id === clientId);
             if (index !== -1) {
@@ -1603,51 +1537,42 @@
             const cliente = clientesExibidos[index];
             const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
             const vencimento = cliente.data;
-            
             // --- INÍCIO DA LÓGICA DO DOLA, baseada no código do usuário ---
             let telefoneParaWhatsApp = cliente.telefone.replace(/\D/g, '');
             if (!telefoneParaWhatsApp) {
                 exibirAlerta("Número de telefone inválido!");
                 return;
             }
-        
             if (!telefoneParaWhatsApp.startsWith('55')) {
                 telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
             }
-            
             const [diaVenc] = vencimento.split('/');
             const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 11947406124 no nome de Waldemar jose luiz.`;
             const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
             const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
 
-            const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. Vencimento: ${vencimento} (${nomeMes}).
-Qualquer dúvida, entre em contato.
-
-Se você clicar no link abaixo, será lembrado automaticamente pelo Dola
-${urlDola}`;
-        
+            const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. Vencimento: ${vencimento} (${nomeMes}).Qualquer dúvida, entre em contato.
+Se você clicar no link abaixo, será lembrado automaticamente pelo Dola${urlDola}`;
             const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
-        
             window.open(urlFinal, '_blank');
             // --- FIM DA LÓGICA DO DOLA ---
 
             // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
             saveStateToHistory();
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
-            
+
             let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
-                clienteOriginal.avisado = true; // Marca como avisado
                 clienteOriginal.oculto = true; // Oculta da lista principal, como no arquivo do usuário
                 clienteOriginal.dola_sent = true; // NOVO: Marca que a mensagem do Dola foi enviada
             }
             saveClientsToLocalStorage();
-            
+
             exibirTabela();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao("mensagem Dola enviada", cliente.nome);
             prepararClientesVencidosParaMensagem();
-            
+
             try {
                 await salvarClientes();
             } catch (error) {
@@ -1724,8 +1649,8 @@ ${urlDola}`;
 
             let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
-                clienteOriginal.avisado = true; // Marca como avisado (para a cor da linha)
                 // A linha abaixo foi removida, conforme sua solicitação, para não ocultar o cliente.
+                // clienteOriginal.avisado = true; // Mantém a cor azul na linha da tabela
                 // clienteOriginal.oculto = true; // Oculta da tabela principal e move para a seção de avisados
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
@@ -2901,4 +2826,3 @@ ${urlDola}`;
     </script>
 </body>
 </html>
-
