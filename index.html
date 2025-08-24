@@ -1573,7 +1573,7 @@ ${urlDola}
 
     let clienteOriginal = clientes.find(c => c.id === cliente.id);
     if (clienteOriginal) {
-        clienteOriginal.oculto = true; // Oculta da lista principal
+        clienteOriginal.oculto = false; // Oculta da lista principal
         clienteOriginal.dola_sent = true; // Marca que a mensagem do Dola foi enviada
     }
     saveClientsToLocalStorage();
@@ -2837,5 +2837,6 @@ ${urlDola}
     </script>
 </body>
 </html>
+
 
 
