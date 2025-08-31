@@ -371,6 +371,8 @@
         <button onclick="adicionarCliente()">Adicionar Cliente</button>
 
         <h3>Filtros e Ações</h3>
+        <!-- NOVO: Botão para o filtro padrão -->
+        <button onclick="filtrarHojeEVencidos()">Vencendo Hoje + Vencidos <span id="badgeHojeEVencidos" class="notification-badge" style="display:none;"></span></button>
         <button onclick="filtrarHoje()">Clientes Vencendo Hoje <span id="badgeHoje" class="notification-badge" style="display:none;"></span></button>
         <button onclick="filtrarAmanha()">Clientes Vencendo Amanhã <span id="badgeAmanha" class="notification-badge" style="display:none;"></span></button>
         <button onclick="filtrarVencidos()">Clientes Vencidos <span id="badgeVencidos" class="notification-badge" style="display:none;"></span></button>
@@ -532,6 +534,9 @@
         // NOVO: URL do seu Aplicativo da Web do Google Apps Script
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHKKeGamiImtqK0G-DJpJI3E_y83ZlVQq6A3kjW0LmRE9iRvNuG3VCOQmpt_s2XwLIrg/exec'; // URL fictícia, substitua pela sua
         // ====================================================================================
+        
+        // NOVO: Variável global para rastrear o filtro atual
+        let filtroAtual = "hojeEVencidos"; 
 
         // --- Funções de Loading/Spinner ---
         function mostrarCarregando() {
@@ -806,12 +811,8 @@
 
             // Reseta filtros e atualiza a interface imediatamente
             clientesFiltrados = [];
-            modoExibicaoArquivados = false; // Note: Isso vai fazer o cliente sair da tabela principal se não estiver em "arquivados"
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            // NOVO: Manter o filtro atual após a ação
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao("arquivado", clienteParaArquivar.nome);
 
@@ -820,7 +821,7 @@
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao arquivar cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha ao arquivar", clienteParaArquivar.nome);
@@ -841,12 +842,8 @@
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             clientesFiltrados = [];
-            modoExibicaoArquivados = true; // Manter no modo arquivados para que a tabela seja atualizada corretamente
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            // NOVO: Manter o filtro atual após a ação
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao("desarquivado", clienteParaDesarquivar.nome);
 
@@ -855,21 +852,42 @@
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao desarquivar cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha ao desarquivar", clienteParaDesarquivar.nome);
             }
             // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
         }
+        
+        // NOVO: Função para filtrar clientes vencendo hoje + vencidos
+        function filtrarHojeEVencidos() {
+            const hoje = new Date();
+            const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+            const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                hoje.getFullYear();
+
+            clientesFiltrados = clientes.filter(cliente => {
+                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                const dataCliente = new Date(ano, mes - 1, dia);
+
+                const isVencendoHoje = cliente.data === hojeFormatada;
+                const isVencido = dataCliente < hojeSemHora;
+
+                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
+            });
+            
+            // NOVO: Define o filtro atual e reexibe a tabela
+            filtroAtual = "hojeEVencidos";
+            exibirTabela();
+            atualizarContadores();
+        }
 
         function filtrarArquivados() {
             clientesFiltrados = [];
-            modoExibicaoArquivados = true;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "arquivados";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             exibirClientesAvisados();
@@ -877,11 +895,8 @@
 
         function mostrarApenasOcultosPorFiltro() {
             clientesFiltrados = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado);
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = true;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "ocultos";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             exibirClientesAvisados();
@@ -889,11 +904,8 @@
 
         function filtrarVerDepois() {
             clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = true;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "verDepois";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             exibirClientesAvisados();
@@ -901,11 +913,8 @@
 
         function filtrarDesativados() {
             clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = true;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "desativados";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             exibirClientesAvisados();
@@ -913,11 +922,8 @@
 
         function filtrarPorProduto(produto) {
             clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = produto;
+            // NOVO: Altera o filtro atual
+            filtroAtual = `produto:${produto}`;
             document.getElementById("searchInput").value = "";
             fecharModal();
             exibirTabela();
@@ -935,45 +941,72 @@
             }
             return dateString.substring(0, 5); // Fallback, should not happen with proper dates
         }
-
+        
+        // NOVO: Função centralizada para exibir a tabela
         function exibirTabela() {
             const termoPesquisa = document.getElementById("searchInput").value.trim().toLowerCase();
-
             let clientesParaProcessar;
+
+            // NOVO: Lógica baseada na variável filtroAtual
             if (termoPesquisa !== '') {
                 clientesParaProcessar = clientes.filter(cliente =>
                     (cliente.nome.toLowerCase().includes(termoPesquisa) || cliente.telefone.includes(termoPesquisa))
                 );
-                clientesFiltrados = [];
-                modoExibicaoArquivados = false;
-                modoExibicaoOcultos = false;
-                modoExibicaoVerDepois = false;
-                modoExibicaoDesativados = false;
-                filtroProduto = null;
-            } else if (modoExibicaoArquivados) {
+            } else if (filtroAtual === "hojeEVencidos") {
+                 const hoje = new Date();
+                const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+                const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                    (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                    hoje.getFullYear();
+                clientesParaProcessar = clientes.filter(cliente => {
+                    const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                    const dataCliente = new Date(ano, mes - 1, dia);
+                    const isVencendoHoje = cliente.data === hojeFormatada;
+                    const isVencido = dataCliente < hojeSemHora;
+                    return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado;
+                });
+            } else if (filtroAtual === "arquivados") {
                 clientesParaProcessar = clientes.filter(cliente => cliente.arquivado);
-            } else if (modoExibicaoVerDepois) {
+            } else if (filtroAtual === "verDepois") {
                 clientesParaProcessar = clientes.filter(cliente => cliente.verDepois && !cliente.arquivado && !cliente.oculto && !cliente.desativado);
-            } else if (modoExibicaoDesativados) {
+            } else if (filtroAtual === "desativados") {
                 clientesParaProcessar = clientes.filter(cliente => cliente.desativado);
-            } else if (filtroProduto) {
-                clientesParaProcessar = clientes.filter(cliente => cliente.Produto === filtroProduto && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
-            } else if (clientesFiltrados.length > 0) {
-                if (modoExibicaoOcultos) {
-                    clientesParaProcessar = clientesFiltrados;
-                } else {
-                    // Mantenha clientes ocultos, verDepois e desativados fora dos filtros padrão
-                    clientesParaProcessar = clientesFiltrados.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
-                }
+            } else if (filtroAtual.startsWith("produto:")) {
+                const produto = filtroAtual.split(":")[1];
+                clientesParaProcessar = clientes.filter(cliente => cliente.Produto === produto && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+            } else if (filtroAtual === "hoje") {
+                const hoje = new Date();
+                const hojeFormatada = hoje.getDate().toString().padStart(2, '0') + "/" +
+                    (hoje.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                    hoje.getFullYear();
+                clientesParaProcessar = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado && !cliente.avisado);
+            } else if (filtroAtual === "amanha") {
+                const amanha = new Date();
+                amanha.setDate(amanha.getDate() + 1);
+                const amanhaFormatada = amanha.getDate().toString().padStart(2, '0') + "/" +
+                    (amanha.getMonth() + 1).toString().padStart(2, '0') + "/" +
+                    amanha.getFullYear();
+                clientesParaProcessar = clientes.filter(cliente => cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+            } else if (filtroAtual === "vencidos") {
+                 const hoje = new Date();
+                clientesParaProcessar = clientes.filter(cliente => {
+                    const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
+                    const dataCliente = new Date(ano, mes - 1, dia);
+                    const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+                    return dataCliente < hojeSemHora && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado && !cliente.avisado;
+                });
+            } else if (filtroAtual === "debito") {
+                clientesParaProcessar = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
+            } else if (filtroAtual === "todos") {
+                 clientesParaProcessar = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             } else {
                 clientesParaProcessar = clientes.filter(cliente => !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
             }
-
+            
             clientesExibidos = clientesParaProcessar;
             if (clientesExibidos.length === 0) {
                 document.querySelector("table").style.display = "none";
                 document.getElementById("tabelaClientes").innerHTML = `<tr><td colspan="1" style="text-align: center; color: gray;">Nenhum cliente para exibir neste filtro.</td></tr>`;
-                // Ajustado para chamar o preparador de mensagens aqui também, garantindo que o contador central seja 0
                 prepararClientesVencidosParaMensagem();
                 atualizarContadores();
                 return;
@@ -1015,18 +1048,18 @@
                 }
 
                 let botoesAcao = '';
-                if (modoExibicaoArquivados) {
+                if (filtroAtual === "arquivados") {
                     botoesAcao = `
                         <button title="Desarquivar Cliente" onclick="desarquivar(${index})">Desarquivar</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                     `;
-                } else if (modoExibicaoVerDepois) {
+                } else if (filtroAtual === "verDepois") {
                     botoesAcao = `
                         <button title="Desmarcar Ver Depois" onclick="toggleVerDepois(${index})">Desmarcar</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                     `;
-                } else if (modoExibicaoDesativados) {
+                } else if (filtroAtual === "desativados") {
                     botoesAcao = `
                         <button title="Reativar Cliente" onclick="toggleDesativado(${index})">Reativar</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
@@ -1067,6 +1100,7 @@
             });
             atualizarContadores();
         }
+
 
         function exibirClientesAvisados() {
             const clientesAvisadosList = document.getElementById('clientesAvisadosList');
@@ -1135,7 +1169,7 @@
             clientes[clienteOriginalIndex].avisado = false; // Apenas desmarca como avisado
             clientes[clienteOriginalIndex].oculto = false; // E desmarca como oculto para reaparecer na lista principal
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            exibirTabela();
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao("desmarcado avisado", clientes[clienteOriginalIndex].nome);
 
@@ -1144,7 +1178,7 @@
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao desmarcar cliente como avisado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha ao desmarcar avisado", clientes[clienteOriginalIndex].nome);
@@ -1228,13 +1262,8 @@
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao("renovado automaticamente", cliente.nome);
 
@@ -1243,7 +1272,7 @@
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao renovar automaticamente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na renovação automática", cliente.nome);
@@ -1286,13 +1315,8 @@
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao("renovado a partir da data atual", clienteOriginalNome);
             exibirAlerta(`Cliente "${clienteOriginalNome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '')}" renovado para hoje!`);
@@ -1302,7 +1326,7 @@
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao renovar para hoje: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na renovação para hoje", clienteOriginalNome);
@@ -1341,14 +1365,9 @@
                 }
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             exibirClientesAvisados();
             fecharModal();
             clienteIndexParaRenovarDebito = null;
@@ -1360,7 +1379,7 @@
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao renovar com débito: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na renovação com débito", clienteNome);
@@ -1443,13 +1462,8 @@
             clientes.push(novoCliente);
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            // NOVO: Mantém o filtro atual após a ação
+            chamarFiltroAtual();
             exibirClientesAvisados();
             fecharModal();
             clienteIndexParaDuplicar = null;
@@ -1460,7 +1474,7 @@
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao duplicar cliente: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na duplicação", clienteOriginal.nome);
@@ -1578,7 +1592,8 @@ ${urlDola}
     }
     saveClientsToLocalStorage();
 
-    exibirTabela();
+    // NOVO: Chama a função que verifica e chama o filtro atual
+    chamarFiltroAtual();
     exibirClientesAvisados();
     atualizarUltimaAtualizacao("mensagem Dola enviada", cliente.nome);
     prepararClientesVencidosParaMensagem();
@@ -1588,7 +1603,7 @@ ${urlDola}
     } catch (error) {
         clientes = estadoAnteriorClientes;
         saveClientsToLocalStorage();
-        exibirTabela();
+        chamarFiltroAtual();
         exibirClientesAvisados();
         exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
         atualizarUltimaAtualizacao("falha no envio de mensagem Dola", cliente.nome);
@@ -1666,7 +1681,8 @@ ${urlDola}
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-            exibirTabela(); // Atualiza a interface imediatamente (linha fica azul).
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             exibirClientesAvisados(); // Atualiza a seção de avisados.
             atualizarUltimaAtualizacao("mensagem WhatsApp enviada", cliente.nome);
             prepararClientesVencidosParaMensagem(); // ATUALIZA A LISTA DO BOTÃO CENTRAL
@@ -1677,7 +1693,7 @@ ${urlDola}
                 // Se o Sheets falhar, reverte a array local e a interface.
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha no envio de mensagem", cliente.nome);
@@ -1846,15 +1862,8 @@ ${urlDola}
                     }
                     saveClientsToLocalStorage(); // **NOVO: Salva no localStorage após todas as importações locais**
 
-                    clientesFiltrados = [];
-                    modoExibicaoArquivados = false;
-                    modoExibicaoOcultos = false;
-                    modoExibicaoVerDepois = false;
-                    modoExibicaoDesativados = false;
-                    filtroProduto = null;
-                    document.getElementById("searchInput").value = "";
-
-                    exibirTabela();
+                    // NOVO: Chama a função que verifica e chama o filtro atual
+                    chamarFiltroAtual();
                     exibirClientesAvisados();
                     prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
                     exibirAlerta(`Importação concluída: ${novosClientesAdicionados} novos clientes adicionados, ${clientesAtualizados} clientes atualizados, ${clientesIgnorados} ignorados.`);
@@ -1865,7 +1874,7 @@ ${urlDola}
                     } catch (error) {
                         clientes = estadoAnteriorClientes;
                         saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                        exibirTabela();
+                        chamarFiltroAtual();
                         exibirClientesAvisados();
                         exibirAlerta(`Erro ao sincronizar importação: ${error.message}. As mudanças locais podem não ter sido salvas no Sheets.`);
                         atualizarUltimaAtualizacao("falha na importação", "");
@@ -1916,11 +1925,8 @@ ${urlDola}
                 hoje.getFullYear();
 
             clientesFiltrados = clientes.filter(cliente => cliente.data === hojeFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado && !cliente.avisado);
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "hoje";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1934,11 +1940,8 @@ ${urlDola}
                 amanha.getFullYear();
 
             clientesFiltrados = clientes.filter(cliente => cliente.data === amanhaFormatada && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "amanha";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1954,11 +1957,8 @@ ${urlDola}
 
                 return dataCliente < hojeSemHora && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado && !cliente.avisado;
             });
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "vencidos";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
@@ -1966,23 +1966,59 @@ ${urlDola}
 
         function filtrarDebito() {
             clientesFiltrados = clientes.filter(cliente => cliente.debito && !cliente.arquivado && !cliente.oculto && !cliente.verDepois && !cliente.desativado);
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "debito";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             atualizarContadores();
         }
+        
+        // NOVO: Função para re-chamar o filtro atual
+        function chamarFiltroAtual() {
+            switch(filtroAtual) {
+                case "hojeEVencidos":
+                    filtrarHojeEVencidos();
+                    break;
+                case "hoje":
+                    filtrarHoje();
+                    break;
+                case "amanha":
+                    filtrarAmanha();
+                    break;
+                case "vencidos":
+                    filtrarVencidos();
+                    break;
+                case "debito":
+                    filtrarDebito();
+                    break;
+                case "verDepois":
+                    filtrarVerDepois();
+                    break;
+                case "arquivados":
+                    filtrarArquivados();
+                    break;
+                case "desativados":
+                    filtrarDesativados();
+                    break;
+                case "todos":
+                    exibirTodos();
+                    break;
+                default:
+                    if (filtroAtual.startsWith("produto:")) {
+                        const produto = filtroAtual.split(":")[1];
+                        filtrarPorProduto(produto);
+                    } else {
+                        // Caso padrão, volta para o filtro principal
+                        filtrarHojeEVencidos();
+                    }
+                    break;
+            }
+        }
 
         function exibirTodos() {
             clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
+            // NOVO: Altera o filtro atual
+            filtroAtual = "todos";
             document.getElementById("searchInput").value = "";
             exibirTabela();
             exibirClientesAvisados();
@@ -2045,15 +2081,8 @@ ${urlDola}
             clientes = []; // Limpa a array local imediatamente.
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            document.getElementById("searchInput").value = "";
-
-            exibirTabela();
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             exibirClientesAvisados();
             exibirAlerta("Todos os clientes foram limpos localmente!"); // Feedback imediato
             atualizarUltimaAtualizacao("lista limpa (localmente)", "");
@@ -2065,7 +2094,7 @@ ${urlDola}
                 // Se o Sheets falhar, reverte a array local e a interface.
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao limpar clientes no Google Sheets: ${e.message}. Ação desfeita localmente.`);
                 atualizarUltimaAtualizacao("falha ao limpar lista", "");
@@ -2086,7 +2115,8 @@ ${urlDola}
             clientes = JSON.parse(JSON.stringify(historicoClientes[historicoClientes.length - 1])); // Reverte para o estado anterior
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
-            exibirTodos(); // Reexibe tudo imediatamente
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
             exibirAlerta("Última ação desfeita!");
             atualizarUltimaAtualizacao("ação desfeita");
@@ -2109,7 +2139,8 @@ ${urlDola}
             historicoClientes.push(estadoParaDesfazer); // Adiciona o estado atual ao histórico para permitir 'desfazer' novamente
             clientes = redoHistory.pop(); // Aplica o estado de refazer
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            exibirTodos(); // Reexibe tudo imediatamente
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
             exibirAlerta("Última ação refeita!");
             atualizarUltimaAtualizacao("ação refeita");
@@ -2219,13 +2250,8 @@ ${urlDola}
             clientes[originalClienteIndex].Produto = novoProduto;
             clientes[originalClienteIndex].dola_sent = false; // NOVO: Reinicia o status do Dola na edição
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            // NOVO: Mantém o filtro atual após a ação
+            chamarFiltroAtual();
             exibirClientesAvisados();
             fecharModal();
             atualizarUltimaAtualizacao("editado", nomeComNovoProduto);
@@ -2236,7 +2262,7 @@ ${urlDola}
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao salvar edição: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na edição", nomeComNovoProduto);
@@ -2268,14 +2294,9 @@ ${urlDola}
 
             clientes.splice(clienteIndexParaExcluir, 1); // Remove localmente imediatamente.
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-
-            exibirTabela();
+            
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
             exibirClientesAvisados();
             fecharModal();
             clienteIndexParaExcluir = null;
@@ -2287,7 +2308,7 @@ ${urlDola}
             } catch (e) {
                 clientes = estadoAnteriorClientes; // Reverte se o Sheets falhar.
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao excluir cliente no Google Sheets: ${e.message}. Ação desfeita localmente.`);
                 atualizarUltimaAtualizacao("falha na exclusão", nomeClienteExcluido);
@@ -2308,7 +2329,7 @@ ${urlDola}
             // A lógica de ocultar/reexibir agora está ligada ao "oculto", não ao "avisado".
             // Conforme sua solicitação, não vamos mais alterar o status "oculto" aqui.
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            exibirTabela();
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status avisado alterado para ${clientes[clienteOriginalIndex].avisado ? 'sim' : 'não'}`, cliente.nome);
             prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
@@ -2318,7 +2339,7 @@ ${urlDola}
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status avisado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na alteração de status avisado", cliente.nome);
@@ -2337,7 +2358,7 @@ ${urlDola}
 
             clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            exibirTabela();
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarContadores();
             atualizarUltimaAtualizacao(`status débito alterado para ${clientes[clienteOriginalIndex].debito ? 'sim' : 'não'}`, cliente.nome);
@@ -2348,7 +2369,7 @@ ${urlDola}
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status débito: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na alteração de status débito", cliente.nome);
@@ -2372,7 +2393,7 @@ ${urlDola}
                 clientes[clienteOriginalIndex].desativado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            exibirTabela();
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status "Ver Depois" alterado para ${clientes[clienteOriginalIndex].verDepois ? 'sim' : 'não'}`, cliente.nome);
             prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
@@ -2382,7 +2403,7 @@ ${urlDola}
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status "Ver Depois": ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na alteração de status Ver Depois", cliente.nome);
@@ -2408,7 +2429,7 @@ ${urlDola}
                 clientes[clienteOriginalIndex].arquivado = false;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            exibirTabela();
+            chamarFiltroAtual();
             exibirClientesAvisados();
             atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
             prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
@@ -2418,7 +2439,7 @@ ${urlDola}
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar status desativado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na alteração de status desativado", cliente.nome);
@@ -2445,16 +2466,10 @@ ${urlDola}
             if (clienteOriginalIndex !== -1) {
                 let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                 clientes[clienteOriginalIndex].Produto = novoProduto;
-                clientes[clienteOriginalIndex].nome = `${nomeSemProduto} (${novoProduto})`;
+                clientes[originalClienteIndex].nome = `${nomeSemProduto} (${novoProduto})`;
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
-            clientesFiltrados = [];
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false;
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            exibirTabela();
+            chamarFiltroAtual();
             exibirClientesAvisados();
             fecharModal();
             clienteIndexParaAlterarProduto = null;
@@ -2467,7 +2482,7 @@ ${urlDola}
             } catch (error) {
                 clientes = estadoAnteriorClientes;
                 saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                exibirTabela();
+                chamarFiltroAtual();
                 exibirClientesAvisados();
                 exibirAlerta(`Erro ao alterar produto: ${error.message}. Ação desfeita localmente. Tente novamente.`);
                 atualizarUltimaAtualizacao("falha na alteração de produto", clienteNome);
@@ -2557,7 +2572,10 @@ ${urlDola}
                 }
             } finally {
                 esconderCarregando(); // Esconde o spinner sempre, independente de sucesso ou erro na carga inicial
-                exibirTabela();
+                
+                // NOVO: Adiciona a chamada do filtro padrão aqui
+                filtrarHojeEVencidos(); 
+                
                 exibirClientesAvisados();
                 prepararClientesVencidosParaMensagem();
                 saveStateToHistory(); // Salva o estado inicial (do Sheets ou do cache) no histórico
@@ -2688,6 +2706,10 @@ ${urlDola}
 
                 return dataCliente < hojeSemHora && !cliente.avisado;
             }).length;
+            
+            // NOVO: Contador para o filtro "Hoje + Vencidos"
+            const countHojeEVencidos = countHoje + countVencidos;
+            
             const countDebito = clientesNaTabelaPrincipal.filter(cliente => cliente.debito).length;
 
             const countOcultos = clientes.filter(cliente => cliente.oculto && !cliente.arquivado && !cliente.verDepois && !cliente.desativado).length;
@@ -2695,6 +2717,9 @@ ${urlDola}
             const countVerDepois = clientes.filter(cliente => cliente.verDepois).length;
             const countDesativados = clientes.filter(cliente => cliente.desativado).length;
 
+            // NOVO: Atualiza o badge do botão combinado
+            updateBadge('badgeHojeEVencidos', countHojeEVencidos);
+            
             updateBadge('badgeHoje', countHoje);
             updateBadge('badgeAmanha', countAmanha);
             updateBadge('badgeVencidos', countVencidos);
@@ -2791,34 +2816,10 @@ ${urlDola}
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const day = String(today.getDate()).padStart(2, '0');
             document.getElementById('dataInput').value = `${year}-${month}-${day}`;
-
-            // A exibição inicial agora será a mesma que o filtro de vencidos ou vencendo hoje,
-            // garantindo que os clientes mais urgentes estejam visíveis por padrão.
-            const hojeFormatada = today.getDate().toString().padStart(2, '0') + "/" +
-                (today.getMonth() + 1).toString().padStart(2, '0') + "/" +
-                today.getFullYear();
-
-            // CORRIGIDO: A inicialização também filtra por clientes que ainda não foram avisados,
-            // para ser consistente com o resto da lógica.
-            clientesFiltrados = clientes.filter(cliente => {
-                const [dia, mes, ano] = cliente.data.split("/").map(num => parseInt(num));
-                const dataCliente = new Date(ano, mes - 1, dia);
-                const hojeSemHora = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-                const isVencendoHoje = cliente.data === hojeFormatada;
-                const isVencido = dataCliente < hojeSemHora;
-
-                return (isVencendoHoje || isVencido) && !cliente.arquivado && !cliente.verDepois && !cliente.desativado && !cliente.avisado;
-            });
-
-            modoExibicaoArquivados = false;
-            modoExibicaoOcultos = false; // Garante que o modo "ocultos" não está ativo por padrão
-            modoExibicaoVerDepois = false;
-            modoExibicaoDesativados = false;
-            filtroProduto = null;
-            document.getElementById("searchInput").value = "";
-
-            exibirTabela();
+            
+            // NOVO: Adiciona a chamada do filtro padrão aqui
+            filtrarHojeEVencidos(); 
+            
             exibirClientesAvisados();
             prepararClientesVencidosParaMensagem();
             saveStateToHistory(); // Salva o estado inicial (do Sheets ou do cache) no histórico
@@ -2837,6 +2838,3 @@ ${urlDola}
     </script>
 </body>
 </html>
-
-
-
