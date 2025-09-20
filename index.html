@@ -199,6 +199,10 @@
             z-index: 999;
             transition: background-color 0.3s;
         }
+        .cliente-clicado {
+            color: white !important;
+        }
+
         .settings-icon:hover {
             background-color: #004d99;
         }
@@ -522,7 +526,7 @@
         // Variáveis para o botão de mensagem central
         let clientesVencidosParaMensagem = [];
         // O índice não é mais necessário, pois a lista será reprocessada
-        // let indiceClienteVencidoAtual = 0; 
+        // let indiceClienteVencidoAtual = 0; 
 
         // Variável para armazenar o ID do cliente para "Renovar HOJE"
         let clienteIdParaRenovarHoje = null;
@@ -536,12 +540,17 @@
         // ====================================================================================
         
         // NOVO: Variável global para rastrear o filtro atual
-        let filtroAtual = "hojeEVencidos"; 
+        let filtroAtual = "hojeEVencidos"; 
 
         // --- Funções de Loading/Spinner ---
         function mostrarCarregando() {
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
+
+        function marcarClienteClicado(elemento) {
+            elemento.classList.add("cliente-clicado");
+        }
+
 
         function esconderCarregando() {
             document.getElementById('loadingOverlay').style.display = 'none';
@@ -1057,7 +1066,15 @@
                     botoesAcao = `
                         <button title="Desmarcar Ver Depois" onclick="toggleVerDepois(${index})">Desmarcar</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
-                        <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
+                        <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>                        
+                        <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
+                        <button title="Desativar Cliente" onclick="toggleDesativado(${index})">Desativar</button>
+                        <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsApp(${index})">📋 Copiar</button>
+                        <button title="Enviar Lembrete Dola" class="btn-dola" onclick="enviarMensagemWhatsAppDola(${index})">🤖 Dola</button>
+                        <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
+                        <button title="Renovar com Débito (Confirmação)" class="btn-debito-segurar" onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
+                        <button title="Renovar a Partir de Hoje" class="btn-renovar-data-atual" onclick="pedirConfirmacaoRenovarHoje(${index})">RENOVAR HOJE</button>
+                        <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button>
                     `;
                 } else if (filtroAtual === "desativados") {
                     botoesAcao = `
@@ -1069,32 +1086,35 @@
                     const dolaButtonClass = cliente.dola_sent ? 'btn-dola-sent' : 'btn-dola'; // NOVO: Classe condicional
                     botoesAcao = `
                         <button title="Enviar Lembrete Dola" class="${dolaButtonClass}" onclick="enviarMensagemWhatsAppDola(${index})">🤖 Dola</button>
-                        <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsApp(${index})">📋 Copiar</button>
-                        <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">➕ Duplicar</button>
+                        
                         <button title="Renovar Automático" onclick="renovarAutomatico(${index})">🔁</button>
                         <button title="Renovar com Débito (Confirmação)"
-                                class="btn-debito-segurar"
-                                onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
+                                 class="btn-debito-segurar"
+                                 onclick="pedirConfirmacaoRenovacaoDebito(${index})">DÉBITO</button>
                         <button title="Renovar a Partir de Hoje"
-                                class="btn-renovar-data-atual"
-                                onclick="pedirConfirmacaoRenovarHoje(${index})">RENOVAR HOJE</button>
+                                 class="btn-renovar-data-atual"
+                                 onclick="pedirConfirmacaoRenovarHoje(${index})">RENOVAR HOJE</button>
                         <button title="Marcar/Desmarcar Ver Depois" onclick="toggleVerDepois(${index})">${cliente.verDepois ? "Desmarcar Ver Depois" : "Ver Depois"}</button>
                         <button title="Alterar Produto" onclick="abrirModalAlterarProduto(${index})">Produto</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
                         <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>
                         <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
                         <button title="Desativar Cliente" onclick="toggleDesativado(${index})">Desativar</button>
+                        <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsApp(${index})">📋 Copiar</button>
+                        <button title="Duplicar Cliente" onclick="duplicarCliente(${index})">➕ Duplicar</button>
                     `;
                 }
 
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                 tr.innerHTML = `
                     <td>
-                        ${formatDateForDisplay(cliente.data)} <a href="#" onclick="enviarMensagemWhatsApp('${nomeExibicaoBase}', '${cliente.telefone}', ${index}); return false;">
-                            ${nomeExibicaoBase} (${cliente.Produto || 'N/I'})
-                        </a>
-                        ${botoesAcao}
-                    </td>
+        ${formatDateForDisplay(cliente.data)} 
+    <a href="#"
+        onclick="marcarClienteClicado(this); enviarMensagemWhatsApp('${nomeExibicaoBase}', '${cliente.telefone}', ${index}); return false;">
+        ${nomeExibicaoBase} (${cliente.Produto || 'N/I'})
+    </a>
+    ${botoesAcao}
+</td>
                 `;
                 tabela.appendChild(tr);
             });
@@ -1140,11 +1160,11 @@
                         <button title="Duplicar Cliente" onclick="duplicarClienteById('${cliente.id}')">➕ Duplicar</button>
                         <button title="Renovar Automático" onclick="renovarAutomatiscoById('${cliente.id}')">🔁</button>
                         <button title="Renovar com Débito (Confirmação)"
-                                class="btn-debito-segurar"
-                                onclick="pedirConfirmacaoRenovacaoDebitoById('${cliente.id}')">DÉBITO</button>
+                                 class="btn-debito-segurar"
+                                 onclick="pedirConfirmacaoRenovacaoDebitoById('${cliente.id}')">DÉBITO</button>
                         <button title="Renovar a Partir de Hoje"
-                                class="btn-renovar-data-atual"
-                                onclick="pedirConfirmacaoRenovarHojeById('${cliente.id}')">RENOVAR HOJE</button>
+                                 class="btn-renovar-data-atual"
+                                 onclick="pedirConfirmacaoRenovarHojeById('${cliente.id}')">RENOVAR HOJE</button>
                         <button title="Marcar/Desmarcar Ver Depois" onclick="toggleVerDepoisById('${cliente.id}')">${cliente.verDepois ? "Desmarcar Ver Depois" : "Ver Depois"}</button>
                         <button title="Alterar Produto" onclick="abrirModalAlterarProdutoById('${cliente.id}')">Produto</button>
                         <button title="Editar Cliente" onclick="editarClienteById('${cliente.id}')">Edit</button>
@@ -1548,26 +1568,26 @@
         }
 
         async function enviarMensagemWhatsAppDola(index) {
-    const cliente = clientesExibidos[index];
-    const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
-    const vencimento = cliente.data;
+            const cliente = clientesExibidos[index];
+            const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+            const vencimento = cliente.data;
 
-    // --- INÍCIO DA LÓGICA DO DOLA ---
-    let telefoneParaWhatsApp = cliente.telefone.replace(/\D/g, '');
-    if (!telefoneParaWhatsApp) {
-        exibirAlerta("Número de telefone inválido!");
-        return;
-    }
-    if (!telefoneParaWhatsApp.startsWith('55')) {
-        telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
-    }
+            // --- INÍCIO DA LÓGICA DO DOLA ---
+            let telefoneParaWhatsApp = cliente.telefone.replace(/\D/g, '');
+            if (!telefoneParaWhatsApp) {
+                exibirAlerta("Número de telefone inválido!");
+                return;
+            }
+            if (!telefoneParaWhatsApp.startsWith('55')) {
+                telefoneParaWhatsApp = '55' + telefoneParaWhatsApp;
+            }
 
-    const [diaVenc] = vencimento.split('/');
-    const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 11947406124 no nome de Waldemar jose luiz.`;
-    const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
-    const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
+            const [diaVenc] = vencimento.split('/');
+            const mensagemDolaLembrete = `oi me lembre todo dia ${diaVenc} de cada mês de pagar Tv para Luiz no pix 11947406124 no nome de Waldemar jose luiz.`;
+            const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
+            const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
 
-    const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. 
+            const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. 
 📅 Vencimento: ${vencimento} (${nomeMes}).
 💳 Pix: 11947406124 (Waldemar José Luiz).
 
@@ -1577,39 +1597,39 @@ ${urlDola}
 
 ❓ Qualquer dúvida, entre em contato.`;
 
-    const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
-    window.open(urlFinal, '_blank');
-    // --- FIM DA LÓGICA DO DOLA ---
+            const urlFinal = `https://wa.me/${telefoneParaWhatsApp}?text=${encodeURIComponent(mensagemCliente)}`;
+            window.open(urlFinal, '_blank');
+            // --- FIM DA LÓGICA DO DOLA ---
 
-    // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
-    saveStateToHistory();
-    const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
+            // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA (para status de avisado) ---
+            saveStateToHistory();
+            const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
-    let clienteOriginal = clientes.find(c => c.id === cliente.id);
-    if (clienteOriginal) {
-        clienteOriginal.oculto = false; // Oculta da lista principal
-        clienteOriginal.dola_sent = true; // Marca que a mensagem do Dola foi enviada
-    }
-    saveClientsToLocalStorage();
+            let clienteOriginal = clientes.find(c => c.id === cliente.id);
+            if (clienteOriginal) {
+                clienteOriginal.oculto = false; // Oculta da lista principal
+                clienteOriginal.dola_sent = true; // Marca que a mensagem do Dola foi enviada
+            }
+            saveClientsToLocalStorage();
 
-    // NOVO: Chama a função que verifica e chama o filtro atual
-    chamarFiltroAtual();
-    exibirClientesAvisados();
-    atualizarUltimaAtualizacao("mensagem Dola enviada", cliente.nome);
-    prepararClientesVencidosParaMensagem();
+            // NOVO: Chama a função que verifica e chama o filtro atual
+            chamarFiltroAtual();
+            exibirClientesAvisados();
+            atualizarUltimaAtualizacao("mensagem Dola enviada", cliente.nome);
+            prepararClientesVencidosParaMensagem();
 
-    try {
-        await salvarClientes();
-    } catch (error) {
-        clientes = estadoAnteriorClientes;
-        saveClientsToLocalStorage();
-        chamarFiltroAtual();
-        exibirClientesAvisados();
-        exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
-        atualizarUltimaAtualizacao("falha no envio de mensagem Dola", cliente.nome);
-    }
-    // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
-}
+            try {
+                await salvarClientes();
+            } catch (error) {
+                clientes = estadoAnteriorClientes;
+                saveClientsToLocalStorage();
+                chamarFiltroAtual();
+                exibirClientesAvisados();
+                exibirAlerta(`Erro ao enviar mensagem WhatsApp: ${error.message}. Ação desfeita localmente. Tente novamente.`);
+                atualizarUltimaAtualizacao("falha no envio de mensagem Dola", cliente.nome);
+            }
+            // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
+        }
 
 
         async function enviarMensagemWhatsApp(clienteNome, clienteTelefone, index) {
@@ -2356,7 +2376,7 @@ ${urlDola}
             saveStateToHistory();
             const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
-            clientes[clienteOriginalIndex].debito = !clientes[clienteOriginalIndex].debito;
+            clientes[clienteOriginalIndex].debito = !clientes[originalClienteIndex].debito;
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             chamarFiltroAtual();
             exibirClientesAvisados();
@@ -2412,41 +2432,40 @@ ${urlDola}
         }
 
         async function toggleDesativado(index) {
-            const cliente = clientesExibidos[index];
-            const clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
-            if (clienteOriginalIndex === -1) return;
+        const cliente = clientesExibidos[index];
+        const clienteOriginalIndex = clientes.findIndex(c => c.id === cliente.id);
+        if (clienteOriginalIndex === -1) return;
 
-            // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA ---
-            saveStateToHistory();
-            const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
+        // --- INÍCIO DA ATUALIZAÇÃO OTIMISTA ---
+        saveStateToHistory();
+        const estadoAnteriorClientes = JSON.parse(JSON.stringify(clientes));
 
-            clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
-            if (clientes[clienteOriginalIndex].desativado) {
-                clientes[clienteOriginalIndex].avisado = false;
-                clientes[clienteOriginalIndex].debito = false;
-                clientes[clienteOriginalIndex].oculto = false; // Garante que não está oculto se desativado
-                clientes[clienteOriginalIndex].verDepois = false;
-                clientes[clienteOriginalIndex].arquivado = false;
-            }
-            saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
+        clientes[clienteOriginalIndex].desativado = !clientes[clienteOriginalIndex].desativado;
+        if (clientes[clienteOriginalIndex].desativado) {
+            clientes[clienteOriginalIndex].avisado = false;
+            clientes[clienteOriginalIndex].debito = false;
+            clientes[clienteOriginalIndex].oculto = false; // Garante que não está oculto se desativado
+            clientes[clienteOriginalIndex].verDepois = false;
+            clientes[clienteOriginalIndex].arquivado = false;
+        }
+        saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
+        chamarFiltroAtual();
+        exibirClientesAvisados();
+        atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
+        prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
+
+        try {
+            await salvarClientes();
+        } catch (error) {
+            clientes = estadoAnteriorClientes;
+            saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
             chamarFiltroAtual();
             exibirClientesAvisados();
-            atualizarUltimaAtualizacao(`status desativado alterado para ${clientes[clienteOriginalIndex].desativado ? 'sim' : 'não'}`, cliente.nome);
-            prepararClientesVencidosParaMensagem(); // Recarrega a lista do botão central
-
-            try {
-                await salvarClientes();
-            } catch (error) {
-                clientes = estadoAnteriorClientes;
-                saveClientsToLocalStorage(); // **NOVO: Atualiza localStorage após reversão**
-                chamarFiltroAtual();
-                exibirClientesAvisados();
-                exibirAlerta(`Erro ao alterar status desativado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
-                atualizarUltimaAtualizacao("falha na alteração de status desativado", cliente.nome);
-            }
-            // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
+            exibirAlerta(`Erro ao alterar status desativado: ${error.message}. Ação desfeita localmente. Tente novamente.`);
+            atualizarUltimaAtualizacao("falha na alteração de status desativado", cliente.nome);
         }
-
+        // --- FIM DA ATUALIZAÇÃO OTIMISTA ---
+    }
         function abrirModalAlterarProduto(index) {
             clienteIndexParaAlterarProduto = index;
             document.getElementById('modalEscolherProduto').style.display = 'flex';
@@ -2574,7 +2593,7 @@ ${urlDola}
                 esconderCarregando(); // Esconde o spinner sempre, independente de sucesso ou erro na carga inicial
                 
                 // NOVO: Adiciona a chamada do filtro padrão aqui
-                filtrarHojeEVencidos(); 
+                filtrarHojeEVencidos(); 
                 
                 exibirClientesAvisados();
                 prepararClientesVencidosParaMensagem();
@@ -2818,12 +2837,12 @@ ${urlDola}
             document.getElementById('dataInput').value = `${year}-${month}-${day}`;
             
             // NOVO: Adiciona a chamada do filtro padrão aqui
-            filtrarHojeEVencidos(); 
+            filtrarHojeEVencidos(); 
             
             exibirClientesAvisados();
             prepararClientesVencidosParaMensagem();
             saveStateToHistory(); // Salva o estado inicial (do Sheets ou do cache) no histórico
-            loadSettings(); // Aplica as configurações de layout
+            loadSettings();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
