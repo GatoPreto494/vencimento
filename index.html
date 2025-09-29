@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -146,6 +147,17 @@
         .center {
             text-align: center;
         }
+        /* ESTILO PARA SOBREPOR A COR PADRÃO DO LINK E FORÇAR BRANCO */
+        /* Note o uso de a.cliente-clicado para aumentar a especificidade */
+        a.cliente-clicado,
+        a.cliente-clicado:link,
+        a.cliente-clicado:visited,
+        a.cliente-clicado:hover,
+        a.cliente-clicado:active {
+            color: white !important;
+            text-decoration: none !important; /* opcional, tira o sublinhado */
+        }
+
         /* Estilos de Modal */
         .modal {
             display: none;
@@ -199,10 +211,7 @@
             z-index: 999;
             transition: background-color 0.3s;
         }
-        .cliente-clicado {
-            color: white !important;
-        }
-
+        /* O trecho duplicado foi removido daqui e ajustado acima. */
         .settings-icon:hover {
             background-color: #004d99;
         }
@@ -526,7 +535,7 @@
         // Variáveis para o botão de mensagem central
         let clientesVencidosParaMensagem = [];
         // O índice não é mais necessário, pois a lista será reprocessada
-        // let indiceClienteVencidoAtual = 0; 
+        // let indiceClienteVencidoAtual = 0; 
 
         // Variável para armazenar o ID do cliente para "Renovar HOJE"
         let clienteIdParaRenovarHoje = null;
@@ -540,15 +549,41 @@
         // ====================================================================================
         
         // NOVO: Variável global para rastrear o filtro atual
-        let filtroAtual = "hojeEVencidos"; 
+        let filtroAtual = "hojeEVencidos"; 
 
         // --- Funções de Loading/Spinner ---
         function mostrarCarregando() {
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
 
+        // FUNÇÃO ATUALIZADA: Marca o link clicado e ATUALIZA O OBJETO CLIENTE
         function marcarClienteClicado(elemento) {
+            console.log("Cliquei em:", elemento.innerText);
             elemento.classList.add("cliente-clicado");
+            console.log("Classes atuais do link:", elemento.className);
+
+            // Tenta encontrar o cliente correspondente e marcar seu estado
+            const tr = elemento.closest("tr");
+            if (tr) {
+                // Pega o índice do elemento <tr> dentro do <tbody>
+                const indexNaTabela = Array.from(tr.parentNode.children).indexOf(tr);
+                
+                // Usa o índice da tabela para encontrar o cliente na lista de clientes exibidos
+                const clienteClicado = clientesExibidos[indexNaTabela];
+                
+                if (clienteClicado) {
+                    // Encontra o índice original na lista 'clientes'
+                    const indexOriginal = clientes.findIndex(c => c.id === clienteClicado.id);
+                    if (indexOriginal !== -1) {
+                        // Salva o estado 'clicado' no objeto original (para persistir na reexibição)
+                        clientes[indexOriginal].clicado = true;
+                        // Força a atualização do localStorage (opcional, mas bom para persistência)
+                        saveClientsToLocalStorage(); 
+                        // Não é necessário salvar no Sheets para esta flag de UI
+                        console.log(`Cliente com ID ${clienteClicado.id} marcado como 'clicado'.`);
+                    }
+                }
+            }
         }
 
 
@@ -775,7 +810,8 @@
                 oculto: false,
                 verDepois: false,
                 desativado: false,
-                dola_sent: false // NOVO: Campo para controlar o botão Dola
+                dola_sent: false, // NOVO: Campo para controlar o botão Dola
+                clicado: false // NOVO: Adiciona o estado 'clicado'
             };
 
             clientes.push(novoClienteObj); // Atualiza a array local **imediatamente**.
@@ -816,6 +852,7 @@
             clientes[clienteOriginalIndex].oculto = false;
             clientes[clienteOriginalIndex].verDepois = false;
             clientes[clienteOriginalIndex].desativado = false;
+            clientes[clienteOriginalIndex].clicado = false; // Limpa o estado 'clicado' ao arquivar
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
             // Reseta filtros e atualiza a interface imediatamente
@@ -1066,7 +1103,7 @@
                     botoesAcao = `
                         <button title="Desmarcar Ver Depois" onclick="toggleVerDepois(${index})">Desmarcar</button>
                         <button title="Editar Cliente" onclick="editar(${index})">Edit</button>
-                        <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>                        
+                        <button title="Excluir Cliente" onclick="excluir(${index})">❌</button>                        
                         <button title="Arquivar Cliente" onclick="arquivar(${index})">📂</button>
                         <button title="Desativar Cliente" onclick="toggleDesativado(${index})">Desativar</button>
                         <button title="Copiar Mensagem WhatsApp" onclick="copiarMensagemWhatsApp(${index})">📋 Copiar</button>
@@ -1106,15 +1143,20 @@
                 }
 
                 const nomeExibicaoBase = cliente.nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
+                
+                // TRECHO ALTERADO: Adiciona a classe 'cliente-clicado' dinamicamente ao <a>
+                const classeDinamica = cliente.clicado ? 'cliente-clicado' : '';
+
                 tr.innerHTML = `
                     <td>
-        ${formatDateForDisplay(cliente.data)} 
-    <a href="#"
-        onclick="marcarClienteClicado(this); enviarMensagemWhatsApp('${nomeExibicaoBase}', '${cliente.telefone}', ${index}); return false;">
-        ${nomeExibicaoBase} (${cliente.Produto || 'N/I'})
-    </a>
-    ${botoesAcao}
-</td>
+                        ${formatDateForDisplay(cliente.data)} 
+                        <a href="#"
+                            class="${classeDinamica}"
+                            onclick="marcarClienteClicado(this); enviarMensagemWhatsApp('${nomeExibicaoBase}', '${cliente.telefone}', ${index}); return false;">
+                            ${nomeExibicaoBase} (${cliente.Produto || 'N/I'})
+                        </a>
+                        ${botoesAcao}
+                    </td>
                 `;
                 tabela.appendChild(tr);
             });
@@ -1188,6 +1230,7 @@
 
             clientes[clienteOriginalIndex].avisado = false; // Apenas desmarca como avisado
             clientes[clienteOriginalIndex].oculto = false; // E desmarca como oculto para reaparecer na lista principal
+            clientes[clienteOriginalIndex].clicado = false; // Limpa o estado 'clicado'
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             chamarFiltroAtual();
             exibirClientesAvisados();
@@ -1279,6 +1322,7 @@
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].desativado = false;
                 clientes[clienteOriginalIndex].dola_sent = false; // Reinicia o status do Dola ao renovar
+                clientes[clienteOriginalIndex].clicado = false; // Limpa o estado 'clicado' ao renovar
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1332,6 +1376,7 @@
                 clientes[clienteOriginalIndex].verDepois = false;
                 clientes[clienteOriginalIndex].desativado = false;
                 clientes[clienteOriginalIndex].dola_sent = false; // Reinicia o status do Dola ao renovar
+                clientes[clienteOriginalIndex].clicado = false; // Limpa o estado 'clicado' ao renovar
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1382,6 +1427,7 @@
                     clientes[clienteOriginalIndex].verDepois = false;
                     clientes[clienteOriginalIndex].desativado = false;
                     clientes[clienteOriginalIndex].dola_sent = false; // Reinicia o status do Dola ao renovar
+                    clientes[clienteOriginalIndex].clicado = false; // Limpa o estado 'clicado' ao renovar
                 }
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
@@ -1477,7 +1523,8 @@
                 oculto: false,
                 verDepois: false,
                 desativado: false,
-                dola_sent: false // NOVO: Campo para controlar o botão Dola
+                dola_sent: false, // NOVO: Campo para controlar o botão Dola
+                clicado: false // NOVO: Adiciona o estado 'clicado'
             };
             clientes.push(novoCliente);
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
@@ -1587,7 +1634,7 @@
             const urlDola = `https://wa.me/16502234435?text=${encodeURIComponent(mensagemDolaLembrete)}`;
             const nomeMes = getNomeMes(parseInt(vencimento.split('/')[1]));
 
-            const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. 
+            const mensagemCliente = `Olá! Lembrete de vencimento do seu plano de TV. 
 📅 Vencimento: ${vencimento} (${nomeMes}).
 💳 Pix: 11947406124 (Waldemar José Luiz).
 
@@ -1609,6 +1656,7 @@ ${urlDola}
             if (clienteOriginal) {
                 clienteOriginal.oculto = false; // Oculta da lista principal
                 clienteOriginal.dola_sent = true; // Marca que a mensagem do Dola foi enviada
+                clienteOriginal.clicado = true; // Marca como clicado
             }
             saveClientsToLocalStorage();
 
@@ -1696,8 +1744,9 @@ ${urlDola}
             let clienteOriginal = clientes.find(c => c.id === cliente.id);
             if (clienteOriginal) {
                 // A linha abaixo foi removida, conforme sua solicitação, para não ocultar o cliente.
-                // clienteOriginal.avisado = true; // Mantém a cor azul na linha da tabela
-                // clienteOriginal.oculto = true; // Oculta da tabela principal e move para a seção de avisados
+                clienteOriginal.avisado = true; // Mantém a cor azul na linha da tabela
+                clienteOriginal.oculto = false; // MANTÉM VISÍVEL na lista principal, mas com cor azul
+                clienteOriginal.clicado = true; // A função marcarClienteClicado já fez isso, mas reforçamos
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
 
@@ -1736,7 +1785,8 @@ ${urlDola}
                 oculto: c.oculto || false,
                 verDepois: c.verDepois || false,
                 desativado: c.desativado || false,
-                dola_sent: c.dola_sent || false // NOVO: Adiciona o campo
+                dola_sent: c.dola_sent || false, // NOVO: Adiciona o campo
+                clicado: c.clicado || false // NOVO: Adiciona o campo
             }));
 
             const clientesJson = JSON.stringify(clientesParaExportar, null, 4);
@@ -1795,7 +1845,8 @@ ${urlDola}
                             oculto: c.oculto || false,
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false,
-                            dola_sent: c.dola_sent || false // NOVO: Adiciona o campo
+                            dola_sent: c.dola_sent || false, // NOVO: Adiciona o campo
+                            clicado: c.clicado || false // NOVO: Adiciona o campo
                         };
                     });
 
@@ -1872,6 +1923,7 @@ ${urlDola}
                                     clientes[indexClienteExistente].verDepois = clienteImportado.verDepois;
                                     clientes[indexClienteExistente].desativado = clienteImportado.desativado;
                                     clientes[indexClienteExistente].dola_sent = clienteImportado.dola_sent; // NOVO: Adiciona o campo
+                                    clientes[indexClienteExistente].clicado = clienteImportado.clicado; // NOVO: Adiciona o campo
                                     clientesAtualizados++;
                                 }
                             }
@@ -2269,6 +2321,7 @@ ${urlDola}
             clientes[originalClienteIndex].data = novaData.split("-").reverse().join("/");
             clientes[originalClienteIndex].Produto = novoProduto;
             clientes[originalClienteIndex].dola_sent = false; // NOVO: Reinicia o status do Dola na edição
+            clientes[originalClienteIndex].clicado = false; // Limpa o estado 'clicado' na edição
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             // NOVO: Mantém o filtro atual após a ação
             chamarFiltroAtual();
@@ -2411,6 +2464,7 @@ ${urlDola}
                 clientes[clienteOriginalIndex].oculto = false; // Garante que não está oculto se for "ver depois"
                 clientes[clienteOriginalIndex].arquivado = false;
                 clientes[clienteOriginalIndex].desativado = false;
+                clientes[clienteOriginalIndex].clicado = false; // Limpa o estado 'clicado'
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             chamarFiltroAtual();
@@ -2447,6 +2501,7 @@ ${urlDola}
             clientes[clienteOriginalIndex].oculto = false; // Garante que não está oculto se desativado
             clientes[clienteOriginalIndex].verDepois = false;
             clientes[clienteOriginalIndex].arquivado = false;
+            clientes[clienteOriginalIndex].clicado = false; // Limpa o estado 'clicado'
         }
         saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
         chamarFiltroAtual();
@@ -2486,6 +2541,7 @@ ${urlDola}
                 let nomeSemProduto = clientes[clienteOriginalIndex].nome.replace(/\s\(UniTv\)/g, '').replace(/\s\(Duplecast\)/g, '');
                 clientes[clienteOriginalIndex].Produto = novoProduto;
                 clientes[originalClienteIndex].nome = `${nomeSemProduto} (${novoProduto})`;
+                clientes[originalClienteIndex].clicado = false; // Limpa o estado 'clicado' ao alterar o produto
             }
             saveClientsToLocalStorage(); // **NOVO: Salva no localStorage imediatamente**
             chamarFiltroAtual();
@@ -2563,7 +2619,8 @@ ${urlDola}
                             oculto: isOcultoAposRefresh, // Manter o status oculto
                             verDepois: c.verDepois || false,
                             desativado: c.desativado || false,
-                            dola_sent: c.dola_sent || false // NOVO: Mapeia o novo campo
+                            dola_sent: c.dola_sent || false, // NOVO: Mapeia o novo campo
+                            clicado: c.clicado || false // NOVO: Mapeia o novo campo
                         };
                     }).filter(c => c.id !== null);
                     saveClientsToLocalStorage(); // **NOVO: Atualiza cache com dados do Sheets APÓS carga bem-sucedida**
@@ -2593,7 +2650,7 @@ ${urlDola}
                 esconderCarregando(); // Esconde o spinner sempre, independente de sucesso ou erro na carga inicial
                 
                 // NOVO: Adiciona a chamada do filtro padrão aqui
-                filtrarHojeEVencidos(); 
+                filtrarHojeEVencidos(); 
                 
                 exibirClientesAvisados();
                 prepararClientesVencidosParaMensagem();
@@ -2837,7 +2894,7 @@ ${urlDola}
             document.getElementById('dataInput').value = `${year}-${month}-${day}`;
             
             // NOVO: Adiciona a chamada do filtro padrão aqui
-            filtrarHojeEVencidos(); 
+            filtrarHojeEVencidos(); 
             
             exibirClientesAvisados();
             prepararClientesVencidosParaMensagem();
